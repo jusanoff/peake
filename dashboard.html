@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"><title>Dashboard - Peake Fruit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <style>
+        :root { --s:#2e7d32; --p:#d32f2f; --bg:#f0f2f5; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .stat-card { background: #fff; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .stat-num { font-size: 24px; font-weight: bold; color: var(--s); }
+        table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: var(--s); color: white; }
+        .urgent-row { background: #fff0f0; color: var(--p); font-weight: bold; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="stats">
+        <div class="stat-card"><div class="stat-num" id="total_count">0</div><div>Всего сегодня</div></div>
+        <div class="stat-card"><div class="stat-num" id="pending_count" style="color:var(--p)">0</div><div>Ожидают</div></div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Линия</th>
+                <th>Сорт</th>
+                <th>Кол-во</th>
+                <th>Склад</th>
+                <th>Водитель</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody id="log_body"></tbody>
+    </table>
+
+<script>
+    async function updateDashboard() {
+        const orders = await window.api.getOrders();
+        
+        document.getElementById('total_count').innerText = orders.length;
+        document.getElementById('pending_count').innerText = orders.filter(o => o.status === 'pending').length;
+
+        document.getElementById('log_body').innerHTML = orders.map(o => `
+            <tr class="${o.urgent && o.status !== 'delivered' ? 'urgent-row' : ''}">
+                <td><b>${o.line}</b></td>
+                <td>${o.sort}</td>
+                <td>${o.qty}</td>
+                <td>${o.store}</td>
+                <td>${o.driver_name || '-'}</td>
+                <td><span class="status-badge">${o.status.toUpperCase()}</span></td>
+            </tr>
+        `).join('') || '<tr><td colspan="6" style="text-align:center">Нет заказов</td></tr>';
+    }
+
+    updateDashboard();
+    setInterval(updateDashboard, 5000);
+</script>
+</body>
+</html>

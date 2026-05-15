@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Peake Fruit</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body{font-family:sans-serif; background:#1a1a2e; display:flex; justify-content:center; align-items:center; height:100vh; margin:0}
+        .card{background:#fff; padding:30px; border-radius:15px; width:320px; text-align:center; box-shadow:0 10px 20px rgba(0,0,0,0.3)}
+        input, button{width:100%; padding:12px; margin:10px 0; border-radius:8px; border:1px solid #ccc; font-size:16px; box-sizing:border-box}
+        button{background:#2e7d32; color:white; border:none; font-weight:bold; cursor:pointer}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>PEAKE FRUIT</h2>
+        <input type="text" id="u_name" placeholder="Username (admin)">
+        <input type="password" id="u_pass" placeholder="Password (777)">
+        <button id="btn" onclick="doLogin()">LOGIN / ВХОД</button>
+        <p id="msg" style="color:red; font-size:12px;"></p>
+    </div>
+
+<script>
+    // Настройки базы прямо здесь, чтобы не было ошибки "not defined"
+    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+    const _db = supabase.createClient(supabaseUrl, supabaseKey);
+
+    async function doLogin() {
+        const u = document.getElementById('u_name').value.trim();
+        const p = document.getElementById('u_pass').value.trim();
+        const btn = document.getElementById('btn');
+        const msg = document.getElementById('msg');
+
+        if(!u || !p) return alert("Введите данные!");
+
+        btn.innerText = "Checking...";
+        btn.disabled = true;
+        msg.innerText = "";
+
+        try {
+            // Прямой запрос в таблицу app_users
+            const { data, error } = await _db
+                .from('app_users')
+                .select('*')
+                .eq('username', u.toLowerCase())
+                .eq('password', p)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (data) {
+                localStorage.setItem('user', data.username);
+                localStorage.setItem('role', data.role);
+                
+                // Перенаправление в зависимости от роли
+                if (data.role === 'office') window.location.href = 'office.html';
+                else if (data.role === 'driver') window.location.href = 'driver.html';
+                else window.location.href = 'index.html';
+            } else {
+                msg.innerText = "Неверный логин или пароль!";
+                btn.innerText = "LOGIN / ВХОД";
+                btn.disabled = false;
+            }
+        } catch (e) {
+            console.error(e);
+            msg.innerText = "Ошибка: " + e.message;
+            btn.innerText = "LOGIN / ВХОД";
+            btn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>
