@@ -1,34 +1,28 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Line Panel - Peake Fruit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --s:#2e7d32; --bg:#f4f7f6; --dark:#333; --w:#ff9800; --p:#d32f2f; }
+        :root { --s:#2e7d32; --bg:#f4f7f6; --dark:#333; --p:#d32f2f; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
-        
         #main { flex: 1 1 500px; max-width: 800px; width: 100%; }
         #sidebar { flex: 1 1 350px; max-width: 450px; width: 100%; }
-
         .card { background: #fff; padding: 20px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); border-top: 6px solid var(--s); margin-bottom: 20px; box-sizing: border-box; }
         h3 { margin: 0 0 15px 0; color: var(--dark); border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 18px; text-transform: uppercase; }
         label { font-size: 13px; font-weight: bold; color: #666; margin-top: 10px; display: block; }
-        
         input, button, select { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
         .btn-send { background: var(--s); color: white; font-weight: bold; cursor: pointer; border: none; font-size: 18px; margin-top: 15px; }
         .btn-logout { background: #546e7a; color: white; border: none; border-radius: 10px; padding: 12px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
-
         .manual-zone { background: #fffde7; padding: 15px; border-radius: 12px; margin: 10px 0; border: 2px dashed #fbc02d; display: flex; align-items: center; gap: 10px; }
-        
         .order-row { padding: 15px; background: #fff; border-radius: 12px; margin-bottom: 12px; border-left: 6px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #eee; border-left-width: 6px; }
         .order-row.urgent-border { border-left-color: var(--p); background: #fff8f8; }
         .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .order-time { background: #333; color: #fff; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; }
         .order-title { font-size: 16px; font-weight: bold; color: #111; }
         .st-badge { display: inline-block; margin-top: 8px; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; background: #eee; }
-
         @media (max-width: 900px) { body { flex-direction: column; align-items: center; } #main, #sidebar { max-width: 100%; } }
     </style>
 </head>
@@ -36,24 +30,24 @@
 
 <div id="main">
     <div class="card">
-        <h3>📦 Новый заказ / New Order</h3>
+        <h3 id="h_new_order">New Order</h3>
         <form id="orderForm">
             <div class="manual-zone">
                 <input type="checkbox" id="manual_check" style="width:25px; height:25px; margin:0; cursor:pointer"> 
-                <label for="manual_check" style="margin:0; cursor:pointer; font-size:16px">Ввести данные вручную</label>
+                <label for="manual_check" id="l_manual" style="margin:0; cursor:pointer; font-size:16px">Manual Input</label>
             </div>
 
-            <label>1. Сорт (Sort):</label>
-            <select id="sort_select"><option value="">Загрузка...</option></select>
-            <input type="text" id="sort_manual" placeholder="Название сорта вручную" style="display:none">
+            <label id="l_sort">1. Sort:</label>
+            <select id="sort_select"><option value="">Loading...</option></select>
+            <input type="text" id="sort_manual" placeholder="Enter sort manually" style="display:none">
 
-            <label>2. Гровер (Grower):</label>
-            <select id="grower_select" disabled><option value="">Сначала выберите сорт</option></select>
-            <input type="text" id="grower_manual" placeholder="Имя гровера вручную" style="display:none">
+            <label id="l_grower">2. Grower:</label>
+            <select id="grower_select" disabled><option value="">Select Sort First</option></select>
+            <input type="text" id="grower_manual" placeholder="Enter grower manually" style="display:none">
 
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px">
                 <div>
-                    <label>Склад (Store):</label>
+                    <label id="l_store">Store:</label>
                     <input type="text" id="store_view" placeholder="-" readonly style="background:#f0f0f0">
                 </div>
                 <div>
@@ -62,24 +56,24 @@
                 </div>
             </div>
 
-            <label>Количество (Qty):</label>
+            <label id="l_qty">Quantity:</label>
             <input type="number" id="qty_input" placeholder="0" required inputmode="numeric">
 
             <div style="background:#fff0f0; padding:12px; border-radius:10px; margin-top:15px; display:flex; align-items:center; gap:10px">
                 <input type="checkbox" id="urgent_check" style="width:22px; height:22px; margin:0"> 
-                <label for="urgent_check" style="margin:0; color:var(--p); font-weight:bold">🚀 СРОЧНО (URGENT)</label>
+                <label for="urgent_check" id="l_urgent" style="margin:0; color:var(--p); font-weight:bold">🚀 URGENT</label>
             </div>
 
-            <button type="submit" class="btn-send">ОТПРАВИТЬ ЗАКАЗ</button>
+            <button type="submit" class="btn-send" id="btn_send">SEND ORDER</button>
         </form>
     </div>
 </div>
 
 <div id="sidebar">
     <div class="card" style="border-top-color: #666">
-        <h3>🕒 История / History</h3>
-        <div id="my_list">Загрузка...</div>
-        <button onclick="logout()" class="btn-logout">ВЫЙТИ (LOGOUT)</button>
+        <h3 id="h_history">History</h3>
+        <div id="my_list">Loading...</div>
+        <button onclick="logout()" class="btn-logout" id="btn_logout">LOGOUT</button>
     </div>
 </div>
 
@@ -87,51 +81,67 @@
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
+    
     const user = localStorage.getItem('user') || 'Line';
+    const lang = localStorage.getItem('lang') || 'en';
 
-    // РАБОТА ГАЛОЧКИ
+    // СЛОВАРЬ ПЕРЕВОДА
+    const i18n = {
+        en: { new: "New Order", man: "Manual Input", sort: "1. Sort:", grow: "2. Grower:", store: "Store:", qty: "Quantity:", urg: "🚀 URGENT", send: "SEND ORDER", hist: "History", exit: "LOGOUT", loading: "Loading...", select_sort: "-- Select Sort --", select_grow: "-- Select Grower --", wait_sort: "Select Sort First" },
+        ru: { new: "Новый заказ", man: "Вручную", sort: "1. Сорт:", grow: "2. Гровер:", store: "Склад:", qty: "Кол-во:", urg: "🚀 СРОЧНО", send: "ОТПРАВИТЬ", hist: "История", exit: "ВЫЙТИ", loading: "Загрузка...", select_sort: "-- Выберите сорт --", select_grow: "-- Выберите гровера --", wait_sort: "Сначала выберите сорт" }
+    };
+
+    function applyLang() {
+        const t = i18n[lang];
+        document.getElementById('h_new_order').innerText = t.new;
+        document.getElementById('l_manual').innerText = t.man;
+        document.getElementById('l_sort').innerText = t.sort;
+        document.getElementById('l_grower').innerText = t.grow;
+        document.getElementById('l_store').innerText = t.store;
+        document.getElementById('l_qty').innerText = t.qty;
+        document.getElementById('l_urgent').innerText = t.urg;
+        document.getElementById('btn_send').innerText = t.send;
+        document.getElementById('h_history').innerText = t.hist;
+        document.getElementById('btn_logout').innerText = t.exit;
+        document.getElementById('sort_manual').placeholder = lang === 'ru' ? "Сорт вручную" : "Sort manually";
+        document.getElementById('grower_manual').placeholder = lang === 'ru' ? "Гровер вручную" : "Grower manually";
+    }
+
+    // ЛОГИКА ГАЛОЧКИ
     document.getElementById('manual_check').addEventListener('change', function() {
         const isM = this.checked;
-        
-        // Переключаем видимость
         document.getElementById('sort_select').style.display = isM ? 'none' : 'block';
         document.getElementById('grower_select').style.display = isM ? 'none' : 'block';
         document.getElementById('sort_manual').style.display = isM ? 'block' : 'none';
         document.getElementById('grower_manual').style.display = isM ? 'block' : 'none';
-        
-        // Разблокируем Store и Consignment
         const views = [document.getElementById('store_view'), document.getElementById('consign_view')];
         views.forEach(v => {
             v.readOnly = !isM;
             v.style.background = isM ? '#ffffff' : '#f0f0f0';
-            v.value = ""; // Очищаем при переключении
+            v.value = "";
         });
     });
 
-    // Загрузка склада
     let fullStock = [];
     async function loadStock() {
         const { data } = await _db.from('stock').select('*');
         fullStock = data || [];
         const uniqueSorts = [...new Set(fullStock.map(i => i.item_name))];
-        document.getElementById('sort_select').innerHTML = '<option value="">-- Выберите сорт --</option>' + 
+        document.getElementById('sort_select').innerHTML = `<option value="">${i18n[lang].select_sort}</option>` + 
             uniqueSorts.map(s => `<option value="${s}">${s}</option>`).join('');
     }
 
-    // Логика выбора в списках
     document.getElementById('sort_select').onchange = function() {
         const val = this.value;
         const gSel = document.getElementById('grower_select');
-        gSel.innerHTML = '<option value="">-- Выберите гровера --</option>';
+        gSel.innerHTML = `<option value="">${i18n[lang].select_grow}</option>`;
         if(!val) { gSel.disabled = true; return; }
         const filtered = fullStock.filter(i => i.item_name === val);
         gSel.disabled = false;
         filtered.forEach(g => {
             let opt = document.createElement('option');
-            opt.value = g.grower;
-            opt.textContent = g.grower;
-            opt.dataset.st = g.store;
-            opt.dataset.con = g.consignment || '';
+            opt.value = g.grower; opt.textContent = g.grower;
+            opt.dataset.st = g.store; opt.dataset.con = g.consignment || '';
             gSel.appendChild(opt);
         });
     };
@@ -142,37 +152,28 @@
         document.getElementById('consign_view').value = opt.dataset.con || "";
     };
 
-    // Отправка заказа
     document.getElementById('orderForm').onsubmit = async (e) => {
         e.preventDefault();
         const isM = document.getElementById('manual_check').checked;
-        const finalSort = isM ? document.getElementById('sort_manual').value : document.getElementById('sort_select').value;
-        const finalGrower = isM ? document.getElementById('grower_manual').value : document.getElementById('grower_select').value;
+        const s = isM ? document.getElementById('sort_manual').value : document.getElementById('sort_select').value;
+        const g = isM ? document.getElementById('grower_manual').value : document.getElementById('grower_select').value;
 
-        if(!finalSort || !finalGrower) return alert("Заполните все поля!");
+        if(!s || !g) return alert(lang === 'ru' ? "Заполните поля!" : "Fill all fields!");
 
         const { error } = await _db.from('orders').insert([{
-            line: user, sort: finalSort, grower: finalGrower,
-            qty: document.getElementById('qty_input').value,
-            store: document.getElementById('store_view').value,
-            consign: document.getElementById('consign_view').value,
-            urgent: document.getElementById('urgent_check').checked,
-            status: 'pending',
+            line: user, sort: s, grower: g, qty: document.getElementById('qty_input').value,
+            store: document.getElementById('store_view').value, consign: document.getElementById('consign_view').value,
+            urgent: document.getElementById('urgent_check').checked, status: 'pending',
             time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
         }]);
 
-        if(!error) {
-            e.target.reset();
-            document.getElementById('manual_check').checked = false;
-            document.getElementById('manual_check').dispatchEvent(new Event('change'));
-            loadOrders();
-        } else alert("Ошибка: " + error.message);
+        if(!error) { e.target.reset(); document.getElementById('manual_check').checked = false; document.getElementById('manual_check').dispatchEvent(new Event('change')); loadOrders(); }
     };
 
     async function loadOrders() {
         const { data } = await _db.from('orders').select('*').eq('line', user).order('id', {ascending:false}).limit(15);
         const list = document.getElementById('my_list');
-        if (!data || data.length === 0) { list.innerHTML = '<p style="text-align:center; color:#999">Нет заказов</p>'; return; }
+        if (!data || data.length === 0) { list.innerHTML = `<p style="text-align:center; color:#999">${lang === 'ru' ? "Нет заказов" : "No orders"}</p>`; return; }
         list.innerHTML = data.map(o => `
             <div class="order-row ${o.urgent ? 'urgent-border' : ''}">
                 <div class="order-header">
@@ -180,7 +181,7 @@
                     <span class="order-time">${o.time || '--:--'}</span>
                 </div>
                 <div class="order-details">
-                    <b>Кол-во: ${o.qty}</b><br>
+                    <b>QTY: ${o.qty}</b><br>
                     <span>📍 ${o.store || '-'} | 👤 ${o.grower}</span>
                 </div>
                 <span class="st-badge">${o.status}</span>
@@ -189,7 +190,7 @@
     }
 
     function logout() { localStorage.clear(); window.location.href='login.html'; }
-    loadStock(); loadOrders(); setInterval(loadOrders, 5000);
+    applyLang(); loadStock(); loadOrders(); setInterval(loadOrders, 5000);
 </script>
 </body>
 </html>
