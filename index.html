@@ -36,34 +36,21 @@
                 <input type="checkbox" id="manual_check" style="width:25px; height:25px; margin:0; cursor:pointer"> 
                 <label for="manual_check" id="l_manual" style="margin:0; cursor:pointer; font-size:16px">Manual Input</label>
             </div>
-
             <label id="l_sort">1. Sort:</label>
             <select id="sort_select"><option value="">Loading...</option></select>
             <input type="text" id="sort_manual" placeholder="Enter sort manually" style="display:none">
-
             <label id="l_grower">2. Grower:</label>
             <select id="grower_select" disabled><option value="">Select Sort First</option></select>
             <input type="text" id="grower_manual" placeholder="Enter grower manually" style="display:none">
-
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px">
-                <div>
-                    <label id="l_store">Store:</label>
-                    <input type="text" id="store_view" placeholder="-" readonly style="background:#f0f0f0">
-                </div>
-                <div>
-                    <label>Consignment:</label>
-                    <input type="text" id="consign_view" placeholder="-" readonly style="background:#f0f0f0">
-                </div>
+                <div><label id="l_store">Store:</label><input type="text" id="store_view" placeholder="-" readonly style="background:#f0f0f0"></div>
+                <div><label>Consignment:</label><input type="text" id="consign_view" placeholder="-" readonly style="background:#f0f0f0"></div>
             </div>
-
-            <label id="l_qty">Quantity:</label>
-            <input type="number" id="qty_input" placeholder="0" required inputmode="numeric">
-
+            <label id="l_qty">Quantity:</label><input type="number" id="qty_input" placeholder="0" required inputmode="numeric">
             <div style="background:#fff0f0; padding:12px; border-radius:10px; margin-top:15px; display:flex; align-items:center; gap:10px">
                 <input type="checkbox" id="urgent_check" style="width:22px; height:22px; margin:0"> 
                 <label for="urgent_check" id="l_urgent" style="margin:0; color:var(--p); font-weight:bold">🚀 URGENT</label>
             </div>
-
             <button type="submit" class="btn-send" id="btn_send">SEND ORDER</button>
         </form>
     </div>
@@ -78,29 +65,94 @@
 </div>
 
 <script>
-    // ПРОВЕРКА АВТОРИЗАЦИИ (ОХРАННИК)
-    if (!localStorage.getItem('user')) {
-        window.location.href = 'login.html';
-    }
-
+    if (!localStorage.getItem('user')) { window.location.href = 'login.html'; }
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
-    
-    const user = localStorage.getItem('user');
-    const lang = localStorage.getItem('lang') || 'en';
+    const user = localStorage.getItem('user'), lang = localStorage.getItem('lang') || 'en';
 
     const i18n = {
-        en: { new: "New Order", man: "Manual Input", sort: "1. Sort:", grow: "2. Grower:", store: "Store:", qty: "Quantity:", urg: "🚀 URGENT", send: "SEND ORDER", hist: "History", exit: "LOGOUT", loading: "Loading...", select_sort: "-- Select Sort --", select_grow: "-- Select Grower --", wait_sort: "Select Sort First" },
-        ru: { new: "Новый заказ", man: "Вручную", sort: "1. Сорт:", grow: "2. Гровер:", store: "Склад:", qty: "Кол-во:", urg: "🚀 СРОЧНО", send: "ОТПРАВИТЬ", hist: "История", exit: "ВЫЙТИ", loading: "Загрузка...", select_sort: "-- Выберите сорт --", select_grow: "-- Выберите гровера --", wait_sort: "Сначала выберите сорт" }
+        en: { new: "New Order", man: "Manual Input", sort: "1. Sort:", grow: "2. Grower:", store: "Store:", qty: "Quantity:", urg: "🚀 URGENT", send: "SEND ORDER", hist: "History", exit: "LOGOUT", ord: "Ordered:", del: "Delivered:" },
+        ru: { new: "Новый заказ", man: "Вручную", sort: "1. Сорт:", grow: "2. Гровер:", store: "Склад:", qty: "Кол-во:", urg: "🚀 СРОЧНО", send: "ОТПРАВИТЬ", hist: "История", exit: "ВЫЙТИ", ord: "Заказано:", del: "Привезено:" }
     };
 
     function applyLang() {
         const t = i18n[lang];
-        document.getElementById('h_new_order').innerText = t.new;
-        document.getElementById('l_manual').innerText = t.man;
-        document.getElementById('l_sort').innerText = t.sort;
-        document.getElementById('l_grower').innerText = t.grow;
-        document.getElementById('l_store').innerText = t.store;
-        document.getElementById('l_qty').innerText = t.qty;
-        document.getElementById('l_urgent').innerText = t
+        document.getElementById('h_new_order').innerText = t.new; document.getElementById('l_manual').innerText = t.man;
+        document.getElementById('l_sort').innerText = t.sort; document.getElementById('l_grower').innerText = t.grow;
+        document.getElementById('l_store').innerText = t.store; document.getElementById('l_qty').innerText = t.qty;
+        document.getElementById('l_urgent').innerText = t.urg; document.getElementById('btn_send').innerText = t.send;
+        document.getElementById('h_history').innerText = t.hist; document.getElementById('btn_logout').innerText = t.exit;
+    }
+
+    document.getElementById('manual_check').onchange = function() {
+        const isM = this.checked;
+        document.getElementById('sort_select').style.display = isM ? 'none' : 'block';
+        document.getElementById('grower_select').style.display = isM ? 'none' : 'block';
+        document.getElementById('sort_manual').style.display = isM ? 'block' : 'none';
+        document.getElementById('grower_manual').style.display = isM ? 'block' : 'none';
+        const views = [document.getElementById('store_view'), document.getElementById('consign_view')];
+        views.forEach(v => { v.readOnly = !isM; v.style.background = isM ? '#fff' : '#f0f0f0'; v.value = ""; });
+    };
+
+    let fullStock = [];
+    async function loadStock() {
+        const { data } = await _db.from('stock').select('*');
+        fullStock = data || [];
+        const uniqueSorts = [...new Set(fullStock.map(i => i.item_name))];
+        document.getElementById('sort_select').innerHTML = '<option value="">-- Select --</option>' + uniqueSorts.map(s => `<option value="${s}">${s}</option>`).join('');
+    }
+
+    document.getElementById('sort_select').onchange = function() {
+        const val = this.value; const gSel = document.getElementById('grower_select');
+        gSel.innerHTML = '<option value="">-- Select --</option>'; if(!val) { gSel.disabled = true; return; }
+        gSel.disabled = false;
+        fullStock.filter(i => i.item_name === val).forEach(g => {
+            let opt = document.createElement('option'); opt.value = g.grower; opt.textContent = g.grower;
+            opt.dataset.st = g.store; opt.dataset.con = g.consignment || ''; gSel.appendChild(opt);
+        });
+    };
+
+    document.getElementById('grower_select').onchange = function() {
+        const opt = this.options[this.selectedIndex];
+        document.getElementById('store_view').value = opt.dataset.st || "";
+        document.getElementById('consign_view').value = opt.dataset.con || "";
+    };
+
+    document.getElementById('orderForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const isM = document.getElementById('manual_check').checked;
+        const s = isM ? document.getElementById('sort_manual').value : document.getElementById('sort_select').value;
+        const g = isM ? document.getElementById('grower_manual').value : document.getElementById('grower_select').value;
+        if(!s || !g) return alert("Fill fields!");
+        const timeNow = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        await _db.from('orders').insert([{
+            line: user, sort: s, grower: g, qty: document.getElementById('qty_input').value,
+            store: document.getElementById('store_view').value, consign: document.getElementById('consign_view').value,
+            urgent: document.getElementById('urgent_check').checked, status: 'pending', time: timeNow
+        }]);
+        e.target.reset(); document.getElementById('manual_check').checked = false; document.getElementById('manual_check').onchange(); loadOrders();
+    };
+
+    async function loadOrders() {
+        const { data } = await _db.from('orders').select('*').eq('line', user).order('id', {ascending:false}).limit(15);
+        const list = document.getElementById('my_list');
+        if (!data || data.length === 0) { list.innerHTML = "No orders"; return; }
+        list.innerHTML = data.map(o => `
+            <div class="order-row ${o.urgent ? 'urgent-border' : ''}">
+                <div class="order-header"><span class="order-title">${o.sort}</span><span class="order-time">${o.time}</span></div>
+                <div class="order-details">
+                    <b>QTY: ${o.qty}</b><br><span>📍 ${o.store} | 👤 ${o.grower}</span>
+                    <div style="margin-top:5px; font-size:11px; color:#666">
+                        ${i18n[lang].ord} ${o.time} ${o.delivered_at ? `<br><b style="color:var(--s)">${i18n[lang].del} ${o.delivered_at}</b>` : ''}
+                    </div>
+                </div>
+                <span class="st-badge">${o.status}</span>
+            </div>
+        `).join('');
+    }
+    function logout() { localStorage.clear(); window.location.href='login.html'; }
+    applyLang(); loadStock(); loadOrders(); setInterval(loadOrders, 5000);
+</script>
+</body>
+</html>
