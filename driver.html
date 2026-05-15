@@ -6,82 +6,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --s:#0277bd; --bg:#f0f4f8; --dark:#333; --ok:#2e7d32; }
+        :root { --s:#0277bd; --bg:#f0f4f8; --ok:#2e7d32; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 600px; }
         .card { background: #fff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-top: 6px solid var(--s); margin-bottom: 20px; }
-        h3 { margin: 0 0 15px 0; color: var(--dark); text-align: center; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .order-card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        h3 { margin: 0; text-align: center; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .order-card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .order-card.urgent { border: 2px solid #d32f2f; background: #fff8f8; }
-        .order-info { margin-bottom: 15px; line-height: 1.6; }
-        .order-info b { font-size: 18px; color: #111; }
-        .btn-done { background: var(--ok); color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-done { background: var(--ok); color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
         .badge-urgent { background: #d32f2f; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 5px; display: inline-block; }
         .btn-logout { background: #666; color: white; border: none; padding: 10px; width: 100%; border-radius: 8px; margin-top: 20px; cursor: pointer; }
-        #empty_msg { text-align: center; color: #999; padding: 40px 0; }
     </style>
 </head>
 <body>
-
 <div class="container">
     <div class="card">
-        <h3 id="h_title">Active Tasks</h3>
-        <div id="driver_list">Loading orders...</div>
+        <h3 id="h_title">Tasks</h3>
+        <div id="driver_list">Loading...</div>
         <button onclick="logout()" class="btn-logout" id="btn_logout">LOGOUT</button>
     </div>
 </div>
-
 <script>
-    // ПРОВЕРКА АВТОРИЗАЦИИ
-    if (!localStorage.getItem('user')) {
-        window.location.href = 'login.html';
-    }
-
-    const supabaseUrl = 'https://ndwipmovekqdvtaajqdez.supabase.co'; // Примечание: Убедитесь, что URL верный
+    if (!localStorage.getItem('user')) { window.location.href = 'login.html'; }
+    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
-
     const lang = localStorage.getItem('lang') || 'en';
 
     const i18n = {
-        en: { title: "Active Tasks", done: "DELIVERED / DONE", empty: "No active orders", urgent: "URGENT", logout: "LOGOUT" },
-        ru: { title: "Активные задачи", done: "ДОСТАВЛЕНО / ГОТОВО", empty: "Нет активных заказов", urgent: "СРОЧНО", logout: "ВЫЙТИ" }
+        en: { title: "Active Tasks", done: "DELIVERED", empty: "No orders", urg: "URGENT" },
+        ru: { title: "Активные задачи", done: "ДОСТАВЛЕНО", empty: "Нет заказов", urg: "СРОЧНО" }
     };
 
-    function applyLang() {
-        document.getElementById('h_title').innerText = i18n[lang].title;
-        document.getElementById('btn_logout').innerText = i18n[lang].logout;
-    }
-
     async function loadDriverOrders() {
-        try {
-            const { data } = await _db.from('orders').select('*').eq('status', 'pending').order('urgent', { ascending: false });
-            const list = document.getElementById('driver_list');
-            if (!data || data.length === 0) {
-                list.innerHTML = `<div id="empty_msg">${i18n[lang].empty}</div>`;
-                return;
-            }
-            list.innerHTML = data.map(o => `
-                <div class="order-card ${o.urgent ? 'urgent' : ''}">
-                    ${o.urgent ? `<span class="badge-urgent">${i18n[lang].urgent}</span>` : ''}
-                    <div class="order-info">
-                        <b>${o.sort} — QTY: ${o.qty}</b>
-                        <span>📍 Store: ${o.store || '-'} | Grower: ${o.grower}</span>
-                        <span>🏭 Line: ${o.line}</span>
-                    </div>
-                    <button class="btn-done" onclick="completeOrder(${o.id})">${i18n[lang].done}</button>
+        const { data } = await _db.from('orders').select('*').eq('status', 'pending').order('urgent', { ascending: false });
+        const list = document.getElementById('driver_list');
+        if (!data || data.length === 0) { list.innerHTML = i18n[lang].empty; return; }
+        list.innerHTML = data.map(o => `
+            <div class="order-card ${o.urgent ? 'urgent' : ''}">
+                ${o.urgent ? `<span class="badge-urgent">${i18n[lang].urg}</span>` : ''}
+                <div style="margin-bottom:10px">
+                    <b>${o.sort} — QTY: ${o.qty}</b><br>
+                    <span>📍 Store: ${o.store} | Line: ${o.line}</span>
                 </div>
-            `).join('');
-        } catch (e) {}
+                <button class="btn-done" onclick="completeOrder(${o.id})">${i18n[lang].done}</button>
+            </div>
+        `).join('');
     }
 
     async function completeOrder(id) {
-        await _db.from('orders').update({ status: 'delivered' }).eq('id', id);
+        const dTime = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        await _db.from('orders').update({ status: 'delivered', delivered_at: dTime }).eq('id', id);
         loadDriverOrders();
     }
-
-    function logout() { localStorage.clear(); window.location.href = 'login.html'; }
-    applyLang(); loadDriverOrders(); setInterval(loadDriverOrders, 5000);
+    function logout() { localStorage.clear(); window.location.href='login.html'; }
+    document.getElementById('h_title').innerText = i18n[lang].title;
+    loadDriverOrders(); setInterval(loadDriverOrders, 5000);
 </script>
 </body>
 </html>
