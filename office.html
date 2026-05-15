@@ -1,61 +1,51 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Склад: Остатки</title>
+    <meta charset="UTF-8"><title>Office - Stock Upload</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        input { width: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
-        button { background: #2e7d32; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
-        h2 { color: #2e7d32; text-align: center; }
-    </style>
+    <style>body{text-align:center;padding:50px;font-family:sans-serif;background:#f4f4f9}button{padding:20px;width:320px;margin:10px;cursor:pointer;border-radius:10px;border:none;font-weight:bold}</style>
 </head>
 <body>
-
-<div class="card">
-    <h2>Остатки на складе</h2>
-    <div id="stock-list">Загрузка...</div>
-    <button onclick="updateAllStock()">ОБНОВИТЬ ВСЕ ДАННЫЕ</button>
-    <p style="text-align: center;"><a href="login.html" style="color: #666;">Выход</a></p>
-</div>
+    <h1>OFFICE PANEL</h1>
+    <input type="file" id="csv" style="display:none" accept=".csv">
+    <button style="background:#2e7d32;color:white" onclick="document.getElementById('csv').click()">UPLOAD STOCK (CSV: Sort, Qty, ST, Grower)</button><br>
+    <button style="background:#d32f2f;color:white" onclick="resetOrders()">RESET ALL ORDERS</button><br>
+    <button onclick="location.href='login.html'">Logout</button>
 
 <script>
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Загружаем текущие остатки при входе
-    async function loadStock() {
-        const { data } = await _db.from('stock').select('*').order('item_name');
-        const container = document.getElementById('stock-list');
-        container.innerHTML = '';
-        
-        data.forEach(item => {
-            container.innerHTML += `
-                <div class="row">
-                    <span>${item.item_name}</span>
-                    <input type="text" id="input-${item.id}" value="${item.quantity}">
-                </div>
-            `;
+    document.getElementById('csv').onchange = e => {
+        Papa.parse(e.target.files[0], {
+            header: false,
+            complete: async (results) => {
+                // Очищаем старые остатки
+                await _db.from('stock').delete().neq('id', 0);
+                
+                // Формируем новые данные из CSV (Sort, Qty, ST, Grower)
+                const newData = results.data.filter(r => r.length >= 4).map(r => ({
+                    item_name: r[0],
+                    quantity: r[1],
+                    store: r[2],
+                    grower: r[3]
+                }));
+
+                const { error } = await _db.from('stock').insert(newData);
+                if(error) alert("Error: " + error.message);
+                else alert("Stock Updated Successfully!");
+            }
         });
-    }
+    };
 
-    // Сохраняем все изменения разом
-    async function updateAllStock() {
-        const inputs = document.querySelectorAll('input[id^="input-"]');
-        for (let input of inputs) {
-            const id = input.id.split('-')[1];
-            const val = input.value;
-            await _db.from('stock').update({ quantity: val }).eq('id', id);
+    async function resetOrders() {
+        if(confirm("Delete all active orders?")) {
+            await _db.from('orders').delete().neq('id', 0);
+            alert("Orders cleared.");
         }
-        alert("Данные склада обновлены!");
-        loadStock();
     }
-
-    loadStock();
 </script>
 </body>
 </html>
