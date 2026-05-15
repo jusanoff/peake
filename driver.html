@@ -39,15 +39,16 @@
     };
 
     async function loadDriverOrders() {
-        const { data } = await _db.from('orders').select('*').eq('status', 'pending').order('urgent', { ascending: false });
+        const { data, error } = await _db.from('orders').select('*').eq('status', 'pending').order('urgent', { ascending: false });
         const list = document.getElementById('driver_list');
+        if (error) { list.innerHTML = "Error loading"; return; }
         if (!data || data.length === 0) { list.innerHTML = i18n[lang].empty; return; }
         list.innerHTML = data.map(o => `
             <div class="order-card ${o.urgent ? 'urgent' : ''}">
                 ${o.urgent ? `<span class="badge-urgent">${i18n[lang].urg}</span>` : ''}
                 <div style="margin-bottom:10px">
                     <b>${o.sort} — QTY: ${o.qty}</b><br>
-                    <span>📍 Store: ${o.store} | Line: ${o.line}</span>
+                    <span>📍 Store: ${o.store || '-'} | Line: ${o.line}</span>
                 </div>
                 <button class="btn-done" onclick="completeOrder(${o.id})">${i18n[lang].done}</button>
             </div>
@@ -56,7 +57,8 @@
 
     async function completeOrder(id) {
         const dTime = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        await _db.from('orders').update({ status: 'delivered', delivered_at: dTime }).eq('id', id);
+        const { error } = await _db.from('orders').update({ status: 'delivered', delivered_at: dTime }).eq('id', id);
+        if (error) alert(error.message);
         loadDriverOrders();
     }
     function logout() { localStorage.clear(); window.location.href='login.html'; }
