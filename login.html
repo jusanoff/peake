@@ -28,6 +28,7 @@
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 const { data, error } = await _db.from('app_users').select('*').eq('username', u).eq('password', p).maybeSingle();
 console.log("Результат из базы:", data); // ДОБАВЬ ЭТО
+    </script>
     <script>
     async function doLogin() {
         alert("Кнопка работает, начинаю проверку!"); // Если это выскочит, значит кнопка нажалась!
@@ -67,7 +68,7 @@ console.log("Результат из базы:", data); // ДОБАВЬ ЭТО
             alert("Ошибка базы: " + e.message);
         }
     }
-        </script>
+        
 </script>
 </body>
 </html>
