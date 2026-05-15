@@ -3,176 +3,105 @@
 <head>
     <meta charset="UTF-8"><title>Line Panel - Peake Fruit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --s:#2e7d32; --bg:#f4f7f6; --dark:#333; --w:#ff9800; --p:#d32f2f; }
         body{font-family:sans-serif; background:var(--bg); margin:0; padding:10px; display:grid; grid-template-columns: 1fr 340px; gap:15px}
         .card{background:#fff; padding:15px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); border-top:5px solid var(--s); margin-bottom:15px}
-        h3{margin-top:0; color:var(--dark); border-bottom:1px solid #eee; padding-bottom:8px; font-size:15px; display:flex; justify-content:space-between; align-items:center}
-        input, button, select{width:100%; padding:12px; margin:6px 0; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; font-size:16px}
-        .btn-send{background:var(--s); color:white; font-weight:bold; cursor:pointer; border:none; text-transform:uppercase}
-        .pack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-        .btn-pack { background:#eee; border:1px solid #ccc; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; transition:0.2s}
-        .green { border-left: 8px solid green; } .red { border-left: 8px solid red; } .blue { border-left: 8px solid blue; }
-        table{width:100%; border-collapse:collapse; font-size:13px}
-        th, td{padding:10px; border-bottom:1px solid #eee; text-align:left; cursor:pointer}
-        .lang-btn { background:none; border:1px solid #ccc; width:auto; padding:5px 8px; cursor:pointer; border-radius:4px; font-size:11px; margin-right:2px}
-        .active-lang { background:var(--s); color:white; border-color:var(--s)}
-        .track-item { padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; border-left: 4px solid #ccc; margin-bottom: 5px; background: #fafafa;}
-        input:read-only { background: #f9f9f9; color: #777; cursor: not-allowed; }
-        input:not(:read-only) { border-color: var(--w); background: #fffcf0; box-shadow: 0 0 5px orange; }
-        @media (max-width:800px){ body{grid-template-columns:1fr} }
+        h3{margin:0; padding-bottom:8px; border-bottom:1px solid #eee; display:flex; justify-content:space-between}
+        input, button, select{width:100%; padding:12px; margin:6px 0; border:1px solid #ccc; border-radius:8px; box-sizing:border-box}
+        .btn-send{background:var(--s); color:white; font-weight:bold; cursor:pointer}
+        .order-row{padding:8px; border-bottom:1px solid #eee; font-size:13px}
+        .st-waiting{color:var(--w); font-weight:bold}
+        .st-done{color:var(--s); font-weight:bold}
     </style>
 </head>
 <body>
-
-    <div>
-        <div class="card" style="border-top-color: #555;">
-            <h3><span data-ln="pack_title">ТАРА И ПУСТЫЕ БИНЫ</span></h3>
-            <div class="pack-grid">
-                <button class="btn-pack" onclick="setLoc('Trays', 'PACK', '-')">📦 TRAYS</button>
-                <button class="btn-pack" onclick="setLoc('Boxes', 'PACK', '-')">📦 BOXES</button>
-                <button class="btn-pack green" onclick="setLoc('Empty Bin (GREEN)', 'YARD', '-')">🗑️ GREEN BIN</button>
-                <button class="btn-pack red" onclick="setLoc('Empty Bin (RED)', 'YARD', '-')">🗑️ RED BIN</button>
-                <button class="btn-pack blue" onclick="setLoc('Empty Bin (BLUE)', 'YARD', '-')">🗑️ BLUE BIN</button>
-                <button class="btn-pack" onclick="setLoc('Pallets', 'YARD', '-')"><span data-ln="pallets">ПАЛЛЕТЫ</span></button>
-            </div>
-        </div>
-
+    <div id="main">
         <div class="card">
-            <h3><span data-ln="stock_title">СКЛАД ФРУКТОВ</span></h3>
-            <table>
-                <thead><tr><th data-ln="th_sort">Сорт</th><th data-ln="th_st">Склад</th><th data-ln="th_bins">Bins</th><th>Grower</th></tr></thead>
-                <tbody id="stock_body"></tbody>
-            </table>
+            <h3 id="t_order">NEW ORDER</h3>
+            <form id="orderForm">
+                <select id="sort"><option>Select Fruit/Sort</option></select>
+                <input type="text" id="grower" placeholder="Grower" readonly>
+                <input type="text" id="store" placeholder="Store" readonly>
+                <input type="number" id="qty" placeholder="Quantity" required>
+                <div style="display:flex; gap:10px; align-items:center; margin:10px 0">
+                    <input type="checkbox" id="urgent" style="width:20px"> <label for="urgent">URGENT / СРОЧНО</label>
+                </div>
+                <button type="submit" class="btn-send">SEND ORDER</button>
+            </form>
         </div>
     </div>
 
-    <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
-            <div>
-                <button class="lang-btn" id="btn_ru" onclick="setLang('ru')">RU</button>
-                <button class="lang-btn" id="btn_en" onclick="setLang('en')">EN</button>
-                <button class="lang-btn" id="btn_lt" onclick="setLang('lt')">LT</button>
-            </div>
-            <button onclick="logout()" style="width:auto; padding:5px 10px; font-size:11px; background:#f4f4f4" data-ln="logout">Выход</button>
-        </div>
-        
-        <h2 id="user_display" style="color:var(--s); margin:10px 0; text-align:center"></h2>
-        
-        <form id="orderForm">
-            <label style="font-size:12px; display:flex; align-items:center; gap:5px; margin-bottom:5px; cursor:pointer">
-                <input type="checkbox" id="manual_toggle" style="width:16px; height:16px" onchange="toggleManual()"> 
-                <span data-ln="manual">Вручную (Manual)</span>
-            </label>
-
-            <input type="text" id="sort" data-placeholder="p_sort" readonly required>
-            <input type="text" id="grower" placeholder="Grower" readonly required>
-            <input type="number" id="qty" value="1" min="1" required>
-            <input type="text" id="store" data-placeholder="p_store" readonly required>
-            <input type="text" id="consign" data-placeholder="p_consign">
-            
-            <label style="color:red; font-weight:bold; display:flex; align-items:center; gap:8px; margin:10px 0; cursor:pointer">
-                <input type="checkbox" id="urgent" style="width:20px; height:20px"> <span data-ln="urgent">🚨 СРОЧНО</span>
-            </label>
-            <button type="submit" class="btn-send" data-ln="btn_send">ОТПРАВИТЬ</button>
-        </form>
-
-        <div style="margin-top:20px; border-top:2px solid #eee; padding-top:15px">
-            <h3><span data-ln="track_title">МОИ ЗАКАЗЫ (LIVE)</span></h3>
-            <div id="my_orders_list"></div>
+    <div id="sidebar">
+        <div class="card">
+            <h3>MY ORDERS</h3>
+            <div id="my_list">Loading...</div>
+            <button onclick="logout()" style="background:#666; color:white; margin-top:20px">LOGOUT</button>
         </div>
     </div>
 
 <script>
-    const API = 'save.php';
-    const user = localStorage.getItem('user');
-    if(!user) window.location.href = 'login.html';
-    document.getElementById('user_display').innerText = user;
-
-    const langData = {
-        ru: { pack_title: "ТАРА", pallets: "ПАЛЛЕТЫ", stock_title: "СКЛАД", th_sort: "Сорт", th_st: "Склад", th_bins: "Bins", logout: "Выход", p_sort: "Сорт", p_store: "Склад/Зона", p_consign: "Консигнация", urgent: "🚨 СРОЧНО", btn_send: "ОТПРАВИТЬ", track_title: "МОИ ЗАКАЗЫ", no_orders: "Заказов нет", waiting: "⏳ ЖДЕМ", driving: "🚚 ЕДЕТ", manual: "Вручную", btn_cancel: "ОТМЕНА", confirm_del: "Отменить?" },
-        en: { pack_title: "PACKAGING", pallets: "PALLETS", stock_title: "FRUIT STOCK", th_sort: "Variety", th_st: "Store", th_bins: "Bins", logout: "Logout", p_sort: "Variety", p_store: "Store/Zone", p_consign: "Consignment", urgent: "🚨 URGENT", btn_send: "SEND", track_title: "MY ORDERS", no_orders: "No orders", waiting: "⏳ PENDING", driving: "🚚 DRIVING", manual: "Manual", btn_cancel: "CANCEL", confirm_del: "Cancel?" },
-        lt: { pack_title: "PAKUOTĖS", pallets: "PADĖKLAI", stock_title: "ATSARGOS", th_sort: "Veislė", th_st: "Sandėlis", th_bins: "Bins", logout: "Atsijungti", p_sort: "Veislė", p_store: "Sandėlis", p_consign: "Siunta", urgent: "🚨 SKUBU", btn_send: "SIŲSTI", track_title: "MANO UŽSAKYMAI", no_orders: "Nėra", waiting: "⏳ LAUKIA", driving: "🚚 ATVEŽA", manual: "Rankiniu", btn_cancel: "ATŠAUKTI", confirm_del: "Atšaukti?" }
-    };
-
-    let currentLang = localStorage.getItem('lang') || 'ru';
-    function setLang(lang) { currentLang = lang; localStorage.setItem('lang', lang); updateUI(); }
-
-    function updateUI() {
-        document.querySelectorAll('[data-ln]').forEach(el => el.innerText = langData[currentLang][el.getAttribute('data-ln')]);
-        document.querySelectorAll('[data-placeholder]').forEach(el => el.placeholder = langData[currentLang][el.getAttribute('data-placeholder')]);
-        document.getElementById('btn_ru').className = 'lang-btn ' + (currentLang === 'ru' ? 'active-lang' : '');
-        document.getElementById('btn_en').className = 'lang-btn ' + (currentLang === 'en' ? 'active-lang' : '');
-        document.getElementById('btn_lt').className = 'lang-btn ' + (currentLang === 'lt' ? 'active-lang' : '');
-        track();
-    }
-
-    function toggleManual() {
-        const isManual = document.getElementById('manual_toggle').checked;
-        document.getElementById('sort').readOnly = !isManual;
-        document.getElementById('store').readOnly = !isManual;
-        document.getElementById('grower').readOnly = !isManual;
-        if(!isManual) { document.getElementById('sort').value = ""; document.getElementById('store').value = ""; document.getElementById('grower').value = ""; }
-    }
-
-    function setLoc(name, loc, gr, isFruit = false) {
-        document.getElementById('manual_toggle').checked = false;
-        toggleManual();
-        document.getElementById('sort').value = name;
-        document.getElementById('store').value = isFruit ? 'ST ' + loc : loc;
-        document.getElementById('grower').value = gr;
-    }
+    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+    const _db = supabase.createClient(supabaseUrl, supabaseKey);
+    const user = localStorage.getItem('user') || 'Line';
 
     async function loadStock() {
-        try {
-            const r = await fetch(API + '?mode=stock&t=' + Date.now());
-            const data = await r.json();
-            // Ожидается формат: [Сорт, Кол-во, Склад, Grower]
-            document.getElementById('stock_body').innerHTML = data.map(row => `
-                <tr onclick="setLoc('${row[0]}','${row[2]}','${row[3]}', true)">
-                    <td>${row[0]}</td><td>ST ${row[2]}</td><td><b>${row[1]}</b></td><td>${row[3] || '-'}</td>
-                </tr>`).join('');
-        } catch(e){}
+        const { data } = await _db.from('stock').select('*');
+        const sortSelect = document.getElementById('sort');
+        sortSelect.innerHTML = '<option value="">-- Select --</option>';
+        data.forEach(item => {
+            let opt = document.createElement('option');
+            opt.value = item.id;
+            opt.innerText = `${item.item_name} (${item.quantity})`;
+            opt.dataset.grower = item.grower;
+            opt.dataset.store = item.store;
+            sortSelect.appendChild(opt);
+        });
     }
 
-    async function track() {
-        try {
-            const r = await fetch(API + '?mode=orders&t=' + Date.now());
-            const orders = await r.json();
-            const myOrders = orders.filter(o => o.line === user && o.status !== 'delivered');
-            const list = document.getElementById('my_orders_list');
-            if(myOrders.length === 0) { list.innerHTML = `<p style="color:#999; font-size:12px">${langData[currentLang].no_orders}</p>`; return; }
-            list.innerHTML = myOrders.map(o => {
-                const isP = o.status === 'pending';
-                return `<div class="track-item" style="border-left-color: ${isP ? '#ccc' : 'orange'}">
-                    <div><b>${o.sort}</b> [${o.grower}] (${o.qty})<br><small>${o.store}</small><br>
-                    <span style="font-size:11px; font-weight:bold; color:${isP ? '#888' : 'orange'}">${isP ? langData[currentLang].waiting : langData[currentLang].driving + ' ('+o.lockedBy+')'}</span></div>
-                    ${isP ? `<button onclick="cancelOrder(${o.id})" style="width:auto; border:1px solid red; color:red; background:none; padding:4px 8px; font-size:10px; border-radius:4px">${langData[currentLang].btn_cancel}</button>` : ''}
-                </div>`;
-            }).join('');
-        } catch(e){}
-    }
+    document.getElementById('sort').onchange = (e) => {
+        const opt = e.target.options[e.target.selectedIndex];
+        document.getElementById('grower').value = opt.dataset.grower || '';
+        document.getElementById('store').value = opt.dataset.store || '';
+    };
 
     document.getElementById('orderForm').onsubmit = async (e) => {
         e.preventDefault();
-        const r = await fetch(API + '?mode=orders');
-        let oData = await r.json();
-        oData.push({
-            id: Date.now(), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
-            line: user, sort: document.getElementById('sort').value, grower: document.getElementById('grower').value,
-            qty: document.getElementById('qty').value, store: document.getElementById('store').value,
-            consign: document.getElementById('consign').value, urgent: document.getElementById('urgent').checked,
-            status: 'pending', lockedBy: null
-        });
-        await fetch(API + '?mode=orders', { method: 'POST', body: JSON.stringify(oData) });
-        e.target.reset(); document.getElementById('manual_toggle').checked = false; toggleManual();
-        track();
+        const sel = document.getElementById('sort');
+        const sortName = sel.options[sel.selectedIndex].text.split(' (')[0];
+        
+        await _db.from('orders').insert([{
+            line: user,
+            sort: sortName,
+            grower: document.getElementById('grower').value,
+            qty: document.getElementById('qty').value,
+            store: document.getElementById('store').value,
+            urgent: document.getElementById('urgent').checked,
+            status: 'pending',
+            time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+        }]);
+        
+        e.target.reset();
+        loadOrders();
     };
 
+    async function loadOrders() {
+        const { data } = await _db.from('orders').select('*').eq('line', user).order('id', {ascending:false});
+        document.getElementById('my_list').innerHTML = data.map(o => `
+            <div class="order-row">
+                <b>${o.sort}</b> - ${o.qty} <br>
+                <span class="${o.status === 'pending' ? 'st-waiting' : 'st-done'}">${o.status.toUpperCase()}</span>
+            </div>
+        `).join('') || 'No orders yet';
+    }
+
     function logout() { localStorage.clear(); window.location.href='login.html'; }
-    updateUI(); loadStock(); track();
-    setInterval(loadStock, 5000); setInterval(track, 3000);
+
+    loadStock();
+    loadOrders();
+    setInterval(loadOrders, 5000);
 </script>
 </body>
 </html>
-
