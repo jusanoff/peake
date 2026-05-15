@@ -2,51 +2,42 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Peake Fruit</title>
+    <title>Peake Fruit Login</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body{font-family:sans-serif; background:#1a1a2e; display:flex; justify-content:center; align-items:center; height:100vh; margin:0}
-        .card{background:#fff; padding:30px; border-radius:15px; width:320px; text-align:center; box-shadow:0 10px 20px rgba(0,0,0,0.3)}
-        input, button{width:100%; padding:12px; margin:10px 0; border-radius:8px; border:1px solid #ccc; font-size:16px; box-sizing:border-box}
-        button{background:#2e7d32; color:white; border:none; font-weight:bold; cursor:pointer}
+        body { font-family: sans-serif; background: #1a1a2e; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; color: #333; padding: 30px; border-radius: 12px; width: 300px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #2e7d32; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #msg { color: red; font-size: 13px; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>PEAKE FRUIT</h2>
-        <input type="text" id="u_name" placeholder="Username (admin)">
-        <input type="password" id="u_pass" placeholder="Password (777)">
-        <button id="btn" onclick="doLogin()">LOGIN / ВХОД</button>
-        <p id="msg" style="color:red; font-size:12px;"></p>
-    </div>
+
+<div class="login-card">
+    <h2>Вход в систему</h2>
+    <input type="text" id="u_name" placeholder="Логин (admin)">
+    <input type="password" id="u_pass" placeholder="Пароль (777)">
+    <button type="button" id="loginBtn">ВОЙТИ</button>
+    <div id="msg"></div>
+</div>
 
 <script>
-    // Настройки базы прямо здесь, чтобы не было ошибки "not defined"
+    // 1. Инициализация базы
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
-const { data, error } = await _db.from('app_users').select('*').eq('username', u).eq('password', p).maybeSingle();
-console.log("Результат из базы:", data); // ДОБАВЬ ЭТО
-    </script>
-    <script>
-    async function doLogin() {
-        alert("Кнопка работает, начинаю проверку!"); // Если это выскочит, значит кнопка нажалась!
 
-        const uInput = document.getElementById('u_name');
-        const pInput = document.getElementById('u_pass');
+    // 2. Вешаем событие на кнопку (это надежнее, чем onclick в HTML)
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+        const u = document.getElementById('u_name').value.trim();
+        const p = document.getElementById('u_pass').value.trim();
         const msg = document.getElementById('msg');
-
-        if (!uInput || !pInput) {
-            alert("Ошибка: Не найдены поля ввода на странице!");
-            return;
-        }
-
-        const u = uInput.value.trim();
-        const p = pInput.value.trim();
+        
+        console.log("Попытка входа:", u); // Увидишь в F12 -> Console
+        msg.innerText = "Проверка...";
 
         try {
-            // Прямое обращение к базе (используем те же ключи, что в test.html)
             const { data, error } = await _db
                 .from('app_users')
                 .select('*')
@@ -57,18 +48,26 @@ console.log("Результат из базы:", data); // ДОБАВЬ ЭТО
             if (error) throw error;
 
             if (data) {
-                alert("Добро пожаловать, " + data.role);
+                msg.style.color = "green";
+                msg.innerText = "Успешно! Перенаправление...";
+                
                 localStorage.setItem('user', data.username);
                 localStorage.setItem('role', data.role);
-                window.location.href = data.role + '.html';
+                
+                // Переход на страницу роли
+                setTimeout(() => {
+                    window.location.href = data.role + '.html';
+                }, 500);
             } else {
+                msg.style.color = "red";
                 msg.innerText = "Неверный логин или пароль!";
             }
-        } catch (e) {
-            alert("Ошибка базы: " + e.message);
+        } catch (err) {
+            console.error(err);
+            msg.innerText = "Ошибка: " + err.message;
         }
-    }
-        
+    });
 </script>
+
 </body>
 </html>
