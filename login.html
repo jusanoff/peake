@@ -1,87 +1,67 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Peake Fruit - Вход</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Peake Fruit</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a2e; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-card { background: #ffffff; color: #333; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 100%; max-width: 350px; text-align: center; }
-        h2 { margin-bottom: 25px; color: #1a1a2e; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 12px; background: #2e7d32; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; margin-top: 10px; }
-        button:hover { background: #1b5e20; }
-        #msg { margin-top: 15px; font-size: 14px; min-height: 20px; font-weight: 500; }
+        body{font-family:sans-serif; background:#1a1a2e; display:flex; justify-content:center; align-items:center; height:100vh; margin:0}
+        .card{background:#fff; padding:30px; border-radius:15px; width:300px; text-align:center; box-shadow:0 10px 20px rgba(0,0,0,0.3)}
+        select, input, button{width:100%; padding:12px; margin:10px 0; border-radius:8px; border:1px solid #ccc; font-size:16px}
+        button{background:#2e7d32; color:white; border:none; font-weight:bold; cursor:pointer}
+        .super-link { font-size: 10px; color: #ccc; text-decoration: none; margin-top: 10px; display: block; }
     </style>
 </head>
 <body>
-
-<div class="login-card">
-    <h2>Peake Fruit System</h2>
-    <input type="text" id="u_name" placeholder="Логин (например, admin)">
-    <input type="password" id="u_pass" placeholder="Пароль (например, 777)">
-    <button type="button" id="loginBtn">ВОЙТИ</button>
-    <div id="msg"></div>
-</div>
+    <div class="card">
+        <h2 id="title">PEAKE FRUIT</h2>
+        <select id="u_select"><option>Loading users...</option></select>
+        <input type="password" id="pass_input" placeholder="Password">
+        <button onclick="doLogin()">LOGIN / ВХОД</button>
+        <a href="#" class="super-link" onclick="adminLogin()">SUPERADMIN ACCESS</a>
+    </div>
 
 <script>
-    // Настройки твоей базы данных
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
-    
-    // Инициализация клиента базы
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Логика кнопки
-    document.getElementById('loginBtn').addEventListener('click', async () => {
-        const u = document.getElementById('u_name').value.trim();
-        const p = document.getElementById('u_pass').value.trim();
-        const msg = document.getElementById('msg');
+    let allUsers = [];
 
-        if (!u || !p) {
-            msg.style.color = "orange";
-            msg.innerText = "Введите логин и пароль";
-            return;
+    async function loadUsers() {
+        const { data } = await _db.from('app_users').select('*');
+        if(data) {
+            allUsers = data;
+            const select = document.getElementById('u_select');
+            select.innerHTML = '';
+            data.forEach(user => {
+                let opt = document.createElement('option');
+                opt.value = user.username;
+                opt.innerText = user.username.toUpperCase() + ' (' + user.role.toUpperCase() + ')';
+                select.appendChild(opt);
+            });
         }
+    }
 
-        msg.style.color = "#666";
-        msg.innerText = "Проверка данных...";
+    async function doLogin() {
+        const uName = document.getElementById('u_select').value;
+        const uPass = document.getElementById('pass_input').value;
+        const found = allUsers.find(u => u.username === uName && u.password === uPass);
 
-        try {
-            // Ищем пользователя в таблице
-            const { data, error } = await _db
-                .from('app_users')
-                .select('*')
-                .eq('username', u.toLowerCase())
-                .eq('password', p)
-                .maybeSingle();
-
-            if (error) throw error;
-
-            if (data) {
-                msg.style.color = "green";
-                msg.innerText = "Успешно! Входим...";
-                
-                // Сохраняем данные в браузере
-                localStorage.setItem('user', data.username);
-                localStorage.setItem('role', data.role);
-                
-                // Переходим на страницу роли (например, office.html или driver.html)
-                setTimeout(() => {
-                    window.location.href = data.role + '.html';
-                }, 800);
-            } else {
-                msg.style.color = "red";
-                msg.innerText = "Неверный логин или пароль!";
-            }
-        } catch (err) {
-            console.error("Ошибка системы:", err);
-            msg.style.color = "red";
-            msg.innerText = "Ошибка базы: " + err.message;
+        if(found) {
+            localStorage.setItem('user', found.username);
+            localStorage.setItem('role', found.role);
+            window.location.href = (found.role === 'office') ? 'office.html' : (found.role === 'driver' ? 'driver.html' : 'index.html');
+        } else {
+            alert("Wrong Password!");
         }
-    });
+    }
+
+    function adminLogin() {
+        if(prompt("Enter Master Password:") === "MASTER777") window.location.href = 'superadmin.html';
+    }
+
+    loadUsers();
 </script>
-
 </body>
 </html>
