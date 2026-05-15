@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h2>Список пользователей в базе:</h2>
+    <div id="out">Загрузка...</div>
+
+    <script>
+        const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+        const _db = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function check() {
+            const { data, error } = await _db.from('app_users').select('username, password');
+            if (error) {
+                document.getElementById('out').innerText = "ОШИБКА: " + error.message;
+            } else {
+                document.getElementById('out').innerText = JSON.stringify(data, null, 2);
+            }
+        }
+        check();
+    </script>
+</body>
+</html>
