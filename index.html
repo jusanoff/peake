@@ -8,36 +8,55 @@
         :root { --s:#2e7d32; --bg:#f4f7f6; --dark:#333; --w:#ff9800; --p:#d32f2f; }
         body{font-family:sans-serif; background:var(--bg); margin:0; padding:10px; display:grid; grid-template-columns: 1fr 340px; gap:15px}
         .card{background:#fff; padding:15px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); border-top:5px solid var(--s); margin-bottom:15px}
-        h3{margin:0; padding-bottom:8px; border-bottom:1px solid #eee; display:flex; justify-content:space-between}
-        input, button, select{width:100%; padding:12px; margin:6px 0; border:1px solid #ccc; border-radius:8px; box-sizing:border-box}
-        .btn-send{background:var(--s); color:white; font-weight:bold; cursor:pointer}
-        .order-row{padding:8px; border-bottom:1px solid #eee; font-size:13px}
-        .st-waiting{color:var(--w); font-weight:bold}
+        h3{margin-top:0; color:var(--dark); border-bottom:1px solid #eee; padding-bottom:8px; font-size:15px; display:flex; justify-content:space-between; align-items:center}
+        input, button, select{width:100%; padding:12px; margin:6px 0; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; font-size:16px}
+        .btn-send{background:var(--s); color:white; font-weight:bold; cursor:pointer; border:none}
+        .order-row{padding:10px; border-bottom:1px solid #eee; font-size:13px; background:#f9f9f9; border-radius:8px; margin-bottom:5px}
+        .st-pending{color:var(--w); font-weight:bold}
+        .st-progress{color:#1976d2; font-weight:bold}
         .st-done{color:var(--s); font-weight:bold}
+        @media (max-width: 768px) { body { grid-template-columns: 1fr; } #sidebar { order: 2; } }
     </style>
 </head>
 <body>
     <div id="main">
         <div class="card">
-            <h3 id="t_order">NEW ORDER</h3>
+            <h3>NEW ORDER / НОВЫЙ ЗАКАЗ</h3>
             <form id="orderForm">
-                <select id="sort"><option>Select Fruit/Sort</option></select>
-                <input type="text" id="grower" placeholder="Grower" readonly>
-                <input type="text" id="store" placeholder="Store" readonly>
-                <input type="number" id="qty" placeholder="Quantity" required>
-                <div style="display:flex; gap:10px; align-items:center; margin:10px 0">
-                    <input type="checkbox" id="urgent" style="width:20px"> <label for="urgent">URGENT / СРОЧНО</label>
+                <label>Select Sort / Выберите сорт:</label>
+                <select id="sort_select" required>
+                    <option value="">Loading stock...</option>
+                </select>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px">
+                    <div>
+                        <label>Grower:</label>
+                        <input type="text" id="grower_view" placeholder="-" readonly style="background:#eee">
+                    </div>
+                    <div>
+                        <label>Store:</label>
+                        <input type="text" id="store_view" placeholder="-" readonly style="background:#eee">
+                    </div>
                 </div>
-                <button type="submit" class="btn-send">SEND ORDER</button>
+
+                <label>Quantity / Количество:</label>
+                <input type="number" id="qty_input" placeholder="Enter amount" required>
+
+                <div style="display:flex; gap:10px; align-items:center; margin:10px 0; background:#fff0f0; padding:10px; border-radius:8px">
+                    <input type="checkbox" id="urgent_check" style="width:20px; margin:0"> 
+                    <label for="urgent_check" style="color:var(--p); font-weight:bold">URGENT / СРОЧНО</label>
+                </div>
+
+                <button type="submit" class="btn-send">SEND ORDER / ОТПРАВИТЬ</button>
             </form>
         </div>
     </div>
 
     <div id="sidebar">
         <div class="card">
-            <h3>MY ORDERS</h3>
-            <div id="my_list">Loading...</div>
-            <button onclick="logout()" style="background:#666; color:white; margin-top:20px">LOGOUT</button>
+            <h3>MY ORDERS / МОИ ЗАКАЗЫ</h3>
+            <div id="my_list">Загрузка заказов...</div>
+            <button onclick="logout()" style="background:#666; color:white; margin-top:20px; border:none; border-radius:8px; padding:10px; cursor:pointer">LOGOUT / ВЫХОД</button>
         </div>
     </div>
 
@@ -47,61 +66,82 @@
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
     const user = localStorage.getItem('user') || 'Line';
 
+    // 1. Загрузка остатков в выпадающий список
     async function loadStock() {
-        const { data } = await _db.from('stock').select('*');
-        const sortSelect = document.getElementById('sort');
-        sortSelect.innerHTML = '<option value="">-- Select --</option>';
-        data.forEach(item => {
-            let opt = document.createElement('option');
-            opt.value = item.id;
-            opt.innerText = `${item.item_name} (${item.quantity})`;
-            opt.dataset.grower = item.grower;
-            opt.dataset.store = item.store;
-            sortSelect.appendChild(opt);
-        });
+        const { data, error } = await _db.from('stock').select('*').order('item_name');
+        const select = document.getElementById('sort_select');
+        
+        if (data) {
+            select.innerHTML = '<option value="">-- Select Sort --</option>';
+            data.forEach(item => {
+                let opt = document.createElement('option');
+                opt.value = item.item_name;
+                opt.innerText = `${item.item_name} (Avail: ${item.quantity})`;
+                // Сохраняем скрытые данные
+                opt.dataset.grower = item.grower || 'N/A';
+                opt.dataset.store = item.store || 'N/A';
+                select.appendChild(opt);
+            });
+        }
     }
 
-    document.getElementById('sort').onchange = (e) => {
+    // 2. Автозаполнение Grower и Store при выборе сорта
+    document.getElementById('sort_select').onchange = (e) => {
         const opt = e.target.options[e.target.selectedIndex];
-        document.getElementById('grower').value = opt.dataset.grower || '';
-        document.getElementById('store').value = opt.dataset.store || '';
+        document.getElementById('grower_view').value = opt.dataset.grower || '';
+        document.getElementById('store_view').value = opt.dataset.store || '';
     };
 
+    // 3. Отправка заказа
     document.getElementById('orderForm').onsubmit = async (e) => {
         e.preventDefault();
-        const sel = document.getElementById('sort');
-        const sortName = sel.options[sel.selectedIndex].text.split(' (')[0];
-        
-        await _db.from('orders').insert([{
+        const sort = document.getElementById('sort_select').value;
+        const qty = document.getElementById('qty_input').value;
+        const grower = document.getElementById('grower_view').value;
+        const store = document.getElementById('store_view').value;
+        const urgent = document.getElementById('urgent_check').checked;
+
+        if(!sort) return alert("Please select sort!");
+
+        const { error } = await _db.from('orders').insert([{
             line: user,
-            sort: sortName,
-            grower: document.getElementById('grower').value,
-            qty: document.getElementById('qty').value,
-            store: document.getElementById('store').value,
-            urgent: document.getElementById('urgent').checked,
+            sort: sort,
+            grower: grower,
+            qty: qty,
+            store: store,
+            urgent: urgent,
             status: 'pending',
             time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
         }]);
-        
-        e.target.reset();
-        loadOrders();
+
+        if (error) alert("Error: " + error.message);
+        else {
+            e.target.reset();
+            loadOrders();
+        }
     };
 
+    // 4. Список моих заказов
     async function loadOrders() {
-        const { data } = await _db.from('orders').select('*').eq('line', user).order('id', {ascending:false});
-        document.getElementById('my_list').innerHTML = data.map(o => `
-            <div class="order-row">
-                <b>${o.sort}</b> - ${o.qty} <br>
-                <span class="${o.status === 'pending' ? 'st-waiting' : 'st-done'}">${o.status.toUpperCase()}</span>
-            </div>
-        `).join('') || 'No orders yet';
+        const { data } = await _db.from('orders').select('*').eq('line', user).order('id', {ascending:false}).limit(10);
+        const list = document.getElementById('my_list');
+        if (data) {
+            list.innerHTML = data.map(o => `
+                <div class="order-row">
+                    <b>${o.sort}</b> — ${o.qty}<br>
+                    <small>Grower: ${o.grower} | Store: ${o.store}</small><br>
+                    Status: <span class="st-${o.status}">${o.status.toUpperCase()}</span>
+                </div>
+            `).join('') || 'No orders yet';
+        }
     }
 
     function logout() { localStorage.clear(); window.location.href='login.html'; }
 
+    // Запуск
     loadStock();
     loadOrders();
-    setInterval(loadOrders, 5000);
+    setInterval(loadOrders, 5000); // Обновлять список каждые 5 сек
 </script>
 </body>
 </html>
