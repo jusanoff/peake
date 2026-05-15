@@ -6,22 +6,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --s:#0277bd; --bg:#f0f4f8; --ok:#2e7d32; --warn:#f57c00; }
+        :root { --s:#0277bd; --bg:#f0f4f8; --ok:#2e7d32; --warn:#f57c00; --dark:#263238; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 600px; }
         .card { background: #fff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-top: 6px solid var(--s); margin-bottom: 20px; }
-        h3 { margin: 0; text-align: center; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        h3 { margin: 0; text-align: center; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 10px; color: var(--dark); }
+        
         .order-card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .order-card.urgent { border: 2px solid #d32f2f; background: #fff8f8; }
         .order-card.in-progress { border: 2px solid var(--warn); background: #fffcf5; }
         
-        .btn-action { color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; font-size: 14px; }
+        .info-item { background: #f8f9fa; padding: 8px; border-radius: 6px; border: 1px solid #eee; }
+        .info-label { font-size: 11px; color: #777; display: block; text-transform: uppercase; font-weight: bold; }
+        .info-value { font-weight: bold; color: #111; font-size: 15px; }
+
+        .btn-action { color: white; border: none; padding: 16px; width: 100%; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 0 rgba(0,0,0,0.1); }
+        .btn-action:active { transform: translateY(2px); box-shadow: none; }
         .btn-take { background: var(--warn); }
         .btn-delivered { background: var(--ok); }
         
-        .badge-urgent { background: #d32f2f; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 5px; display: inline-block; }
+        .badge-urgent { background: #d32f2f; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 8px; display: inline-block; }
         .btn-logout { background: #666; color: white; border: none; padding: 10px; width: 100%; border-radius: 8px; margin-top: 20px; cursor: pointer; }
-        .status-info { font-size: 12px; color: #666; margin-top: 5px; }
+        .status-info { font-size: 12px; color: #d32f2f; font-weight: bold; margin-top: 10px; text-align: center; }
     </style>
 </head>
 <body>
@@ -32,6 +39,7 @@
         <button onclick="logout()" class="btn-logout" id="btn_logout">LOGOUT</button>
     </div>
 </div>
+
 <script>
     if (!localStorage.getItem('user')) { window.location.href = 'login.html'; }
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
@@ -40,34 +48,46 @@
     const lang = localStorage.getItem('lang') || 'en';
 
     const i18n = {
-        en: { title: "Active Tasks", take: "TAKE ORDER", done: "DELIVERED", empty: "No orders", urg: "URGENT", taken: "Taken at:" },
-        ru: { title: "Активные задачи", take: "ВЗЯТЬ ЗАКАЗ", done: "ДОСТАВЛЕНО", empty: "Нет заказов", urg: "СРОЧНО", taken: "Взят в:" }
+        en: { title: "Active Tasks", take: "TAKE ORDER", done: "DELIVERED", empty: "No orders", urg: "URGENT", taken: "Taken at:", sort: "Sort", qty: "Qty", grower: "Grower", store: "Store", consign: "Consignment" },
+        ru: { title: "Активные задачи", take: "ВЗЯТЬ ЗАКАЗ", done: "ДОСТАВЛЕНО", empty: "Нет заказов", urg: "СРОЧНО", taken: "Взят в:", sort: "Сорт", qty: "Кол-во", grower: "Гровер", store: "Склад", consign: "Партия" }
     };
 
     async function loadDriverOrders() {
         const { data, error } = await _db.from('orders')
             .select('*')
-            .or('status.eq.pending,status.eq.in_progress') // Показываем и новые, и те, что в работе
+            .or('status.eq.pending,status.eq.in_progress')
             .order('urgent', { ascending: false });
 
         const list = document.getElementById('driver_list');
         if (error) { list.innerHTML = "Error loading"; return; }
-        if (!data || data.length === 0) { list.innerHTML = i18n[lang].empty; return; }
+        if (!data || data.length === 0) { list.innerHTML = `<div style="text-align:center; padding:20px; color:#999">${i18n[lang].empty}</div>`; return; }
 
         list.innerHTML = data.map(o => {
             const isInProgress = o.status === 'in_progress';
+            const t = i18n[lang];
             return `
                 <div class="order-card ${o.urgent ? 'urgent' : ''} ${isInProgress ? 'in-progress' : ''}">
-                    ${o.urgent ? `<span class="badge-urgent">${i18n[lang].urg}</span>` : ''}
-                    <div style="margin-bottom:10px">
-                        <b>${o.sort} — QTY: ${o.qty}</b><br>
-                        <span>📍 Store: ${o.store || '-'} | Line: ${o.line}</span>
-                        ${isInProgress ? `<div class="status-info">${i18n[lang].taken} ${o.taken_at}</div>` : ''}
+                    ${o.urgent ? `<span class="badge-urgent">${t.urg}</span>` : ''}
+                    
+                    <div style="font-size: 18px; font-weight: 800; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px;">
+                        ${o.sort} <span style="color:var(--s)">x${o.qty}</span>
                     </div>
-                    ${!isInProgress 
-                        ? `<button class="btn-action btn-take" onclick="takeOrder(${o.id})">${i18n[lang].take}</button>`
-                        : `<button class="btn-action btn-delivered" onclick="completeOrder(${o.id})">${i18n[lang].done}</button>`
-                    }
+
+                    <div class="info-grid">
+                        <div class="info-item"><span class="info-label">${t.grower}</span><span class="info-value">${o.grower || '-'}</span></div>
+                        <div class="info-item"><span class="info-label">${t.consign}</span><span class="info-value">${o.consign || '-'}</span></div>
+                        <div class="info-item"><span class="info-label">${t.store}</span><span class="info-value">${o.store || '-'}</span></div>
+                        <div class="info-item"><span class="info-label">Line</span><span class="info-value">${o.line}</span></div>
+                    </div>
+
+                    ${isInProgress ? `<div class="status-info">${t.taken} ${o.taken_at}</div>` : ''}
+                    
+                    <div style="margin-top:15px">
+                        ${!isInProgress 
+                            ? `<button class="btn-action btn-take" onclick="takeOrder(${o.id})">${t.take}</button>`
+                            : `<button class="btn-action btn-delivered" onclick="completeOrder(${o.id})">${t.done}</button>`
+                        }
+                    </div>
                 </div>
             `;
         }).join('');
@@ -82,14 +102,3 @@
 
     async function completeOrder(id) {
         const d = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        const { error } = await _db.from('orders').update({ status: 'delivered', delivered_at: d }).eq('id', id);
-        if (error) alert(error.message);
-        loadDriverOrders();
-    }
-
-    function logout() { localStorage.clear(); window.location.href='login.html'; }
-    document.getElementById('h_title').innerText = i18n[lang].title;
-    loadDriverOrders(); setInterval(loadDriverOrders, 5000);
-</script>
-</body>
-</html>
