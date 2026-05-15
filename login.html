@@ -1,67 +1,57 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
     <title>Login - Peake Fruit</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body{font-family:sans-serif; background:#1a1a2e; display:flex; justify-content:center; align-items:center; height:100vh; margin:0}
-        .card{background:#fff; padding:30px; border-radius:15px; width:300px; text-align:center; box-shadow:0 10px 20px rgba(0,0,0,0.3)}
-        select, input, button{width:100%; padding:12px; margin:10px 0; border-radius:8px; border:1px solid #ccc; font-size:16px}
-        button{background:#2e7d32; color:white; border:none; font-weight:bold; cursor:pointer}
-        .super-link { font-size: 10px; color: #ccc; text-decoration: none; margin-top: 10px; display: block; }
+        body { font-family: sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: #fff; padding: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        h2 { color: #2e7d32; margin-bottom: 20px; }
+        select, input, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { background: #2e7d32; color: white; border: none; font-weight: bold; cursor: pointer; }
+        .lang-select { background: #e8f5e9; border: 2px solid #2e7d32; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2 id="title">PEAKE FRUIT</h2>
-        <select id="u_select"><option>Loading users...</option></select>
-        <input type="password" id="pass_input" placeholder="Password">
-        <button onclick="doLogin()">LOGIN / ВХОД</button>
-        <a href="#" class="super-link" onclick="adminLogin()">SUPERADMIN ACCESS</a>
+    <div class="login-card">
+        <h2 id="title">Select Language</h2>
+        <select id="lang" class="lang-select" onchange="updateLang()">
+            <option value="en">English</option>
+            <option value="ru">Русский</option>
+        </select>
+        <input type="text" id="username" placeholder="Line Name (e.g. Line 1)">
+        <button onclick="login()" id="btn">LOGIN</button>
     </div>
 
-<script>
-    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
-    const _db = supabase.createClient(supabaseUrl, supabaseKey);
-
-    let allUsers = [];
-
-    async function loadUsers() {
-        const { data } = await _db.from('app_users').select('*');
-        if(data) {
-            allUsers = data;
-            const select = document.getElementById('u_select');
-            select.innerHTML = '';
-            data.forEach(user => {
-                let opt = document.createElement('option');
-                opt.value = user.username;
-                opt.innerText = user.username.toUpperCase() + ' (' + user.role.toUpperCase() + ')';
-                select.appendChild(opt);
-            });
+    <script>
+        function updateLang() {
+            const lang = document.getElementById('lang').value;
+            const t = document.getElementById('title');
+            const u = document.getElementById('username');
+            const b = document.getElementById('btn');
+            
+            if(lang === 'ru') {
+                t.innerText = "Выберите язык";
+                u.placeholder = "Название линии (напр. Линия 1)";
+                b.innerText = "ВОЙТИ";
+            } else {
+                t.innerText = "Select Language";
+                u.placeholder = "Line Name (e.g. Line 1)";
+                b.innerText = "LOGIN";
+            }
         }
-    }
 
-    async function doLogin() {
-        const uName = document.getElementById('u_select').value;
-        const uPass = document.getElementById('pass_input').value;
-        const found = allUsers.find(u => u.username === uName && u.password === uPass);
-
-        if(found) {
-            localStorage.setItem('user', found.username);
-            localStorage.setItem('role', found.role);
-            window.location.href = (found.role === 'office') ? 'office.html' : (found.role === 'driver' ? 'driver.html' : 'index.html');
-        } else {
-            alert("Wrong Password!");
+        function login() {
+            const user = document.getElementById('username').value;
+            const lang = document.getElementById('lang').value;
+            if(!user) return alert(lang === 'ru' ? "Введите имя!" : "Enter name!");
+            
+            localStorage.setItem('user', user);
+            localStorage.setItem('lang', lang);
+            window.location.href = 'index.html';
         }
-    }
-
-    function adminLogin() {
-        if(prompt("Enter Master Password:") === "MASTER777") window.location.href = 'superadmin.html';
-    }
-
-    loadUsers();
-</script>
+        updateLang();
+    </script>
 </body>
 </html>
