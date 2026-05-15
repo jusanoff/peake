@@ -9,19 +9,19 @@
         :root { --s:#2e7d32; --bg:#f4f7f6; --dark:#333; --w:#ff9800; --p:#d32f2f; }
         
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            font-family: sans-serif; 
             background: var(--bg); 
             margin: 0; 
             padding: 15px; 
             display: flex; 
-            flex-wrap: wrap; /* Позволяет колонкам перепрыгивать */
+            flex-wrap: wrap; 
             gap: 20px; 
             justify-content: center;
         }
 
-        /* Адаптивные колонки: 60% левая, 35% правая на больших экранах */
-        #main { flex: 1 1 500px; max-width: 800px; }
-        #sidebar { flex: 1 1 350px; max-width: 500px; }
+        /* Адаптивные колонки: Левая (Форма) - 60%, Правая (История) - 35% */
+        #main { flex: 1 1 500px; max-width: 800px; width: 100%; }
+        #sidebar { flex: 1 1 350px; max-width: 450px; width: 100%; }
 
         .card { 
             background: #fff; 
@@ -29,7 +29,7 @@
             border-radius: 16px; 
             box-shadow: 0 8px 24px rgba(0,0,0,0.08); 
             border-top: 6px solid var(--s); 
-            margin-bottom: 20px; 
+            margin-bottom: 20px;
             box-sizing: border-box;
         }
 
@@ -45,16 +45,15 @@
             border-radius: 10px; 
             box-sizing: border-box; 
             font-size: 16px; 
-            outline: none;
         }
 
         .btn-send { background: var(--s); color: white; font-weight: bold; cursor: pointer; border: none; font-size: 18px; margin-top: 15px; }
         .btn-logout { background: #546e7a; color: white; border: none; border-radius: 10px; padding: 12px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
 
         .manual-zone { background: #fffde7; padding: 15px; border-radius: 12px; margin: 10px 0; border: 2px dashed #fbc02d; }
-        .checkbox-container { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .checkbox-container { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: bold; }
 
-        /* Стили истории */
+        /* Стили Истории */
         .order-row { 
             padding: 15px; 
             background: #fff; 
@@ -62,8 +61,8 @@
             margin-bottom: 12px; 
             border-left: 6px solid #ccc; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
-            border-right: 1px solid #eee;
-            border-bottom: 1px solid #eee;
+            border: 1px solid #eee;
+            border-left-width: 6px;
         }
         .order-row.urgent-border { border-left-color: var(--p); background: #fff8f8; }
         .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -72,10 +71,9 @@
         .order-details { color: #444; font-size: 13px; line-height: 1.5; }
         .st-badge { display: inline-block; margin-top: 8px; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; background: #eee; color: #666; }
 
-        @media (max-width: 600px) {
-            body { padding: 10px; }
-            .card { padding: 15px; }
-            #main, #sidebar { max-width: 100%; flex: 1 1 100%; }
+        @media (max-width: 900px) {
+            body { flex-direction: column; align-items: center; }
+            #main, #sidebar { max-width: 100%; }
         }
     </style>
 </head>
@@ -88,23 +86,20 @@
             <div class="manual-zone">
                 <label class="checkbox-container">
                     <input type="checkbox" id="manual_check" style="width:22px; height:22px; margin:0"> 
-                    <span style="font-size:15px; color:#000; font-weight:bold">Ввести данные вручную</span>
+                    <span>Ввести данные вручную (Manual)</span>
                 </label>
             </div>
 
-            <div id="auto_fields">
+            <div id="sort_area">
                 <label>1. Сорт (Sort):</label>
                 <select id="sort_select"><option value="">Загрузка...</option></select>
-                
-                <label>2. Гровер (Grower):</label>
-                <select id="grower_select" disabled><option value="">Сначала выберите сорт</option></select>
+                <input type="text" id="sort_manual" placeholder="Напр: Bins" style="display:none">
             </div>
 
-            <div id="manual_fields" style="display:none">
-                <label>Сорт / Тара (вручную):</label>
-                <input type="text" id="sort_manual" placeholder="Напр: Bins">
-                <label>Гровер (вручную):</label>
-                <input type="text" id="grower_manual" placeholder="Имя гровера">
+            <div id="grower_area">
+                <label>2. Гровер (Grower):</label>
+                <select id="grower_select" disabled><option value="">Сначала выберите сорт</option></select>
+                <input type="text" id="grower_manual" placeholder="Имя гровера" style="display:none">
             </div>
 
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px">
@@ -123,7 +118,7 @@
 
             <label class="checkbox-container" style="margin-top:15px; background:#fff0f0; padding:12px; border-radius:10px">
                 <input type="checkbox" id="urgent_check" style="width:22px; height:22px; margin:0"> 
-                <span style="color:var(--p); font-weight:bold">🚀 СРОЧНО (URGENT)</span>
+                <span style="color:var(--p)">🚀 СРОЧНО (URGENT)</span>
             </label>
 
             <button type="submit" class="btn-send">ОТПРАВИТЬ ЗАКАЗ</button>
@@ -134,7 +129,7 @@
 <div id="sidebar">
     <div class="card" style="border-top-color: #666">
         <h3>🕒 История / History</h3>
-        <div id="my_list">Загрузка истории...</div>
+        <div id="my_list">Загрузка...</div>
         <button onclick="logout()" class="btn-logout">ВЫЙТИ (LOGOUT)</button>
     </div>
 </div>
@@ -147,10 +142,17 @@
 
     let fullStock = [];
 
+    // ГАЛОЧКА: Переключение ручного ввода
     document.getElementById('manual_check').onchange = function() {
         const isM = this.checked;
-        document.getElementById('auto_fields').style.display = isM ? 'none' : 'block';
-        document.getElementById('manual_fields').style.display = isM ? 'block' : 'none';
+        // Скрываем/показываем выпадающие списки
+        document.getElementById('sort_select').style.display = isM ? 'none' : 'block';
+        document.getElementById('grower_select').style.display = isM ? 'none' : 'block';
+        // Показываем/скрываем текстовые поля
+        document.getElementById('sort_manual').style.display = isM ? 'block' : 'none';
+        document.getElementById('grower_manual').style.display = isM ? 'block' : 'none';
+        
+        // Разблокируем поля склада
         const views = [document.getElementById('store_view'), document.getElementById('consign_view')];
         views.forEach(v => {
             v.readOnly = !isM;
@@ -160,14 +162,12 @@
     };
 
     async function loadStock() {
-        try {
-            const { data } = await _db.from('stock').select('*');
-            fullStock = data || [];
-            const sortSel = document.getElementById('sort_select');
-            const uniqueSorts = [...new Set(fullStock.map(i => i.item_name))];
-            sortSel.innerHTML = '<option value="">-- Выберите сорт --</option>' + 
-                uniqueSorts.map(s => `<option value="${s}">${s}</option>`).join('');
-        } catch(e) { console.error("Stock error", e); }
+        const { data } = await _db.from('stock').select('*');
+        fullStock = data || [];
+        const sortSel = document.getElementById('sort_select');
+        const uniqueSorts = [...new Set(fullStock.map(i => i.item_name))];
+        sortSel.innerHTML = '<option value="">-- Выберите сорт --</option>' + 
+            uniqueSorts.map(s => `<option value="${s}">${s}</option>`).join('');
     }
 
     document.getElementById('sort_select').onchange = function() {
@@ -183,8 +183,10 @@
 
     document.getElementById('grower_select').onchange = function() {
         const opt = this.options[this.selectedIndex];
-        document.getElementById('store_view').value = opt.dataset.st || "";
-        document.getElementById('consign_view').value = opt.dataset.con || "";
+        if(opt && opt.value) {
+            document.getElementById('store_view').value = opt.dataset.st || "";
+            document.getElementById('consign_view').value = opt.dataset.con || "";
+        }
     };
 
     document.getElementById('orderForm').onsubmit = async (e) => {
@@ -193,13 +195,49 @@
         const s = isM ? document.getElementById('sort_manual').value : document.getElementById('sort_select').value;
         const g = isM ? document.getElementById('grower_manual').value : document.getElementById('grower_select').value;
 
-        if(!s || !g) { alert("Заполните Сорт и Гровера!"); return; }
+        if(!s || !g) return alert("Заполните Сорт и Гровера!");
 
         const { error } = await _db.from('orders').insert([{
-            line: user, 
-            sort: s, 
-            grower: g,
+            line: user, sort: s, grower: g,
             qty: document.getElementById('qty_input').value,
             store: document.getElementById('store_view').value,
             consign: document.getElementById('consign_view').value,
             urgent: document.getElementById('urgent_check').checked,
+            status: 'pending',
+            time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+        }]);
+
+        if(!error) { 
+            e.target.reset(); 
+            document.getElementById('manual_check').checked = false; 
+            document.getElementById('manual_check').dispatchEvent(new Event('change')); 
+            loadOrders(); 
+        } else alert("Ошибка: " + error.message);
+    };
+
+    async function loadOrders() {
+        const { data } = await _db.from('orders').select('*').eq('line', user).order('id', {ascending:false}).limit(15);
+        const list = document.getElementById('my_list');
+        if (!data || data.length === 0) { list.innerHTML = '<p style="text-align:center; color:#999">Нет заказов</p>'; return; }
+        
+        list.innerHTML = data.map(o => `
+            <div class="order-row ${o.urgent ? 'urgent-border' : ''}">
+                <div class="order-header">
+                    <span class="order-title">${o.sort}</span>
+                    <span class="order-time">${o.time || '--:--'}</span>
+                </div>
+                <div class="order-details">
+                    <b>Кол-во: ${o.qty}</b><br>
+                    <span>📍 ${o.store || '-'} | 👤 ${o.grower}</span>
+                </div>
+                <span class="st-badge">${o.status}</span>
+            </div>
+        `).join('');
+    }
+
+    function logout() { localStorage.clear(); window.location.href='login.html'; }
+
+    loadStock(); loadOrders(); setInterval(loadOrders, 5000);
+</script>
+</body>
+</html>
