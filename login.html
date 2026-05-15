@@ -9,9 +9,8 @@
         .login-card { background: #fff; padding: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
         h2 { color: #2e7d32; margin-bottom: 20px; }
         select, input, button { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; outline: none; }
-        button { background: #2e7d32; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #1b5e20; }
-        .lang-select { background: #e8f5e9; border: 2px solid #2e7d32; font-weight: bold; cursor: pointer; }
+        button { background: #2e7d32; color: white; border: none; font-weight: bold; cursor: pointer; }
+        .lang-select { background: #e8f5e9; border: 2px solid #2e7d32; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -21,7 +20,7 @@
             <option value="en">English</option>
             <option value="ru">Русский</option>
         </select>
-        <input type="text" id="username" placeholder="Line Name (e.g. Line 1)">
+        <input type="text" id="username" placeholder="Line Name / Driver Name">
         <input type="password" id="password" placeholder="Password">
         <button onclick="login()" id="btn">LOGIN</button>
     </div>
@@ -29,39 +28,23 @@
     <script>
         function updateLang() {
             const lang = document.getElementById('lang').value;
-            const t = document.getElementById('title');
-            const u = document.getElementById('username');
-            const p = document.getElementById('password');
-            const b = document.getElementById('btn');
-            
+            const t = document.getElementById('title'), u = document.getElementById('username'), p = document.getElementById('password'), b = document.getElementById('btn');
             if(lang === 'ru') {
-                t.innerText = "Вход в систему";
-                u.placeholder = "Название линии";
-                p.placeholder = "Пароль";
-                b.innerText = "ВОЙТИ";
+                t.innerText = "Вход в систему"; u.placeholder = "Имя (Линия или Водитель)"; p.placeholder = "Пароль"; b.innerText = "ВОЙТИ";
             } else {
-                t.innerText = "System Login";
-                u.placeholder = "Line Name";
-                p.placeholder = "Password";
-                b.innerText = "LOGIN";
+                t.innerText = "System Login"; u.placeholder = "Name (Line or Driver)"; p.placeholder = "Password"; b.innerText = "LOGIN";
             }
         }
-
         function login() {
             const user = document.getElementById('username').value;
             const pass = document.getElementById('password').value;
             const lang = document.getElementById('lang').value;
-
-            if(!user || !pass) {
-                alert(lang === 'ru' ? "Заполните все поля!" : "Fill all fields!");
-                return;
-            }
-
-            // ТУТ ТВОЙ ПАРОЛЬ (сейчас 1234)
+            if(!user || !pass) return alert(lang === 'ru' ? "Заполните всё!" : "Fill all fields!");
             if(pass === "1234") {
                 localStorage.setItem('user', user);
                 localStorage.setItem('lang', lang);
-                window.location.href = 'index.html';
+                // Если в имени есть "Driver" или "driver", шлем на панель водителя, иначе на линию
+                window.location.href = user.toLowerCase().includes('driver') ? 'driver.html' : 'index.html';
             } else {
                 alert(lang === 'ru' ? "Неверный пароль!" : "Wrong password!");
             }
