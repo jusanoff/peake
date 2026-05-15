@@ -15,6 +15,7 @@
         .st-pending{color:var(--w); font-weight:bold}
         .st-progress{color:#1976d2; font-weight:bold}
         .st-done{color:var(--s); font-weight:bold}
+        .manual-note { font-size: 11px; color: #666; margin-bottom: 5px; display: block; }
         @media (max-width: 768px) { body { grid-template-columns: 1fr; } #sidebar { order: 2; } }
     </style>
 </head>
@@ -23,24 +24,26 @@
         <div class="card">
             <h3>NEW ORDER / НОВЫЙ ЗАКАЗ</h3>
             <form id="orderForm">
-                <label>Select Sort / Выберите сорт:</label>
-                <select id="sort_select" required>
-                    <option value="">Loading stock...</option>
+                <label>1. Select from Stock / Выбрать из списка:</label>
+                <select id="sort_select">
+                    <option value="">-- LOADING... --</option>
                 </select>
+                
+                <span class="manual-note">ИЛИ введите название вручную (Bins, Boxes) ниже:</span>
                 
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px">
                     <div>
-                        <label>Grower:</label>
-                        <input type="text" id="grower_view" placeholder="-" readonly style="background:#eee">
+                        <label>Item/Grower:</label>
+                        <input type="text" id="grower_view" placeholder="Название или Grower">
                     </div>
                     <div>
-                        <label>Store:</label>
-                        <input type="text" id="store_view" placeholder="-" readonly style="background:#eee">
+                        <label>Store/Location:</label>
+                        <input type="text" id="store_view" placeholder="ST / Склад">
                     </div>
                 </div>
 
                 <label>Quantity / Количество:</label>
-                <input type="number" id="qty_input" placeholder="Enter amount" required>
+                <input type="number" id="qty_input" placeholder="0" required>
 
                 <div style="display:flex; gap:10px; align-items:center; margin:10px 0; background:#fff0f0; padding:10px; border-radius:8px">
                     <input type="checkbox" id="urgent_check" style="width:20px; margin:0"> 
@@ -55,8 +58,8 @@
     <div id="sidebar">
         <div class="card">
             <h3>MY ORDERS / МОИ ЗАКАЗЫ</h3>
-            <div id="my_list">Загрузка заказов...</div>
-            <button onclick="logout()" style="background:#666; color:white; margin-top:20px; border:none; border-radius:8px; padding:10px; cursor:pointer">LOGOUT / ВЫХОД</button>
+            <div id="my_list">Загрузка...</div>
+            <button onclick="logout()" style="background:#666; color:white; margin-top:20px; border:none; border-radius:8px; padding:10px; cursor:pointer; width:100%">LOGOUT / ВЫХОД</button>
         </div>
     </div>
 
@@ -66,82 +69,70 @@
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
     const user = localStorage.getItem('user') || 'Line';
 
-    // 1. Загрузка остатков в выпадающий список
     async function loadStock() {
-        const { data, error } = await _db.from('stock').select('*').order('item_name');
+        const { data } = await _db.from('stock').select('*').order('item_name');
         const select = document.getElementById('sort_select');
-        
         if (data) {
-            select.innerHTML = '<option value="">-- Select Sort --</option>';
+            select.innerHTML = '<option value="">-- MANUAL INPUT / ВРУЧНУЮ --</option>';
             data.forEach(item => {
                 let opt = document.createElement('option');
                 opt.value = item.item_name;
                 opt.innerText = `${item.item_name} (Avail: ${item.quantity})`;
-                // Сохраняем скрытые данные
-                opt.dataset.grower = item.grower || 'N/A';
-                opt.dataset.store = item.store || 'N/A';
+                opt.dataset.grower = item.grower || '';
+                opt.dataset.store = item.store || '';
                 select.appendChild(opt);
             });
         }
     }
 
-    // 2. Автозаполнение Grower и Store при выборе сорта
     document.getElementById('sort_select').onchange = (e) => {
         const opt = e.target.options[e.target.selectedIndex];
-        document.getElementById('grower_view').value = opt.dataset.grower || '';
-        document.getElementById('store_view').value = opt.dataset.store || '';
+        if(opt.value !== "") {
+            document.getElementById('grower_view').value = opt.dataset.grower;
+            document.getElementById('store_view').value = opt.dataset.store;
+        }
     };
 
-    // 3. Отправка заказа
     document.getElementById('orderForm').onsubmit = async (e) => {
         e.preventDefault();
-        const sort = document.getElementById('sort_select').value;
-        const qty = document.getElementById('qty_input').value;
-        const grower = document.getElementById('grower_view').value;
-        const store = document.getElementById('store_view').value;
-        const urgent = document.getElementById('urgent_check').checked;
-
-        if(!sort) return alert("Please select sort!");
+        
+        const selectVal = document.getElementById('sort_select').value;
+        const growerVal = document.getElementById('grower_view').value;
+        
+        // Если сорт выбран - берем его, если нет - берем то что в поле Grower
+        const finalSort = selectVal || growerVal || "Empty Task";
+        const finalGrower = selectVal ? growerVal : "Manual";
 
         const { error } = await _db.from('orders').insert([{
             line: user,
-            sort: sort,
-            grower: grower,
-            qty: qty,
-            store: store,
-            urgent: urgent,
+            sort: finalSort,
+            grower: finalGrower,
+            qty: document.getElementById('qty_input').value,
+            store: document.getElementById('store_view').value || 'N/A',
+            urgent: document.getElementById('urgent_check').checked,
             status: 'pending',
             time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
         }]);
 
-        if (error) alert("Error: " + error.message);
-        else {
-            e.target.reset();
-            loadOrders();
-        }
+        if (!error) { e.target.reset(); loadOrders(); }
+        else alert("Error: " + error.message);
     };
 
-    // 4. Список моих заказов
     async function loadOrders() {
         const { data } = await _db.from('orders').select('*').eq('line', user).order('id', {ascending:false}).limit(10);
-        const list = document.getElementById('my_list');
-        if (data) {
-            list.innerHTML = data.map(o => `
-                <div class="order-row">
-                    <b>${o.sort}</b> — ${o.qty}<br>
-                    <small>Grower: ${o.grower} | Store: ${o.store}</small><br>
-                    Status: <span class="st-${o.status}">${o.status.toUpperCase()}</span>
-                </div>
-            `).join('') || 'No orders yet';
-        }
+        document.getElementById('my_list').innerHTML = data ? data.map(o => `
+            <div class="order-row">
+                <b>${o.sort}</b> — ${o.qty}<br>
+                <small>${o.grower} | ${o.store}</small> | <span class="st-${o.status}">${o.status.toUpperCase()}</span>
+            </div>
+        `).join('') : 'No orders';
     }
 
     function logout() { localStorage.clear(); window.location.href='login.html'; }
 
-    // Запуск
     loadStock();
     loadOrders();
-    setInterval(loadOrders, 5000); // Обновлять список каждые 5 сек
+    setInterval(loadOrders, 5000);
 </script>
 </body>
 </html>
