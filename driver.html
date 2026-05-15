@@ -11,24 +11,19 @@
         .container { width: 100%; max-width: 600px; }
         .card { background: #fff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-top: 6px solid var(--s); margin-bottom: 20px; }
         h3 { margin: 0; text-align: center; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 10px; color: var(--dark); }
-        
-        .order-card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .order-card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; }
         .order-card.urgent { border: 2px solid #d32f2f; background: #fff8f8; }
         .order-card.in-progress { border: 2px solid var(--warn); background: #fffcf5; }
-        
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; font-size: 14px; }
-        .info-item { background: #f8f9fa; padding: 8px; border-radius: 6px; border: 1px solid #eee; }
-        .info-label { font-size: 11px; color: #777; display: block; text-transform: uppercase; font-weight: bold; }
-        .info-value { font-weight: bold; color: #111; font-size: 15px; }
-
-        .btn-action { color: white; border: none; padding: 16px; width: 100%; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 0 rgba(0,0,0,0.1); }
-        .btn-action:disabled { background: #ccc !important; cursor: not-allowed; box-shadow: none; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+        .info-item { background: #f8f9fa; padding: 8px; border-radius: 6px; font-size: 14px; border: 1px solid #eee; }
+        .info-label { font-size: 10px; color: #888; text-transform: uppercase; display: block; font-weight: bold; }
+        .info-value { font-weight: bold; color: #111; }
+        .btn-action { color: white; border: none; padding: 16px; width: 100%; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .btn-action:disabled { background: #ccc !important; cursor: not-allowed; }
         .btn-take { background: var(--warn); }
         .btn-delivered { background: var(--ok); }
-        
-        .badge-urgent { background: #d32f2f; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 8px; display: inline-block; }
-        .btn-logout { background: #666; color: white; border: none; padding: 10px; width: 100%; border-radius: 8px; margin-top: 20px; cursor: pointer; }
         .warning-box { background: #fff3e0; color: #e65100; padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 15px; text-align: center; border: 1px solid #ffe0b2; display: none; }
+        .badge-urgent { background: #d32f2f; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-bottom: 5px; display: inline-block; }
     </style>
 </head>
 <body>
@@ -37,22 +32,19 @@
         <h3 id="h_title">Tasks</h3>
         <div id="warning" class="warning-box"></div>
         <div id="driver_list">Loading...</div>
-        <button onclick="logout()" class="btn-logout" id="btn_logout">LOGOUT</button>
+        <button onclick="logout()" style="background:#666; color:white; border:none; padding:10px; width:100%; border-radius:8px; margin-top:20px; cursor:pointer;">LOGOUT</button>
     </div>
 </div>
-
 <script>
     if (!localStorage.getItem('user')) { window.location.href = 'login.html'; }
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
-    
-    const driverName = localStorage.getItem('user');
-    const lang = localStorage.getItem('lang') || 'en';
+    const driverName = localStorage.getItem('user'), lang = localStorage.getItem('lang') || 'en';
 
     const i18n = {
-        en: { title: "Active Tasks", take: "TAKE ORDER", done: "DELIVERED", empty: "No orders", urg: "URGENT", taken: "Taken at:", sort: "Sort", grower: "Grower", store: "Store", consign: "Consignment", limit: "Finish your current order first!" },
-        ru: { title: "Активные задачи", take: "ВЗЯТЬ ЗАКАЗ", done: "ДОСТАВЛЕНО", empty: "Нет заказов", urg: "СРОЧНО", taken: "Взят в:", sort: "Сорт", grower: "Гровер", store: "Склад", consign: "Партия", limit: "Сначала завершите текущий заказ!" }
+        en: { take: "TAKE ORDER", done: "DELIVERED", empty: "No orders", urg: "URGENT", limit: "Finish current order first!", grower: "Grower", store: "Store", consign: "Consignment" },
+        ru: { take: "ВЗЯТЬ ЗАКАЗ", done: "ДОСТАВЛЕНО", empty: "Нет заказов", urg: "СРОЧНО", limit: "Сначала завершите текущий заказ!", grower: "Гровер", store: "Склад", consign: "Партия" }
     };
 
     async function loadDriverOrders() {
@@ -61,53 +53,33 @@
             .or(`status.eq.pending,and(status.eq.in_progress,driver_name.eq."${driverName}")`)
             .order('urgent', { ascending: false });
 
+        if (error) return;
         const list = document.getElementById('driver_list');
         const warning = document.getElementById('warning');
-        
-        if (error) { list.innerHTML = "Error"; return; }
-
-        // Проверяем, есть ли у этого водителя заказ в работе
         const hasActiveJob = data.some(o => o.status === 'in_progress' && o.driver_name === driverName);
         
-        if (hasActiveJob) {
-            warning.innerText = i18n[lang].limit;
-            warning.style.display = 'block';
-        } else {
-            warning.style.display = 'none';
-        }
+        warning.style.display = hasActiveJob ? 'block' : 'none';
+        warning.innerText = i18n[lang].limit;
 
         if (!data || data.length === 0) { list.innerHTML = `<div style="text-align:center; padding:20px; color:#999">${i18n[lang].empty}</div>`; return; }
 
         list.innerHTML = data.map(o => {
             const isMyJob = o.status === 'in_progress' && o.driver_name === driverName;
-            const isPending = o.status === 'pending';
-            
-            // Если заказ у другого водителя в процессе, мы его тут даже не увидим из-за фильтра .or() в запросе
-            
             const t = i18n[lang];
             return `
                 <div class="order-card ${o.urgent ? 'urgent' : ''} ${isMyJob ? 'in-progress' : ''}">
                     ${o.urgent ? `<span class="badge-urgent">${t.urg}</span>` : ''}
-                    
-                    <div style="font-size: 18px; font-weight: 800; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px;">
-                        ${o.sort} <span style="color:var(--s)">x${o.qty}</span>
-                    </div>
-
+                    <div style="font-size: 18px; font-weight: 800; margin-bottom: 10px;">${o.sort} <span style="color:var(--s)">x${o.qty}</span></div>
                     <div class="info-grid">
                         <div class="info-item"><span class="info-label">${t.grower}</span><span class="info-value">${o.grower || '-'}</span></div>
                         <div class="info-item"><span class="info-label">${t.consign}</span><span class="info-value">${o.consign || '-'}</span></div>
                         <div class="info-item"><span class="info-label">${t.store}</span><span class="info-value">${o.store || '-'}</span></div>
                         <div class="info-item"><span class="info-label">Line</span><span class="info-value">${o.line}</span></div>
                     </div>
-
-                    ${isMyJob ? `<div style="font-size:12px; color:var(--warn); font-weight:bold; text-align:center; margin-top:10px">${t.taken} ${o.taken_at}</div>` : ''}
-                    
-                    <div style="margin-top:15px">
-                        ${isPending 
-                            ? `<button class="btn-action btn-take" ${hasActiveJob ? 'disabled' : ''} onclick="takeOrder(${o.id})">${t.take}</button>`
-                            : `<button class="btn-action btn-delivered" onclick="completeOrder(${o.id})">${t.done}</button>`
-                        }
-                    </div>
+                    ${o.status === 'pending' 
+                        ? `<button class="btn-action btn-take" ${hasActiveJob ? 'disabled' : ''} onclick="takeOrder(${o.id})">${t.take}</button>`
+                        : `<button class="btn-action btn-delivered" onclick="completeOrder(${o.id})">${t.done}</button>`
+                    }
                 </div>
             `;
         }).join('');
@@ -115,34 +87,18 @@
 
     async function takeOrder(id) {
         const t = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        // Записываем и статус, и имя водителя
-        const { error } = await _db.from('orders')
-            .update({ 
-                status: 'in_progress', 
-                taken_at: t, 
-                driver_name: driverName 
-            })
-            .eq('id', id);
-            
+        const { error } = await _db.from('orders').update({ status:'in_progress', taken_at:t, driver_name:driverName }).eq('id', id);
         if (error) alert(error.message);
         loadDriverOrders();
     }
 
     async function completeOrder(id) {
         const d = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        const { error } = await _db.from('orders')
-            .update({ 
-                status: 'delivered', 
-                delivered_at: d 
-            })
-            .eq('id', id);
-            
+        const { error } = await _db.from('orders').update({ status:'delivered', delivered_at:d }).eq('id', id);
         if (error) alert(error.message);
         loadDriverOrders();
     }
-
     function logout() { localStorage.clear(); window.location.href='login.html'; }
-    document.getElementById('h_title').innerText = i18n[lang].title;
     loadDriverOrders(); setInterval(loadDriverOrders, 5000);
 </script>
 </body>
