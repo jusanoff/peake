@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"><title>SuperAdmin - Peake Fruit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root { --p:#d32f2f; --s:#1a1a2e; --bg:#f0f2f5; --ok:#2e7d32; }
+        body{font-family:sans-serif; background:var(--bg); margin:0; padding:15px;}
+        .card{background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); max-width:800px; margin:auto}
+        h2{margin-top:0; color:var(--s); border-bottom:2px solid #eee; padding-bottom:10px}
+        .form-box{background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid #eee}
+        input, select, button{padding:12px; margin:5px; border-radius:6px; border:1px solid #ccc; font-size:14px; box-sizing:border-box}
+        table{width:100%; border-collapse:collapse}
+        th, td{padding:12px; border-bottom:1px solid #eee; text-align:left}
+        th{background:#f4f4f4; font-size:12px; color:#666; text-transform:uppercase}
+        .btn-add{background:var(--ok); color:white; border:none; font-weight:bold; cursor:pointer; width:150px}
+        .btn-del{background:var(--p); color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px}
+        .lang-btns { margin-bottom: 15px; text-align: right; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="lang-btns">
+            <button onclick="setLang('ru')">RU</button>
+            <button onclick="setLang('en')">EN</button>
+            <button onclick="setLang('lt')">LT</button>
+        </div>
+
+        <h2 id="title">УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ</h2>
+        
+        <div class="form-box">
+            <input type="text" id="new_u" placeholder="Логин (напр. RP1)">
+            <input type="text" id="new_p" placeholder="Пароль">
+            <select id="new_t">
+                <option value="line">Line (Линия)</option>
+                <option value="office">Office (Офис)</option>
+                <option value="driver">Driver (Водитель)</option>
+            </select>
+            <button class="btn-add" onclick="addUser()" id="btn_add">➕ ДОБАВИТЬ</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th id="th_u">Пользователь</th>
+                    <th id="th_p">Пароль</th>
+                    <th id="th_t">Тип</th>
+                    <th id="th_a">Действие</th>
+                </tr>
+            </thead>
+            <tbody id="user_list"></tbody>
+        </table>
+        
+        <div style="margin-top:30px">
+            <button onclick="location.href='login.html'" style="background:#666; color:white; border:none">⬅ Назад в Логин</button>
+        </div>
+    </div>
+
+<script>
+    const API = 'save.php?mode=users';
+    
+    // Переводы
+    const lang = {
+        ru: { title:"УПРАВЛЕНИЕ", btn_add:"ДОБАВИТЬ", th_u:"Пользователь", th_p:"Пароль", th_t:"Тип", th_a:"Удалить", conf:"Удалить этого пользователя?" },
+        en: { title:"USER MANAGEMENT", btn_add:"ADD USER", th_u:"User", th_p:"Password", th_t:"Type", th_a:"Action", conf:"Delete this user?" },
+        lt: { title:"VALDYMAS", btn_add:"PRIDĖTI", th_u:"Vartotojas", th_p:"Slaptažodis", th_t:"Tipas", th_a:"Veiksmas", conf:"Ištrinti šį vartotoją?" }
+    };
+    let curL = localStorage.getItem('dash_lang') || 'ru';
+
+    function setLang(l) { curL = l; updateUI(); }
+    function updateUI() {
+        document.getElementById('title').innerText = lang[curL].title;
+        document.getElementById('btn_add').innerText = lang[curL].btn_add;
+        document.getElementById('th_u').innerText = lang[curL].th_u;
+        document.getElementById('th_p').innerText = lang[curL].th_p;
+        document.getElementById('th_t').innerText = lang[curL].th_t;
+        document.getElementById('th_a').innerText = lang[curL].th_a;
+    }
+
+    async function loadUsers() {
+        try {
+            const r = await fetch(API + '&t=' + Date.now());
+            const users = await r.json();
+            document.getElementById('user_list').innerHTML = users.map((u, i) => `
+                <tr>
+                    <td><b>${u.u}</b></td>
+                    <td><input type="text" value="${u.p}" onchange="changePass(${i}, this.value)" style="width:80px; padding:5px"></td>
+                    <td>${u.t.toUpperCase()}</td>
+                    <td><button class="btn-del" onclick="delUser(${i})">✖</button></td>
+                </tr>`).join('');
+            return users;
+        } catch(e) { console.error("Error loading users"); return []; }
+    }
+
+    async function addUser() {
+        const u = document.getElementById('new_u').value.trim();
+        const p = document.getElementById('new_p').value.trim();
+        const t = document.getElementById('new_t').value;
+        if(!u || !p) return alert("Fill all fields!");
+
+        let users = await loadUsers();
+        users.push({u, p, t});
+        await save(users);
+        document.getElementById('new_u').value = '';
+        document.getElementById('new_p').value = '';
+    }
+
+    async function changePass(idx, newP) {
+        let users = await loadUsers();
+        users[idx].p = newP;
+        await save(users);
+    }
+
+    async function delUser(idx) {
+        if(!confirm(lang[curL].conf)) return;
+        let users = await loadUsers();
+        users.splice(idx, 1);
+        await save(users);
+    }
+
+    async function save(data) {
+        await fetch(API, { method:'POST', body:JSON.stringify(data) });
+        loadUsers();
+    }
+
+    updateUI();
+    loadUsers();
+</script>
+</body>
+</html>
