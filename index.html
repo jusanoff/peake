@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --s:#2e7d32; --bg:#f4f7f6; --dark:#333; --p:#d32f2f; }
+        :root { --s:#2e7d32; --bg:#f4f7f6; --dark:#333; --p:#d32f2f; --warn:#f57c00; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
         #main { flex: 1 1 500px; max-width: 800px; width: 100%; }
         #sidebar { flex: 1 1 350px; max-width: 450px; width: 100%; }
@@ -23,6 +23,8 @@
         .order-time { background: #333; color: #fff; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; }
         .order-title { font-size: 16px; font-weight: bold; color: #111; }
         .st-badge { display: inline-block; margin-top: 8px; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; background: #eee; }
+        .st-badge.in_progress { background: var(--warn); color: white; }
+        .st-badge.delivered { background: var(--s); color: white; }
         @media (max-width: 900px) { body { flex-direction: column; align-items: center; } #main, #sidebar { max-width: 100%; } }
     </style>
 </head>
@@ -72,8 +74,8 @@
     const user = localStorage.getItem('user'), lang = localStorage.getItem('lang') || 'en';
 
     const i18n = {
-        en: { new: "New Order", man: "Manual Input", sort: "1. Sort:", grow: "2. Grower:", store: "Store:", qty: "Quantity:", urg: "🚀 URGENT", send: "SEND ORDER", hist: "History", exit: "LOGOUT", ord: "Ordered:", del: "Delivered:", fill: "Fill all fields!" },
-        ru: { new: "Новый заказ", man: "Вручную", sort: "1. Сорт:", grow: "2. Гровер:", store: "Склад:", qty: "Кол-во:", urg: "🚀 СРОЧНО", send: "ОТПРАВИТЬ", hist: "История", exit: "ВЫЙТИ", ord: "Заказано:", del: "Привезено:", fill: "Заполните все поля!" }
+        en: { new: "New Order", man: "Manual Input", sort: "1. Sort:", grow: "2. Grower:", store: "Store:", qty: "Quantity:", urg: "🚀 URGENT", send: "SEND ORDER", hist: "History", exit: "LOGOUT", ord: "Ordered:", del: "Delivered:", take: "Taken at:" },
+        ru: { new: "Новый заказ", man: "Вручную", sort: "1. Сорт:", grow: "2. Гровер:", store: "Склад:", qty: "Кол-во:", urg: "🚀 СРОЧНО", send: "ОТПРАВИТЬ", hist: "История", exit: "ВЫЙТИ", ord: "Заказано:", del: "Привезено:", take: "Взят в:" }
     };
 
     function applyLang() {
@@ -97,8 +99,7 @@
 
     let fullStock = [];
     async function loadStock() {
-        const { data, error } = await _db.from('stock').select('*');
-        if (error) console.error(error);
+        const { data } = await _db.from('stock').select('*');
         fullStock = data || [];
         const uniqueSorts = [...new Set(fullStock.map(i => i.item_name))];
         document.getElementById('sort_select').innerHTML = '<option value="">-- Select --</option>' + uniqueSorts.map(s => `<option value="${s}">${s}</option>`).join('');
@@ -125,56 +126,32 @@
         const isM = document.getElementById('manual_check').checked;
         const s = isM ? document.getElementById('sort_manual').value : document.getElementById('sort_select').value;
         const g = isM ? document.getElementById('grower_manual').value : document.getElementById('grower_select').value;
-        
-        if(!s || !g) return alert(i18n[lang].fill);
-
-        const btn = document.getElementById('btn_send');
-        btn.disabled = true;
-        btn.innerText = "...";
-
+        if(!s || !g) return alert("Fill fields!");
         const timeNow = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        
-        const { error } = await _db.from('orders').insert([{
-            line: user, 
-            sort: s, 
-            grower: g, 
-            qty: document.getElementById('qty_input').value,
-            store: document.getElementById('store_view').value, 
-            consign: document.getElementById('consign_view').value,
-            urgent: document.getElementById('urgent_check').checked, 
-            status: 'pending', 
-            time: timeNow
+        await _db.from('orders').insert([{
+            line: user, sort: s, grower: g, qty: document.getElementById('qty_input').value,
+            store: document.getElementById('store_view').value, consign: document.getElementById('consign_view').value,
+            urgent: document.getElementById('urgent_check').checked, status: 'pending', time: timeNow
         }]);
-
-        if(error) {
-            alert("Error: " + error.message);
-            btn.disabled = false;
-            btn.innerText = i18n[lang].send;
-        } else {
-            e.target.reset(); 
-            document.getElementById('manual_check').checked = false; 
-            document.getElementById('manual_check').onchange(); 
-            btn.disabled = false;
-            btn.innerText = i18n[lang].send;
-            loadOrders();
-        }
+        e.target.reset(); document.getElementById('manual_check').checked = false; document.getElementById('manual_check').onchange(); loadOrders();
     };
 
     async function loadOrders() {
-        const { data, error } = await _db.from('orders').select('*').eq('line', user).order('id', {ascending:false}).limit(15);
+        const { data } = await _db.from('orders').select('*').eq('line', user).order('id', {ascending:false}).limit(15);
         const list = document.getElementById('my_list');
-        if (error) { list.innerHTML = "Error loading history"; return; }
         if (!data || data.length === 0) { list.innerHTML = "No orders"; return; }
         list.innerHTML = data.map(o => `
             <div class="order-row ${o.urgent ? 'urgent-border' : ''}">
-                <div class="order-header"><span class="order-title">${o.sort}</span><span class="order-time">${o.time || '--:--'}</span></div>
+                <div class="order-header"><span class="order-title">${o.sort}</span><span class="order-time">${o.time}</span></div>
                 <div class="order-details">
-                    <b>QTY: ${o.qty}</b><br><span>📍 ${o.store || '-'} | 👤 ${o.grower || '-'}</span>
+                    <b>QTY: ${o.qty}</b><br><span>📍 ${o.store} | 👤 ${o.grower}</span>
                     <div style="margin-top:5px; font-size:11px; color:#666">
-                        ${i18n[lang].ord} ${o.time || '--:--'} ${o.delivered_at ? `<br><b style="color:var(--s)">${i18n[lang].del} ${o.delivered_at}</b>` : ''}
+                        ${i18n[lang].ord} ${o.time} 
+                        ${o.taken_at ? `<br>${i18n[lang].take} ${o.taken_at}` : ''}
+                        ${o.delivered_at ? `<br><b style="color:var(--s)">${i18n[lang].del} ${o.delivered_at}</b>` : ''}
                     </div>
                 </div>
-                <span class="st-badge">${o.status}</span>
+                <span class="st-badge ${o.status}">${o.status}</span>
             </div>
         `).join('');
     }
