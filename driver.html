@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"><title>Driver Panel - Peake Fruit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <style>
+        :root { --p:#d32f2f; --s:#2e7d32; --bg:#f4f7f6; }
+        body{font-family:sans-serif; background:var(--bg); margin:0; padding:10px}
+        .header{display:flex; justify-content:space-between; align-items:center; background:#fff; padding:15px; border-radius:12px; border-bottom:4px solid var(--p); margin-bottom:10px}
+        .card{background:#fff; margin-bottom:10px; padding:15px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border-left:10px solid #ccc; box-shadow:0 2px 5px rgba(0,0,0,0.1)}
+        .urgent{border-left-color: var(--p); background:#fff0f0}
+        .btn-done{background:var(--s); color:white; border:none; padding:15px; border-radius:8px; font-weight:bold; cursor:pointer}
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <b id="driver_name">Driver</b>
+    <button onclick="location.href='login.html'" style="border:none; background:none; color:#666">Exit</button>
+</div>
+
+<div id="list">Загрузка заказов...</div>
+
+<script>
+    const myName = localStorage.getItem('user') || 'Driver';
+    document.getElementById('driver_name').innerText = myName;
+
+    async function loadOrders() {
+        const orders = await window.api.getOrders();
+        // Показываем только те, что еще не доставлены
+        const active = orders.filter(o => o.status !== 'delivered');
+        
+        document.getElementById('list').innerHTML = active.map(o => `
+            <div class="card ${o.urgent ? 'urgent' : ''}">
+                <div>
+                    <b style="font-size:18px">${o.line}</b><br>
+                    <span>${o.sort} — ${o.qty}</span><br>
+                    <small>📍 Store: ${o.store}</small>
+                </div>
+                <button class="btn-done" onclick="completeOrder(${o.id})">DONE</button>
+            </div>
+        `).join('') || '<p style="text-align:center; color:#999">No orders / Заказов нет</p>';
+    }
+
+    async function completeOrder(id) {
+        const { error } = await window.api.updateStatus(id, 'delivered', myName);
+        if(!error) loadOrders();
+        else alert("Ошибка обновления!");
+    }
+
+    loadOrders();
+    setInterval(loadOrders, 5000);
+</script>
+</body>
+</html>

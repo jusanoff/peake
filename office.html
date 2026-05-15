@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"><title>Office</title>
+    <script src="https://cdnjs.cloudflare.com"></script>
+    <style>body{text-align:center;padding:50px;font-family:sans-serif}button{padding:20px;width:300px;margin:10px;cursor:pointer}</style>
+</head>
+<body>
+    <h1>OFFICE PANEL</h1>
+    <input type="file" id="csv" style="display:none">
+    <button style="background:green;color:white" onclick="document.getElementById('csv').click()">UPLOAD STOCK (CSV: Sort, Qty, ST, Grower)</button><br>
+    <button style="background:red;color:white" onclick="reset()">RESET ALL ORDERS</button><br>
+    <button onclick="location.href='login.html'">Logout</button>
+<script>
+    document.getElementById('csv').onchange = e => {
+        Papa.parse(e.target.files[0], { complete: async r => {
+            await fetch('save.php?mode=stock', {method:'POST', body:JSON.stringify(r.data)});
+            alert("Stock Updated!");
+        }});
+    };
+    async function reset(){ if(confirm("Reset orders?")) await fetch('save.php?mode=orders',{method:'POST',body:'[]'}); }
+</script>
+</body>
+</html>
+
