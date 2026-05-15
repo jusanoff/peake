@@ -11,12 +11,17 @@
         .card{background:#fff; margin-bottom:10px; padding:15px; border-radius:12px; display:grid; grid-template-columns:1fr 110px; align-items:center; border-left:10px solid #ccc; box-shadow:0 2px 5px rgba(0,0,0,0.1)}
         .urgent{border:2px solid red !important; background:#fff0f0; animation:pulse 1.5s infinite}
         .btn{width:100%; padding:15px; border:none; border-radius:8px; color:#fff; font-weight:bold; cursor:pointer; text-transform:uppercase; font-size:13px}
+        /* Стиль для кнопки выхода */
+        .btn-logout { background:#eee; color:#666; padding:5px 10px; border-radius:6px; text-decoration:none; font-size:12px; border:1px solid #ccc; font-weight:bold; cursor:pointer; }
         @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(211,47,47,0.4)} 70%{box-shadow:0 0 0 10px rgba(211,47,47,0)} 100%{box-shadow:0 0 0 0 rgba(211,47,47,0)}}
     </style>
 </head>
 <body>
     <div class="header">
-        <b id="driver_name">DRIVER</b>
+        <div>
+            <b id="driver_name">DRIVER</b>
+            <button class="btn-logout" onclick="logout()" style="margin-left:10px">ВЫХОД / EXIT</button>
+        </div>
         <div id="clock" style="font-weight:bold; color:var(--p)">00:00</div>
     </div>
     <div id="orders_list">Загрузка заказов...</div>
@@ -25,8 +30,15 @@
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
+    
     const myName = localStorage.getItem('user') || 'Driver';
     document.getElementById('driver_name').innerText = myName.toUpperCase();
+
+    // Функция выхода
+    function logout() {
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
 
     async function load() {
         const { data } = await _db.from('orders').select('*').neq('status', 'delivered').order('urgent', {ascending:false});
@@ -52,7 +64,6 @@
 
     async function upd(id, st, sort, qty) {
         if (st === 'delivered') {
-            // Списание со склада
             const { data: stockItem } = await _db.from('stock').select('*').eq('item_name', sort).maybeSingle();
             if (stockItem) {
                 const newQty = Math.max(0, parseInt(stockItem.quantity) - parseInt(qty));
