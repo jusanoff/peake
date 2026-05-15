@@ -2,39 +2,24 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Панель управления - Peake Fruit</title>
+    <title>Склад: Остатки</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; margin: 20px; background: #f4f7f6; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #2e7d32; color: white; padding: 10px 20px; border-radius: 8px; }
-        .container { margin-top: 20px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        button.logout { background: #d32f2f; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
-        .order-form input { padding: 10px; margin-right: 10px; border: 1px solid #ccc; border-radius: 4px; }
-        .order-form button { padding: 10px 20px; background: #2e7d32; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        input { width: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
+        button { background: #2e7d32; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
+        h2 { color: #2e7d32; text-align: center; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h2>Личный кабинет: ОФИС</h2>
-    <div>
-        <span id="user-display"></span>
-        <button class="logout" onclick="logout()">Выйти</button>
-    </div>
-</div>
-
-<div class="container">
-    <h3>Создать новый заказ</h3>
-    <div class="order-form">
-        <input type="text" id="truck_num" placeholder="Номер машины">
-        <input type="text" id="fruit_type" placeholder="Тип фруктов">
-        <button onclick="createOrder()">Добавить в базу</button>
-    </div>
-</div>
-
-<div class="container">
-    <h3>Активные заказы</h3>
-    <div id="orders-list">Загрузка данных...</div>
+<div class="card">
+    <h2>Остатки на складе</h2>
+    <div id="stock-list">Загрузка...</div>
+    <button onclick="updateAllStock()">ОБНОВИТЬ ВСЕ ДАННЫЕ</button>
+    <p style="text-align: center;"><a href="login.html" style="color: #666;">Выход</a></p>
 </div>
 
 <script>
@@ -42,32 +27,35 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Проверка авторизации
-    const user = localStorage.getItem('user');
-    if (!user) window.location.href = 'login.html';
-    document.getElementById('user-display').innerText = "Пользователь: " + user;
-
-    function logout() {
-        localStorage.clear();
-        window.location.href = 'login.html';
+    // Загружаем текущие остатки при входе
+    async function loadStock() {
+        const { data } = await _db.from('stock').select('*').order('item_name');
+        const container = document.getElementById('stock-list');
+        container.innerHTML = '';
+        
+        data.forEach(item => {
+            container.innerHTML += `
+                <div class="row">
+                    <span>${item.item_name}</span>
+                    <input type="text" id="input-${item.id}" value="${item.quantity}">
+                </div>
+            `;
+        });
     }
 
-    async function createOrder() {
-        const truck = document.getElementById('truck_num').value;
-        const fruit = document.getElementById('fruit_type').value;
-
-        const { error } = await _db.from('orders').insert([{ 
-            truck_number: truck, 
-            fruit_type: fruit,
-            status: 'pending'
-        }]);
-
-        if (error) alert("Ошибка: " + error.message);
-        else {
-            alert("Заказ добавлен!");
-            location.reload();
+    // Сохраняем все изменения разом
+    async function updateAllStock() {
+        const inputs = document.querySelectorAll('input[id^="input-"]');
+        for (let input of inputs) {
+            const id = input.id.split('-')[1];
+            const val = input.value;
+            await _db.from('stock').update({ quantity: val }).eq('id', id);
         }
+        alert("Данные склада обновлены!");
+        loadStock();
     }
+
+    loadStock();
 </script>
 </body>
 </html>
