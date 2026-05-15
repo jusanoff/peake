@@ -1,87 +1,156 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-    <meta charset="UTF-8"><title>Driver Panel - Peake Fruit</title>
+    <meta charset="UTF-8">
+    <title>Driver Panel - Peake Fruit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --p:#d32f2f; --s:#2e7d32; --bg:#f4f7f6; --w:#ff9800; }
-        body{font-family:sans-serif; background:var(--bg); margin:0; padding:10px}
-        .header{display:flex; justify-content:space-between; align-items:center; background:#fff; padding:10px; border-radius:12px; border-bottom:4px solid var(--p); margin-bottom:10px}
-        .card{background:#fff; margin-bottom:10px; padding:15px; border-radius:12px; display:grid; grid-template-columns:1fr 110px; align-items:center; border-left:10px solid #ccc; box-shadow:0 2px 5px rgba(0,0,0,0.1)}
-        .urgent{border:2px solid red !important; background:#fff0f0; animation:pulse 1.5s infinite}
-        .btn{width:100%; padding:15px; border:none; border-radius:8px; color:#fff; font-weight:bold; cursor:pointer; text-transform:uppercase; font-size:13px}
-        /* Стиль для кнопки выхода */
-        .btn-logout { background:#eee; color:#666; padding:5px 10px; border-radius:6px; text-decoration:none; font-size:12px; border:1px solid #ccc; font-weight:bold; cursor:pointer; }
-        @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(211,47,47,0.4)} 70%{box-shadow:0 0 0 10px rgba(211,47,47,0)} 100%{box-shadow:0 0 0 0 rgba(211,47,47,0)}}
+        :root { --s:#0277bd; --bg:#f0f4f8; --dark:#333; --ok:#2e7d32; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        
+        .container { width: 100%; max-width: 600px; }
+        .card { background: #fff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-top: 6px solid var(--s); margin-bottom: 20px; }
+        
+        h3 { margin: 0 0 15px 0; color: var(--dark); text-align: center; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        
+        /* Стили заказов для водителя */
+        .order-card { 
+            background: #fff; 
+            border: 1px solid #ddd; 
+            border-radius: 12px; 
+            padding: 15px; 
+            margin-bottom: 15px; 
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .order-card.urgent { border: 2px solid #d32f2f; background: #fff8f8; }
+        
+        .order-info { margin-bottom: 15px; line-height: 1.6; }
+        .order-info b { font-size: 18px; color: #111; }
+        .order-info span { color: #555; display: block; font-size: 14px; }
+
+        .btn-done { 
+            background: var(--ok); 
+            color: white; 
+            border: none; 
+            padding: 15px; 
+            width: 100%; 
+            border-radius: 10px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-done:active { transform: scale(0.95); background: #1b5e20; }
+        
+        .badge-urgent { background: #d32f2f; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 5px; display: inline-block; }
+        
+        .btn-logout { background: #666; color: white; border: none; padding: 10px; width: 100%; border-radius: 8px; margin-top: 20px; cursor: pointer; }
+        
+        #empty_msg { text-align: center; color: #999; padding: 40px 0; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div>
-            <b id="driver_name">DRIVER</b>
-            <button class="btn-logout" onclick="logout()" style="margin-left:10px">ВЫХОД / EXIT</button>
-        </div>
-        <div id="clock" style="font-weight:bold; color:var(--p)">00:00</div>
+
+<div class="container">
+    <div class="card">
+        <h3 id="h_title">Active Tasks</h3>
+        <div id="driver_list">Loading orders...</div>
+        <button onclick="logout()" class="btn-logout" id="btn_logout">LOGOUT</button>
     </div>
-    <div id="orders_list">Загрузка заказов...</div>
+</div>
 
 <script>
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
-    
-    const myName = localStorage.getItem('user') || 'Driver';
-    document.getElementById('driver_name').innerText = myName.toUpperCase();
 
-    // Функция выхода
+    const lang = localStorage.getItem('lang') || 'en';
+    const driverName = localStorage.getItem('user') || 'Driver';
+
+    const i18n = {
+        en: { title: "Active Tasks", done: "DELIVERED / DONE", empty: "No active orders", loading: "Loading...", urgent: "URGENT", logout: "LOGOUT" },
+        ru: { title: "Активные задачи", done: "ДОСТАВЛЕНО / ГОТОВО", empty: "Нет активных заказов", loading: "Загрузка...", urgent: "СРОЧНО", logout: "ВЫЙТИ" }
+    };
+
+    function applyLang() {
+        document.getElementById('h_title').innerText = i18n[lang].title;
+        document.getElementById('btn_logout').innerText = i18n[lang].logout;
+    }
+
+    // ЗАГРУЗКА ЗАКАЗОВ (только со статусом pending)
+    async function loadDriverOrders() {
+        try {
+            const { data, error } = await _db
+                .from('orders')
+                .select('*')
+                .eq('status', 'pending')
+                .order('urgent', { ascending: false }) // Сначала срочные
+                .order('id', { ascending: true });
+
+            if (error) throw error;
+
+            const list = document.getElementById('driver_list');
+            if (!data || data.length === 0) {
+                list.innerHTML = `<div id="empty_msg">${i18n[lang].empty}</div>`;
+                return;
+            }
+
+            list.innerHTML = data.map(o => `
+                <div class="order-card ${o.urgent ? 'urgent' : ''}">
+                    ${o.urgent ? `<span class="badge-urgent">${i18n[lang].urgent}</span>` : ''}
+                    <div class="order-info">
+                        <b>${o.sort} — QTY: ${o.qty}</b>
+                        <span>📍 Store: ${o.store || '-'}</span>
+                        <span>👤 Grower: ${o.grower}</span>
+                        <span>🏭 Line: ${o.line}</span>
+                        <small>⏰ Time: ${o.time || '--:--'}</small>
+                    </div>
+                    <button class="btn-done" onclick="completeOrder(${o.id})">
+                        ${i18n[lang].done}
+                    </button>
+                </div>
+            `).join('');
+        } catch (e) {
+            console.error("Load error:", e);
+        }
+    }
+
+    // ФУНКЦИЯ НАЖАТИЯ КНОПКИ
+    async function completeOrder(orderId) {
+        // Чтобы кнопка не нажималась дважды
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "...";
+
+        try {
+            const { error } = await _db
+                .from('orders')
+                .update({ status: 'delivered' })
+                .eq('id', orderId);
+
+            if (error) throw error;
+            
+            // Сразу обновляем список
+            loadDriverOrders();
+        } catch (e) {
+            alert("Error updating order!");
+            btn.disabled = false;
+            btn.innerText = i18n[lang].done;
+        }
+    }
+
     function logout() {
         localStorage.clear();
         window.location.href = 'login.html';
     }
 
-    async function load() {
-        const { data } = await _db.from('orders').select('*').neq('status', 'delivered').order('urgent', {ascending:false});
-        const list = document.getElementById('orders_list');
-        list.innerHTML = data.map(o => {
-            let borderCol = o.status === 'in_progress' ? 'var(--s)' : '#ccc';
-            return `
-            <div class="card ${o.urgent ? 'urgent' : ''}" style="border-left-color:${borderCol}">
-                <div>
-                    <b style="font-size:18px">${o.line}</b> <small>${o.time}</small><br>
-                    <span style="font-size:20px">${o.sort}</span> — <b>${o.qty}</b><br>
-                    <span style="background:#eee; padding:2px 6px; border-radius:4px">📍 ${o.store}</span>
-                </div>
-                <div>
-                    ${o.status === 'pending' 
-                        ? `<button class="btn" style="background:var(--w)" onclick="upd(${o.id}, 'in_progress')">TAKE</button>` 
-                        : `<button class="btn" style="background:var(--s)" onclick="upd(${o.id}, 'delivered', '${o.sort}', '${o.qty}')">DONE</button>`
-                    }
-                </div>
-            </div>`;
-        }).join('') || '<p style="text-align:center">No active orders</p>';
-    }
-
-    async function upd(id, st, sort, qty) {
-        if (st === 'delivered') {
-            const { data: stockItem } = await _db.from('stock').select('*').eq('item_name', sort).maybeSingle();
-            if (stockItem) {
-                const newQty = Math.max(0, parseInt(stockItem.quantity) - parseInt(qty));
-                await _db.from('stock').update({ quantity: newQty.toString() }).eq('id', stockItem.id);
-            }
-        }
-        
-        await _db.from('orders').update({ 
-            status: st, 
-            lockedBy: st === 'in_progress' ? myName : null 
-        }).eq('id', id);
-        
-        load();
-    }
-
-    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) }, 1000);
-    load();
-    setInterval(load, 5000);
+    applyLang();
+    loadDriverOrders();
+    // Обновляем список каждые 5 секунд, чтобы водитель видел новые заказы
+    setInterval(loadDriverOrders, 5000);
 </script>
+
 </body>
 </html>
