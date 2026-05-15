@@ -28,20 +28,24 @@
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 const { data, error } = await _db.from('app_users').select('*').eq('username', u).eq('password', p).maybeSingle();
 console.log("Результат из базы:", data); // ДОБАВЬ ЭТО
+    <script>
     async function doLogin() {
-        const u = document.getElementById('u_name').value.trim();
-        const p = document.getElementById('u_pass').value.trim();
-        const btn = document.getElementById('btn');
+        alert("Кнопка работает, начинаю проверку!"); // Если это выскочит, значит кнопка нажалась!
+
+        const uInput = document.getElementById('u_name');
+        const pInput = document.getElementById('u_pass');
         const msg = document.getElementById('msg');
 
-        if(!u || !p) return alert("Введите данные!");
+        if (!uInput || !pInput) {
+            alert("Ошибка: Не найдены поля ввода на странице!");
+            return;
+        }
 
-        btn.innerText = "Checking...";
-        btn.disabled = true;
-        msg.innerText = "";
+        const u = uInput.value.trim();
+        const p = pInput.value.trim();
 
         try {
-            // Прямой запрос в таблицу app_users
+            // Прямое обращение к базе (используем те же ключи, что в test.html)
             const { data, error } = await _db
                 .from('app_users')
                 .select('*')
@@ -52,23 +56,15 @@ console.log("Результат из базы:", data); // ДОБАВЬ ЭТО
             if (error) throw error;
 
             if (data) {
+                alert("Добро пожаловать, " + data.role);
                 localStorage.setItem('user', data.username);
                 localStorage.setItem('role', data.role);
-                
-                // Перенаправление в зависимости от роли
-                if (data.role === 'office') window.location.href = 'office.html';
-                else if (data.role === 'driver') window.location.href = 'driver.html';
-                else window.location.href = 'index.html';
+                window.location.href = data.role + '.html';
             } else {
                 msg.innerText = "Неверный логин или пароль!";
-                btn.innerText = "LOGIN / ВХОД";
-                btn.disabled = false;
             }
         } catch (e) {
-            console.error(e);
-            msg.innerText = "Ошибка: " + e.message;
-            btn.innerText = "LOGIN / ВХОД";
-            btn.disabled = false;
+            alert("Ошибка базы: " + e.message);
         }
     }
 </script>
