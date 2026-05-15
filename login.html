@@ -24,7 +24,6 @@
         <input type="password" id="password" placeholder="Password">
         <button onclick="login()" id="btn">LOGIN</button>
     </div>
-
     <script>
         function updateLang() {
             const lang = document.getElementById('lang').value;
@@ -43,7 +42,6 @@
             if(pass === "1234") {
                 localStorage.setItem('user', user);
                 localStorage.setItem('lang', lang);
-                // Если в имени есть "Driver" или "driver", шлем на панель водителя, иначе на линию
                 window.location.href = user.toLowerCase().includes('driver') ? 'driver.html' : 'index.html';
             } else {
                 alert(lang === 'ru' ? "Неверный пароль!" : "Wrong password!");
