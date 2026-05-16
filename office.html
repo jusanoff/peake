@@ -27,6 +27,7 @@
             color: var(--text);
             margin: 0;
             padding: 20px;
+            -webkit-font-smoothing: antialiased;
         }
 
         .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
@@ -41,8 +42,7 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.04);
         }
         .header h1 { margin: 0; font-size: 24px; color: var(--accent); font-weight: 700; }
-        .user-badge { font-weight: 600; color: #fff; background: var(--accent); padding: 6px 12px; border-radius: 4px; font-size: 13px; }
-
+        
         .office-ctrl-panel {
             display: flex;
             gap: 20px;
@@ -83,10 +83,11 @@
         }
         .dashboard-card h2 { margin-top: 0; font-size: 20px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
 
+        /* Контейнер с прокруткой и фиксацией шапки */
         .table-responsive {
             overflow-x: auto;
             overflow-y: auto;
-            max-height: 500px; 
+            max-height: 480px; 
             border: 1px solid var(--border);
             border-radius: 4px;
         }
@@ -124,9 +125,23 @@
         
         #upload_status { font-size: 13px; font-weight: 600; margin-left: 10px; }
         .consignment-code { font-family: monospace; background: #f1f3f5; color: #495057; padding: 2px 6px; border-radius: 3px; font-size: 13px; font-weight: 600; }
+        .ref-code { font-family: monospace; color: #2d3748; background: #edf2f7; padding: 2px 5px; border-radius: 3px; font-size: 12px; }
+        .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
 <body>
+
+<script>
+    const currentUser = localStorage.getItem('user');
+    const currentRole = localStorage.getItem('role');
+    if (!currentUser || currentRole !== 'office') {
+        alert("Access denied!");
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+</script>
+
+<audio id="alert_sound" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" preload="auto"></audio>
 
 <div class="container">
     <div class="header">
@@ -204,7 +219,6 @@
     let lastKnownMaxId = 0; 
     const driversList = ["Driver 1", "Driver 2", "Driver 3", "Forklift 1", "Forklift 2"];
 
-    // ТОЧНАЯ ФУНКЦИЯ РАЗБОРА КЛАССИЧЕСКОГО ЛИСТА ОСТАТКОВ PEAKE FRUIT
     function uploadMorningExcel() {
         const fileInput = document.getElementById('excel_file');
         const statusDiv = document.getElementById('upload_status');
@@ -232,14 +246,11 @@
                 ) || workbook.SheetNames[0];
                 
                 const worksheet = workbook.Sheets[sheetName];
-                
-                // defval: "" гарантирует, что пустые ячейки не сдвинут массив колонок!
                 const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
                 if (rawRows.length === 0) throw new Error("Excel sheet is empty.");
 
-                // Шаг 1. Ищем строгий заголовок таблицы
                 let headerIndex = -1;
-                for (let i = 0; i < Math.min(rawRows.length, 15); i++) {
+                for (let i = 0; i < Math.min(rawRows.length, 20); i++) {
                     if (rawRows[i] && String(rawRows[i][0]).toLowerCase().trim() === 'consignment') {
                         headerIndex = i;
                         break;
@@ -252,29 +263,26 @@
 
                 const stockRows = [];
 
-                // Шаг 2. Сканируем данные строго с фиксацией по индексам ячеек (A, B, C, D...)
                 for (let i = headerIndex + 2; i < rawRows.length; i++) {
                     const row = rawRows[i];
-                    if (!row || row.length < 5) continue;
+                    if (!row || row.length < 4) continue;
 
-                    // Берем значения из фиксированных ячеек строки на основе файла
-                    const consignment = String(row[0] || "").trim(); // Колонка A: Consignment (8885)
-                    const growerProRef = String(row[1] || "").trim(); // Колонка B: GrowerPro Ref (114947)
-                    const supplier     = String(row[2] || "").trim(); // Колонка C: Supplier
-                    const origin       = String(row[3] || "").trim(); // Колонка D: Country of Origin
-                    const size         = String(row[4] || "").trim(); // Колонка E: SIZE
-                    const count        = String(row[5] || "").trim(); // Колонка F: Count
-                    const store        = String(row[7] || "").trim(); // Колонка H: Store
-                    const variety      = String(row[9] || "").trim(); // Колонка J: Variety/Commodity
-                    const available    = String(row[14] || "").trim(); // Колонка O: Available stock
+                    const consignment  = String(row[0] || "").trim(); // Колонка A
+                    const growerProRef = String(row[1] || "").trim(); // Колонка B
+                    const supplier     = String(row[2] || "").trim(); // Колонка C
+                    const origin       = String(row[3] || "").trim(); // Колонка D
+                    const size         = String(row[4] || "").trim(); // Колонка E
+                    const count        = String(row[5] || "").trim(); // Колонка F
+                    const store        = String(row[7] || "").trim(); // Колонка H
+                    const variety      = String(row[9] || "").trim(); // Колонка J
+                    const available    = String(row[14] || "").trim(); // Колонка O
 
-                    // Исключаем пустые строки, строки-заголовки категорий и финальные итоги
                     if (!consignment || consignment === "0" || consignment.toLowerCase().includes("total")) continue;
                     if (consignment.toLowerCase().includes("consignment")) continue;
 
                     stockRows.push({
-                        consignment: consignment, 
-                        growerpro: growerProRef ? growerProRef : null, // Сохраняем реальный GrowerPro Ref отдельно!
+                        consignment: consignment,
+                        growerpro: growerProRef ? growerProRef : null, // Записываем GrowerPro Ref в поле growerpro базы данных
                         description: variety ? variety : null,
                         grower: supplier ? supplier : null,
                         origin: origin ? origin : null,
@@ -286,21 +294,20 @@
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("No valid fruit records parsed. Check your spreadsheet formatting.");
+                    throw new Error("No valid items parsed.");
                 }
 
-                statusDiv.innerHTML = `⚙️ Cleansed ${stockRows.length} fruit items. Updating Supabase...`;
+                statusDiv.innerHTML = `⚙️ Processed ${stockRows.length} lines. Updating database...`;
                 
-                // Очищаем старый сток
+                // Очистка и вставка
                 const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                 if (deleteError) throw deleteError;
 
-                // Загружаем чистые данные
                 const { error: insertError } = await clientDb.from('stock').insert(stockRows);
                 if (insertError) throw insertError;
 
                 statusDiv.style.color = "#2e7d32";
-                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} correct lots!`;
+                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} items!`;
                 fileInput.value = '';
                 
                 loadStockTable();
@@ -309,12 +316,10 @@
             } catch (err) {
                 statusDiv.style.color = "#c53030";
                 statusDiv.innerHTML = "❌ Error: " + err.message;
-                console.error(err);
             }
         };
     }
 
-    // Загрузка живого конвейера заказов
     async function loadOfficeDashboard() {
         try {
             const { data: orders, error } = await clientDb.from('orders').select('*').order('id', { ascending: false }).limit(40);
@@ -369,21 +374,20 @@
         } catch (e) { console.error(e); }
     }
 
-    // Отрисовка таблицы остатков склада на экране
     async function loadStockTable() {
         try {
             const { data: stock, error } = await clientDb.from('stock').select('*').order('id', { ascending: true });
             if (error) throw error;
 
             if (!stock || stock.length === 0) {
-                document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--urgent-text);">Stock database is empty. Please upload the excel file.</td></tr>`;
+                document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--urgent-text);">Stock database is empty.</td></tr>`;
                 return;
             }
 
             const html = stock.map(s => `
                 <tr>
                     <td><span class="consignment-code">${s.consignment || '-'}</span></td>
-                    <td><span style="color:#4a5568;">${s.growerpro || '-'}</span></td>
+                    <td><span class="ref-code">${s.growerpro || '-'}</span></td>
                     <td><strong>${s.description || '-'}</strong></td>
                     <td>${s.grower || '-'}</td>
                     <td>${s.origin || '-'}</td>
