@@ -1,59 +1,148 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8"><title>SuperAdmin</title>
+    <meta charset="UTF-8"><title>SuperAdmin - Peake Fruit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --p:#d32f2f; --s:#1a1a2e; --bg:#f0f2f5; --ok:#2e7d32; }
+        body{font-family:sans-serif; background:var(--bg); margin:0; padding:15px;}
+        .card{background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); max-width:800px; margin:auto}
+        h2{margin-top:0; color:var(--s); border-bottom:2px solid #eee; padding-bottom:10px}
+        .form-box{background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid #eee}
+        input, select, button{padding:12px; margin:5px; border-radius:6px; border:1px solid #ccc; font-size:14px; box-sizing:border-box}
+        table{width:100%; border-collapse:collapse}
+        th, td{padding:12px; border-bottom:1px solid #eee; text-align:left}
+        th{background:#f4f4f4; font-size:12px; color:#666; text-transform:uppercase}
+        .btn-add{background:var(--ok); color:white; border:none; font-weight:bold; cursor:pointer; width:150px}
+        .btn-del{background:var(--p); color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px}
+        .lang-btns { margin-bottom: 15px; text-align: right; }
+    </style>
 </head>
-<body style="font-family:sans-serif; padding:20px">
-    <h2>Управление пользователями</h2>
-    <div style="background:#f4f4f4; padding:15px; margin-bottom:20px">
-        <input id="new_u" placeholder="Username">
-        <input id="new_p" placeholder="Password">
-        <select id="new_t">
-            <option value="line">Line</option>
-            <option value="office">Office</option>
-            <option value="driver">Driver</option>
-        </select>
-        <button onclick="addUser()">ДОБАВИТЬ</button>
+<body>
+
+    <div class="card">
+        <div class="lang-btns">
+            <button onclick="setLang('ru')">RU</button>
+            <button onclick="setLang('en')">EN</button>
+            <button onclick="setLang('lt')">LT</button>
+        </div>
+
+        <h2 id="title">УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ</h2>
+        
+        <div class="form-box">
+            <input type="text" id="new_u" placeholder="Логин (напр. RP1)">
+            <input type="text" id="new_p" placeholder="Пароль">
+            <select id="new_t">
+                <option value="line">Line (Линия)</option>
+                <option value="office">Office (Офис)</option>
+                <option value="driver">Driver (Водитель)</option>
+            </select>
+            <button class="btn-add" onclick="addUser()" id="btn_add">➕ ДОБАВИТЬ</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th id="th_u">Пользователь</th>
+                    <th id="th_p">Пароль</th>
+                    <th id="th_t">Тип</th>
+                    <th id="th_a">Действие</th>
+                </tr>
+            </thead>
+            <tbody id="user_list"></tbody>
+        </table>
+        
+        <div style="margin-top:30px">
+            <button onclick="location.href='login.html'" style="background:#666; color:white; border:none" id="btn_back">⬅ Назад в Логин</button>
+        </div>
     </div>
-    <table border="1" width="100%" style="border-collapse:collapse">
-        <thead><tr><th>User</th><th>Password</th><th>Role</th><th>Action</th></tr></thead>
-        <tbody id="user_list"></tbody>
-    </table>
 
 <script>
+    // Подключение к твоему Supabase
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
+    
+    // Переводы
+    const lang = {
+        ru: { title:"УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ", btn_add:"ДОБАВИТЬ", th_u:"Пользователь", th_p:"Пароль", th_t:"Тип", th_a:"Действие", conf:"Удалить этого пользователя?", back:"⬅ Назад в Логин", u_ph:"Логин", p_ph:"Пароль" },
+        en: { title:"USER MANAGEMENT", btn_add:"ADD USER", th_u:"User", th_p:"Password", th_t:"Type", th_a:"Action", conf:"Delete this user?", back:"⬅ Back to Login", u_ph:"Login", p_ph:"Password" },
+        lt: { title:"VARTOTOJŲ VALDYMAS", btn_add:"PRIDĖTI", th_u:"Vartotojas", th_p:"Slaptažodis", th_t:"Tipas", th_a:"Veiksmas", conf:"Ištrinti šį vartotoją?", back:"⬅ Atgal į Prisijungimą", u_ph:"Prisijungimas", p_ph:"Slaptažodis" }
+    };
+    let curL = localStorage.getItem('dash_lang') || 'ru';
 
-    async function load() {
-        const { data } = await _db.from('app_users').select('*');
-        document.getElementById('user_list').innerHTML = data.map(u => `
-            <tr>
-                <td>${u.username}</td>
-                <td>${u.password}</td>
-                <td>${u.role}</td>
-                <td><button onclick="delUser(${u.id})">DEL</button></td>
-            </tr>
-        `).join('');
+    function setLang(l) { 
+        curL = l; 
+        localStorage.setItem('dash_lang', l);
+        updateUI(); 
+    }
+    
+    function updateUI() {
+        const t = lang[curL];
+        document.getElementById('title').innerText = t.title;
+        document.getElementById('btn_add').innerText = t.btn_add;
+        document.getElementById('th_u').innerText = t.th_u;
+        document.getElementById('th_p').innerText = t.th_p;
+        document.getElementById('th_t').innerText = t.th_t;
+        document.getElementById('th_a').innerText = t.th_a;
+        document.getElementById('btn_back').innerText = t.back;
+        document.getElementById('new_u').placeholder = t.u_ph;
+        document.getElementById('new_p').placeholder = t.p_ph;
     }
 
-    async function addUser() {
-        const username = document.getElementById('new_u').value;
-        const password = document.getElementById('new_p').value;
-        const role = document.getElementById('new_t').value;
-        await _db.from('app_users').insert([{ username, password, role }]);
-        location.reload();
-    }
+    // Загрузка пользователей напрямую из Supabase
+    async function loadUsers() {
+        try {
+            const { data: users, error } = await _db.from('users_table').select('*').order('u', { ascending: true });
+            if (error) throw error;
 
-    async function delUser(id) {
-        if(confirm("Delete user?")) {
-            await _db.from('app_users').delete().eq('id', id);
-            load();
+            document.getElementById('user_list').innerHTML = users.map((u) => `
+                <tr>
+                    <td><b>${u.u}</b></td>
+                    <td><input type="text" value="${u.p}" onchange="changePass(${u.id}, this.value)" style="width:100px; padding:5px; border-radius:4px; border:1px solid #ccc"></td>
+                    <td><mark style="background:#e8f5e9; padding:3px 6px; border-radius:4px; font-weight:bold; font-size:12px">${u.t.toUpperCase()}</mark></td>
+                    <td><button class="btn-del" onclick="delUser(${u.id})">✖</button></td>
+                </tr>`).join('');
+        } catch(e) { 
+            console.error("Error loading users:", e); 
         }
     }
 
-    load();
+    // Добавление пользователя в Supabase
+    async function addUser() {
+        const u = document.getElementById('new_u').value.trim();
+        const p = document.getElementById('new_p').value.trim();
+        const t = document.getElementById('new_t').value;
+        if(!u || !p) return alert(curL === 'ru' ? "Заполните все поля!" : "Fill all fields!");
+
+        const { error } = await _db.from('users_table').insert([{ u, p, t }]);
+        if (error) {
+            alert(error.message);
+        } else {
+            document.getElementById('new_u').value = '';
+            document.getElementById('new_p').value = '';
+            loadUsers();
+        }
+    }
+
+    // Быстрое изменение пароля прямо в таблице
+    async function changePass(id, newP) {
+        const { error } = await _db.from('users_table').update({ p: newP }).eq('id', id);
+        if (error) alert(error.message);
+        loadUsers();
+    }
+
+    // Удаление пользователя по его ID из базы данных
+    async function delUser(id) {
+        if(!confirm(lang[curL].conf)) return;
+        const { error } = await _db.from('users_table').delete().eq('id', id);
+        if (error) alert(error.message);
+        loadUsers();
+    }
+
+    updateUI();
+    loadUsers();
 </script>
 </body>
 </html>
