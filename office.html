@@ -150,12 +150,11 @@
                     <tr>
                         <th>Consignment (A)</th>
                         <th>GrowerPro Ref (B)</th>
-                        <th>Grower / Supplier (C)</th>
+                        <th>Variety (J)</th> <th>Grower / Supplier (C)</th>
                         <th>Country of Origin (D)</th>
                         <th>Size (E)</th>
                         <th>Count (F)</th>
                         <th>Store (H)</th>
-                        <th>Variety (J)</th>
                         <th>Available Stock (O)</th>
                     </tr>
                 </thead>
@@ -207,17 +206,12 @@
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 
-                // Ищем ТОЛЬКО лист, в котором есть реальные данные.
-                // Отбрасываем "Daily Stock Control" и берем "Daily Stock Sheet"
                 let sheetName = workbook.SheetNames.find(n => n.includes("Daily Stock Sheet"));
                 if (!sheetName) {
-                    // Резервный вариант, если название немного изменилось
                     sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes("stock") || n.toLowerCase().includes("daily"));
                 }
                 
                 const worksheet = workbook.Sheets[sheetName];
-                
-                // Читаем матрицу строго по индексам (A=0, B=1, C=2...)
                 const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
                 
                 if (!rawRows || rawRows.length === 0) {
@@ -230,9 +224,8 @@
                     const row = rawRows[i];
                     if (!row || row.length === 0) continue;
 
-                    let rawCons = String(row[0] || "").trim(); // Индекс 0 = Колонка A
+                    let rawCons = String(row[0] || "").trim(); 
 
-                    // Универсальный фильтр для Consignment (пропускает номера с буквами, но режет шапку)
                     if (!rawCons || 
                         rawCons.toLowerCase().includes("consignment") || 
                         rawCons.toLowerCase().includes("ltd") || 
@@ -243,20 +236,18 @@
                         continue; 
                     }
 
-                    // Проверка колонки SIZE (Индекс 4 = Колонка E)
                     const sizeVal = String(row[4] || "").trim();
                     if (!sizeVal || sizeVal.toLowerCase().includes("size")) {
                         continue; 
                     }
 
-                    // Сбор данных строго по индексам, подтвержденным твоим CSV файлом
-                    const growerRef = String(row[1] || "").trim();  // Индекс 1 = Колонка B
-                    const supplier  = String(row[2] || "").trim();  // Индекс 2 = Колонка C
-                    const origin    = String(row[3] || "").trim();  // Индекс 3 = Колонка D
-                    const countVal  = String(row[5] || "").trim();  // Индекс 5 = Колонка F
-                    const storeVal  = String(row[7] || "").trim();  // Индекс 7 = Колонка H
-                    const variety   = String(row[9] || "").trim();  // Индекс 9 = Колонка J
-                    const available = String(row[14] || "").trim(); // Индекс 14 = Колонка O
+                    const growerRef = String(row[1] || "").trim();  
+                    const supplier  = String(row[2] || "").trim();  
+                    const origin    = String(row[3] || "").trim();  
+                    const countVal  = String(row[5] || "").trim();  
+                    const storeVal  = String(row[7] || "").trim();  
+                    const variety   = String(row[9] || "").trim();  
+                    const available = String(row[14] || "").trim(); 
 
                     stockRows.push({
                         consignment: rawCons,
@@ -272,7 +263,7 @@
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("No data rows matched. File might be empty or format changed.");
+                    throw new Error("No data rows matched.");
                 }
 
                 statusDiv.innerHTML = `⚙️ Processing ${stockRows.length} rows. Saving to Supabase...`;
@@ -308,16 +299,16 @@
                 return;
             }
 
+            // Перестроили вывод ячеек в строке, чтобы Variety (s.description) шел третьим по счету
             const html = stock.map(s => `
                 <tr>
                     <td><span class="consignment-code">${s.consignment || '-'}</span></td>
                     <td><span class="ref-code">${s.growerpro || '-'}</span></td>
-                    <td><strong style="color:#2b6cb0;">${s.grower || '-'}</strong></td>
+                    <td><strong>${s.description || '-'}</strong></td> <td><strong style="color:#2b6cb0;">${s.grower || '-'}</strong></td>
                     <td>${s.origin || '-'}</td>
                     <td><span class="ref-code">${s.size || '-'}</span></td>
                     <td>${s.count || '-'}</td>
                     <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td>
-                    <td><strong>${s.description || '-'}</strong></td>
                     <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td>
                 </tr>
             `).join('');
