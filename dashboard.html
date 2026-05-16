@@ -1,49 +1,358 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8"><title>Dashboard - Monitor</title>
+    <meta charset="UTF-8"><title>Office Dashboard - Peake Fruit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
-        th { background: #2e7d32; color: white; }
-        .urgent { background: #fff0f0; color: red; font-weight: bold; }
-        .st-pending { color: orange; }
-        .st-progress { color: blue; }
-        .st-done { color: green; }
+        :root { --p:#1a1a2e; --s:#f0f2f5; --ok:#2e7d32; --accent:#1565c0; --del:#d32f2f; }
+        body{font-family:sans-serif; background:var(--s); margin:0; padding:15px;}
+        .card{background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); max-width:1400px; margin:auto; margin-bottom: 25px;}
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px;}
+        h2{margin:0; color:var(--p); font-size: 22px;}
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+        .tab-btn { padding: 10px 20px; border: none; background: #e0e0e0; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 14px; color: #555; }
+        .tab-btn.active { background: var(--accent); color: white; }
+        .filters { background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 15px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .filters label { font-size: 13px; font-weight: bold; color: #444; }
+        input, select, button { padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
+        table{width:100%; border-collapse:collapse; margin-top:10px;}
+        th, td{padding:12px; border-bottom:1px solid #eee; text-align:left; font-size: 14px;}
+        th{background:#f4f4f4; font-size:12px; color:#666; text-transform:uppercase; font-weight: bold;}
+        .status { padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold; text-transform:uppercase;}
+        .status.new { background:#fff3e0; color:#ef6c00; }
+        .status.process { background:#e3f2fd; color:#1565c0; }
+        .status.done { background:#e8f5e9; color:#2e7d32; }
+        .btn-out { background:#666; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .stats-box { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+        .stat-card { background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px 20px; border-radius: 8px; min-width: 150px; }
+        .stat-card div { font-size: 12px; color: #6c757d; text-transform: uppercase; font-weight: bold; }
+        .stat-card span { font-size: 20px; font-weight: bold; color: var(--p); }
+        .lang-btns { text-align: right; margin-bottom: 10px; }
+        .lang-btns button { padding: 4px 8px; font-size: 12px; background: #eee; cursor: pointer; margin-left: 3px; }
     </style>
 </head>
 <body>
-    <h1 style="text-align:center">LIVE ORDER MONITOR</h1>
-    <table>
-        <thead>
-            <tr><th>TIME</th><th>LINE</th><th>FRUIT/SORT</th><th>QTY</th><th>STORE</th><th>STATUS</th></tr>
-        </thead>
-        <tbody id="log_body"></tbody>
-    </table>
+
+    <div class="card">
+        <div class="lang-btns">
+            <button onclick="setLang('ru')">RU</button>
+            <button onclick="setLang('en')">EN</button>
+            <button onclick="setLang('lt')">LT</button>
+        </div>
+
+        <div class="header">
+            <h2 id="main_title">Панель управления и Отчетность (Офис)</h2>
+            <div>
+                <span id="lbl_hi">Привет</span>, <b id="office_user">Администратор</b>
+                <button class="btn-out" onclick="logout()" id="btn_logout">Выйти</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('orders-tab', this)" id="tab_active">🗂 Активные заказы</button>
+            <button class="tab-btn" onclick="switchTab('reports-tab', this); loadFullReport();" id="tab_all">📊 Полный отчет</button>
+        </div>
+
+        <div id="orders-tab" class="tab-content active">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th id="th_from1">Откуда (Линия)</th>
+                        <th id="th_grower1">Гровер</th>
+                        <th id="th_cons1">Consignment</th>
+                        <th id="th_desc1">Описание заказа</th>
+                        <th id="th_driver1">Назначить водителя</th>
+                        <th id="th_status1">Статус</th>
+                    </tr>
+                </thead>
+                <tbody id="orders_list"></tbody>
+            </table>
+        </div>
+
+        <div id="reports-tab" class="tab-content">
+            <div class="stats-box">
+                <div class="stat-card">
+                    <div id="st_all">Всего заказов</div>
+                    <span id="stat_total">0</span>
+                </div>
+                <div class="stat-card">
+                    <div id="st_done">Выполнено</div>
+                    <span id="stat_done" style="color: var(--ok);">0</span>
+                </div>
+                <div class="stat-card">
+                    <div id="st_proc">В процессе</div>
+                    <span id="stat_process" style="color: var(--accent);">0</span>
+                </div>
+            </div>
+
+            <div class="filters">
+                <div>
+                    <label id="lbl_f_line">Линия:</label><br>
+                    <select id="filter_line" onchange="filterReport()">
+                        <option value="" id="opt_all_lines">Все линии</option>
+                    </select>
+                </div>
+                <div>
+                    <label id="lbl_f_driver">Водитель:</label><br>
+                    <select id="filter_driver" onchange="filterReport()">
+                        <option value="" id="opt_all_drivers">Все водители</option>
+                    </select>
+                </div>
+                <div>
+                    <label id="lbl_f_status">Статус:</label><br>
+                    <select id="filter_status" onchange="filterReport()">
+                        <option value="" id="opt_all_statuses">Все статусы</option>
+                        <option value="new">New</option>
+                        <option value="process">Process</option>
+                        <option value="done">Done</option>
+                    </select>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th id="th_date2">Дата / Время заказа</th>
+                        <th id="th_from2">Откуда (Линия)</th>
+                        <th id="th_grower2">Гровер</th>
+                        <th id="th_cons2">Consignment</th>
+                        <th id="th_desc2">Описание заказа</th>
+                        <th id="th_driver2">Кто везет (Водитель)</th>
+                        <th id="th_status2">Статус</th>
+                    </tr>
+                </thead>
+                <tbody id="report_table_body"></tbody>
+            </table>
+        </div>
+    </div>
 
 <script>
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    async function load() {
-        const { data } = await _db.from('orders').select('*').order('id', {ascending:false}).limit(20);
-        document.getElementById('log_body').innerHTML = data.map(o => `
-            <tr class="${o.urgent ? 'urgent' : ''}">
-                <td>${o.time}</td>
-                <td><b>${o.line}</b></td>
-                <td>${o.sort}</td>
-                <td>${o.qty}</td>
-                <td>${o.store}</td>
-                <td><b class="st-${o.status}">${o.status.toUpperCase()}</b></td>
-            </tr>
-        `).join('');
+    const lang = {
+        ru: {
+            main_title: "Панель управления и Отчетность (Офис)", lbl_hi: "Привет", btn_logout: "Выйти",
+            tab_active: "🗂 Активные заказы", tab_all: "📊 Полный отчет",
+            th_from: "Откуда (Линия)", th_desc: "Описание заказа", th_driver: "Назначить водителя", th_status: "Статус", th_date: "Дата / Время заказа", th_driver_who: "Кто везет (Водитель)",
+            th_grower: "Гровер", th_cons: "Consignment",
+            st_all: "Всего заказов", st_done: "Выполнено", st_proc: "В процессе",
+            lbl_f_line: "Линия:", lbl_f_driver: "Водитель:", lbl_f_status: "Статус:",
+            opt_all_lines: "Все линии", opt_all_drivers: "Все водители", opt_all_statuses: "Все статусы",
+            select_driver: "-- Назначить --", no_driver: "Не назначен"
+        },
+        en: {
+            main_title: "Management & Reporting Panel (Office)", lbl_hi: "Hello", btn_logout: "Logout",
+            tab_active: "🗂 Active Orders", tab_all: "📊 Full Report",
+            th_from: "From (Line)", th_desc: "Order Description", th_driver: "Assign Driver", th_status: "Status", th_date: "Order Date / Time", th_driver_who: "Driver Assigned",
+            th_grower: "Grower", th_cons: "Consignment",
+            st_all: "Total Orders", st_done: "Completed", st_proc: "In Process",
+            lbl_f_line: "Line:", lbl_f_driver: "Driver:", lbl_f_status: "Status:",
+            opt_all_lines: "All lines", opt_all_drivers: "All drivers", opt_all_statuses: "All statuses",
+            select_driver: "-- Assign --", no_driver: "Not assigned"
+        },
+        lt: {
+            main_title: "Valdymo ir ataskaitų skydas (Biuras)", lbl_hi: "Sveiki", btn_logout: "Atsijungti",
+            tab_active: "🗂 Aktyvūs užsakymai", tab_all: "📊 Pilna ataskaita",
+            th_from: "Iš kur (Linija)", th_desc: "Užsakymo aprašymas", th_driver: "Priskirti vairuotoją", th_status: "Būsena", th_date: "Užsakymo data / laikas", th_driver_who: "Vairuotojas",
+            th_grower: "Augintojas (Grower)", th_cons: "Consignment",
+            st_all: "Iš viso užsakymų", st_done: "Atlikta", st_proc: "Vykdoma",
+            lbl_f_line: "Linija:", lbl_f_driver: "Vairuotojas:", lbl_f_status: "Būsena:",
+            opt_all_lines: "Visos linijos", opt_all_drivers: "Visi vairuotojai", opt_all_statuses: "Visos būsenos",
+            select_driver: "-- Priskirti --", no_driver: "Nepriskirtas"
+        }
+    };
+
+    let curL = localStorage.getItem('dash_lang') || 'ru';
+
+    function setLang(l) {
+        curL = l;
+        localStorage.setItem('dash_lang', l);
+        updateUI();
+        loadOrders();
+        if(document.getElementById('reports-tab').classList.contains('active')) loadFullReport();
     }
 
-    load();
-    setInterval(load, 5000);
+    function updateUI() {
+        const t = lang[curL];
+        document.getElementById('main_title').innerText = t.main_title;
+        document.getElementById('lbl_hi').innerText = t.lbl_hi;
+        document.getElementById('btn_logout').innerText = t.btn_logout;
+        document.getElementById('tab_active').innerText = t.tab_active;
+        document.getElementById('tab_all').innerText = t.tab_all;
+        
+        document.getElementById('th_from1').innerText = t.th_from;
+        document.getElementById('th_grower1').innerText = t.th_grower;
+        document.getElementById('th_cons1').innerText = t.th_cons;
+        document.getElementById('th_desc1').innerText = t.th_desc;
+        document.getElementById('th_driver1').innerText = t.th_driver;
+        document.getElementById('th_status1').innerText = t.th_status;
+        
+        document.getElementById('st_all').innerText = t.st_all;
+        document.getElementById('st_done').innerText = t.st_done;
+        document.getElementById('st_proc').innerText = t.st_proc;
+        
+        document.getElementById('lbl_f_line').innerText = t.lbl_f_line;
+        document.getElementById('lbl_f_driver').innerText = t.lbl_f_driver;
+        document.getElementById('lbl_f_status').innerText = t.lbl_f_status;
+        document.getElementById('opt_all_lines').innerText = t.opt_all_lines;
+        document.getElementById('opt_all_drivers').innerText = t.opt_all_drivers;
+        document.getElementById('opt_all_statuses').innerText = t.opt_all_statuses;
+        
+        document.getElementById('th_date2').innerText = t.th_date;
+        document.getElementById('th_from2').innerText = t.th_from;
+        document.getElementById('th_grower2').innerText = t.th_grower;
+        document.getElementById('th_cons2').innerText = t.th_cons;
+        document.getElementById('th_desc2').innerText = t.th_desc;
+        document.getElementById('th_driver2').innerText = t.th_driver_who;
+        document.getElementById('th_status2').innerText = t.th_status;
+    }
+
+    const currentUser = localStorage.getItem('user');
+    const currentRole = localStorage.getItem('role');
+    const displayName = localStorage.getItem('name');
+
+    if (!currentUser || currentRole !== 'office') {
+        window.location.href = 'login.html';
+    } else {
+        document.getElementById('office_user').innerText = displayName;
+    }
+
+    let driversList = [];
+    let allLinesList = [];
+    let rawReportData = []; 
+
+    function switchTab(tabId, btn) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    async function loadInitialData() {
+        const { data: drData } = await _db.from('users_table').select('name').eq('t', 'driver').order('name');
+        if (drData) {
+            driversList = drData.map(d => d.name).filter(Boolean);
+            const fDr = document.getElementById('filter_driver');
+            driversList.forEach(name => { fDr.innerHTML += `<option value="${name}">${name}</option>`; });
+        }
+
+        const { data: lnData } = await _db.from('users_table').select('name').eq('t', 'line').order('name');
+        if (lnData) {
+            allLinesList = lnData.map(l => l.name).filter(Boolean);
+            const fLn = document.getElementById('filter_line');
+            allLinesList.forEach(name => { fLn.innerHTML += `<option value="${name}">${name}</option>`; });
+        }
+        
+        updateUI();
+        loadOrders();
+        setInterval(loadOrders, 5000); 
+    }
+
+    async function loadOrders() {
+        try {
+            const { data: orders, error } = await _db.from('orders').select('*').order('id', { ascending: false });
+            if (error) throw error;
+
+            const activeOrders = orders.filter(o => o.status !== 'done');
+
+            document.getElementById('orders_list').innerHTML = activeOrders.map((o) => {
+                let selectOptions = `<option value="">${lang[curL].select_driver}</option>`;
+                selectOptions += driversList.map(name => `
+                    <option value="${name}" ${o.driver_name === name ? 'selected' : ''}>${name}</option>
+                `).join('');
+
+                return `
+                <tr>
+                    <td>#${o.id}</td>
+                    <td><b>${o.line || '-'}</b></td>
+                    <td><span style="color:#555;">${o.grower || '-'}</span></td>
+                    <td><code style="background:#f4f4f4; padding:2px 6px; border-radius:4px; font-weight:bold;">${o.consignment || '-'}</code></td>
+                    <td>${o.description || '-'}</td>
+                    <td>
+                        <select onchange="assignDriver(${o.id}, this.value)">
+                            ${selectOptions}
+                        </select>
+                    </td>
+                    <td><span class="status ${o.status || 'new'}">${o.status || 'new'}</span></td>
+                </tr>`;
+            }).join('');
+        } catch(e) { console.error(e); }
+    }
+
+    async function assignDriver(orderId, driverName) {
+        const status = driverName ? 'process' : 'new';
+        const { error } = await _db.from('orders')
+            .update({ driver_name: driverName, status: status })
+            .eq('id', orderId);
+            
+        if (error) alert("Error: " + error.message);
+        loadOrders();
+    }
+
+    async function loadFullReport() {
+        try {
+            const { data: orders, error } = await _db.from('orders').select('*').order('id', { ascending: false });
+            if (error) throw error;
+
+            rawReportData = orders; 
+            
+            document.getElementById('stat_total').innerText = orders.length;
+            document.getElementById('stat_done').innerText = orders.filter(o => o.status === 'done').length;
+            document.getElementById('stat_process').innerText = orders.filter(o => o.status === 'process').length;
+
+            renderReportTable(rawReportData);
+        } catch(e) { console.error(e); }
+    }
+
+    function renderReportTable(data) {
+        document.getElementById('report_table_body').innerHTML = data.map((o) => {
+            let formattedDate = "-";
+            if (o.created_at) {
+                const d = new Date(o.created_at);
+                formattedDate = d.toLocaleDateString(curL === 'ru' ? 'ru-RU' : 'en-US') + ' ' + d.toLocaleTimeString(curL === 'ru' ? 'ru-RU' : 'en-US', {hour: '2-digit', minute:'2-digit'});
+            }
+
+            return `
+            <tr>
+                <td>#${o.id}</td>
+                <td style="color:#555; font-size:13px; font-weight:bold;">${formattedDate}</td>
+                <td><b>${o.line || '-'}</b></td>
+                <td><b>${o.grower || '-'}</b></td>
+                <td><code>${o.consignment || '-'}</code></td>
+                <td>${o.description || '-'}</td>
+                <td><i style="color:#222; font-weight:bold;">${o.driver_name || lang[curL].no_driver}</i></td>
+                <td><span class="status ${o.status || 'new'}">${o.status || 'new'}</span></td>
+            </tr>`;
+        }).join('');
+    }
+
+    function filterReport() {
+        const fLine = document.getElementById('filter_line').value;
+        const fDriver = document.getElementById('filter_driver').value;
+        const fStatus = document.getElementById('filter_status').value;
+
+        let filtered = rawReportData;
+
+        if (fLine) filtered = filtered.filter(o => o.line === fLine);
+        if (fDriver) filtered = filtered.filter(o => o.driver_name === fDriver);
+        if (fStatus) filtered = filtered.filter(o => o.status === fStatus);
+
+        renderReportTable(filtered);
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+
+    loadInitialData();
 </script>
 </body>
 </html>
