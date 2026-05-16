@@ -281,8 +281,8 @@
                 const opt = document.createElement('option');
                 opt.value = index;
                 
-                // Гибкая проверка названий колонок
-                const consVal = item.cons || item.consignment || item.Cons || '—';
+                // Гибкая проверка названий колонок в таблице stock
+                const consVal = item.consignment || item.cons || item.Cons || '—';
                 const descVal = item.description || item.desc || item.Description || '—';
                 const storeVal = item.store || item.Store || '—';
 
@@ -306,7 +306,7 @@
             
             // Напрямую заполняем инпуты значениями
             document.getElementById('m_description').value = item.description || item.desc || item.Description || '';
-            document.getElementById('m_cons').value = item.cons || item.consignment || item.Cons || '';
+            document.getElementById('m_cons').value = item.consignment || item.cons || item.Cons || '';
             document.getElementById('m_store').value = item.store || item.Store || '';
             document.getElementById('m_grower').value = item.grower || item.Grower || '';
             document.getElementById('m_origin').value = item.origin || item.Origin || '';
@@ -331,12 +331,13 @@
             urgent: document.getElementById('chk_urgent').checked,
             status: 'new',
             description: document.getElementById('m_description').value,
-            cons: document.getElementById('m_cons').value,
             store: document.getElementById('m_store').value,
             grower: document.getElementById('m_grower').value || '—',
             origin: document.getElementById('m_origin').value || '—',
             size: document.getElementById('m_size').value || '—',
-            count: document.getElementById('m_count').value || '—'
+            count: document.getElementById('m_count').value || '—',
+            // ИСПРАВЛЕНО: Ключ изменен с cons на consignment
+            consignment: document.getElementById('m_cons').value
         };
 
         try {
@@ -381,6 +382,9 @@
                 if (isUrgent && statusClean !== 'delivered') rClass = 'urgent-card';
                 else if (statusClean === 'process') rClass = 'process-card';
 
+                // ИСПРАВЛЕНО: Читаем consignment вместо cons для вывода в таблицу
+                const displayCons = o.consignment || o.cons || '—';
+
                 return `
                 <div class="order-row-card ${rClass}">
                     <div class="card-field" style="padding-left:10px;">
@@ -401,7 +405,7 @@
                     </div>
                     <div class="card-field">
                         <span class="field-label">Consignment</span>
-                        <span class="field-value"><code>${o.cons || '—'}</code></span>
+                        <span class="field-value"><code>${displayCons}</code></span>
                     </div>
                     <div class="card-field">
                         <span class="field-label">Specs</span>
