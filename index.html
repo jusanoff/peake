@@ -160,16 +160,16 @@
         e.preventDefault();
 
         // Формируем данные заказа
-        const orderData = {
-            line: displayName, // Заказчиком железно записывается имя авторизованной Линии
-            description: document.getElementById('inp_desc').value,
-            grower: document.getElementById('inp_grower').value || null,
-            consignment: document.getElementById('inp_cons').value || null,
-            store: document.getElementById('inp_store').value || null,
-            quantity: document.getElementById('inp_qty').value ? parseInt(document.getElementById('inp_qty').value) : null,
-            urgent: document.getElementById('chk_urgent').checked, // Отправляем true/false
-            status: 'new' // Всегда создается со статусом 'new'
-        };
+       const orderData = {
+    line: displayName,
+    description: document.getElementById('inp_desc').value,
+    grower: document.getElementById('inp_grower').value || null,
+    cons: document.getElementById('inp_cons').value || null,       // Поменяли ключ на cons
+    store: document.getElementById('inp_store').value || null,
+    qty: parseInt(document.getElementById('inp_qty').value) || null, // Поменяли ключ на qty
+    urgent: document.getElementById('chk_urgent').checked,
+    status: 'new'
+};
 
         try {
             const { error } = await _db
