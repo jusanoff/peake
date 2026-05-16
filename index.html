@@ -317,25 +317,50 @@
 
     async function fetchLineFullName() {
     try {
-        // ИСПРАВЛЕНО: выбираем 'name' и ищем совпадение по колонке 'u' вместо 'username'
+        console.log("Отправляю запрос в Supabase для логина:", currentUser);
+
+        // Используем обычный select без строгого .single(), чтобы избежать ошибок citext
         const { data, error } = await clientDb
             .from('user_table')
-            .select('name')
-            .eq('u', currentUser) 
-            .single();
+            .select('*')
+            .eq('u', currentUser);
 
-        if (error) throw error;
+        if (error) {
+            console.error("Ошибка Supabase:", error.message);
+            return;
+        }
 
-        if (data && data.name) {
-            cachedLineFullName = data.name; 
-            // Меняем логин (например, Nob) на красивое имя (например, Nobac) в синей плашке
-            document.getElementById('line_name_display').innerText = 'Line: ' + data.name;
+        console.log("Ответ от базы данных пришел:", data);
+
+        // Проверяем, что база нашла строку пользователя
+        if (data && data.length > 0) {
+            const userRow = data[0];
+            
+            // Защита от регистра букв: ищем 'name' в любом виде (name, Name, NAME)
+            const realName = userRow.name || userRow.Name || userRow.NAME;
+
+            if (realName) {
+                cachedLineFullName = realName; 
+                
+                // Находим плашку и принудительно меняем текст
+                const badge = document.getElementById('line_name_display');
+                if (badge) {
+                    badge.innerText = 'Line: ' + realName;
+                    console.log("Успешно поменяли текст на плашке на:", realName);
+                } else {
+                    console.error("В HTML коде не найден элемент с id='line_name_display'!");
+                }
+            } else {
+                console.warn("Пользователь найден, но колонки name/Name/NAME пусты или отсутствуют:", userRow);
+            }
+        } else {
+            console.warn(`В user_table нет строки, где в колонке 'u' написано '${currentUser}'`);
         }
     } catch (err) {
-        console.error("Error fetching full name:", err);
+        console.error("Критическая ошибка в функции fetchLineFullName:", err);
     }
     
-    // Загружаем заказы линии
+    // В любом случае запускаем историю заказов
     loadActiveRequests();
 }
     async function loadStockDropdown() {
