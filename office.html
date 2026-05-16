@@ -429,7 +429,7 @@
                     <td>${o.store || '-'}</td>
                     <td><strong>${o.qty || '-'}</strong></td>
                     <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span style="color:var(--text-muted);">Waiting...</span>'}</td>
-                    <td><span style="color:var(--status-done); font-weight:bold;">${o.status === 'delivered' ? '✅ ' + formatTime(o.delivered_at) : '-'}</span></td>
+                    <td><span style="color:var(--status-done); font-weight:bold;">${o.delivered_at ? formatTime(o.delivered_at) : '-'}</span></td>
                     <td><span class="status-badge new">${o.status || 'new'}</span></td>
                 </tr>
             `).join('');
