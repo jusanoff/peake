@@ -84,7 +84,6 @@
         }
         input:focus, select:focus { border-color: var(--accent); outline: none; }
         
-        /* Подсветка автоматически заполненных полей */
         input.auto-filled { background: #fafafa; border-color: #cbd5e0; }
 
         /* Чекбокс Urgent */
@@ -102,46 +101,21 @@
         }
         .submit-btn:hover { background: var(--accent-hover); }
 
-        /* --- ЖЕСТКАЯ ТАБЛИЦА МОНИТОРИНГА (КАК РАНЬШЕ БЫЛО НА ПК) --- */
-        .orders-list { 
-            display: table; 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 15px; 
+        /* --- ИНФОРМАЦИОННОЕ ТАБЛО (БАЗОВЫЙ МОБИЛЬНЫЙ ВИД КОМПАКТНЫХ КАРТОЧЕК) --- */
+        .orders-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .order-row-card {
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;
+            display: flex; flex-direction: column; gap: 6px;
         }
-        .desktop-headers { 
-            display: table-header-group; 
-            background: #f7fafc; 
-        }
-        .desktop-headers th { 
-            color: var(--text-muted); 
-            padding: 10px 8px; 
-            text-align: left; 
-            font-size: 11px; 
-            text-transform: uppercase; 
-            border-bottom: 2px solid #edf2f7; 
-        }
-        .order-row-card { 
-            display: table-row; 
-        }
-        .order-row-card:hover { 
-            background-color: #f8fafc !important; 
-        }
-        .card-field { 
-            display: table-cell; 
-            vertical-align: middle; 
-            padding: 10px 8px; 
-            border-bottom: 1px solid #edf2f7; 
-        }
-        
-        /* Скрываем мобильные подписи названий полей, так как у нас есть полноценная шапка th */
-        .field-label { 
-            display: none; 
-        }
+        .order-row-card.urgent-card { border-left: 5px solid var(--urgent); background: var(--urgent-bg); }
+        .order-row-card.process-card { border-left: 5px solid var(--process); background: var(--process-bg); }
 
-        /* Цвета статусов строк */
-        .order-row-card.urgent-card { background-color: var(--urgent-bg) !important; }
-        .order-row-card.process-card { background-color: var(--process-bg) !important; }
+        .card-field { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #edf2f7; padding-bottom: 4px; }
+        .card-field:last-of-type { border-bottom: none; padding-bottom: 0; }
+        
+        /* Мобильные текстовые подписи (на ПК они будут скрыты) */
+        .field-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: bold; display: inline-block; }
+        .field-value { font-size: 13px; font-weight: 500; text-align: right; }
 
         .store-tag { color: #6b46c1; font-weight: bold; background: #f3e8ff; padding: 1px 6px; border-radius: 4px; }
         .qty-tag { font-weight: bold; background: #e6fffa; border: 1px solid #b2f5ea; padding: 1px 6px; border-radius: 4px; }
@@ -154,6 +128,37 @@
         .status-badge.new { background: #e3f2fd; color: #0288d1; }
         .status-badge.process { background: #fff3e0; color: #f59e0b; }
         .status-badge.delivered { background: #e8f5e9; color: var(--done); }
+
+        /* Шапка таблицы скрыта на мобильных по умолчанию */
+        .desktop-headers { display: none; }
+
+        /* --- ПОЛНОЦЕННАЯ АДАПТАЦИЯ ДЛЯ КОМПЬЮТЕРОВ И ПЛАНШЕТОВ (ЭКРАНЫ ОТ 768px) --- */
+        @media (min-width: 768px) {
+            body { padding: 20px; }
+            .container { gap: 15px; }
+            .main-card { padding: 20px; }
+            
+            /* Превращаем список в классическую жесткую таблицу */
+            .orders-list { display: table; width: 100%; border-collapse: collapse; }
+            .order-row-card { display: table-row; background: transparent !important; }
+            .card-field { display: table-cell; vertical-align: middle; padding: 12px 8px; border-bottom: 1px solid #edf2f7; }
+            
+            /* Скрываем внутренние мобильные подписи внутри ячеек */
+            .field-label { display: none; }
+            .field-value { text-align: left; font-size: 14px; }
+            
+            /* Показываем главную верхнюю шапку таблицы ПК */
+            .desktop-headers { display: table-header-group !important; background: #f8fafc; }
+            .desktop-headers th { 
+                color: var(--text-muted); padding: 12px 8px; text-align: left; 
+                font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; 
+            }
+            
+            /* Фоновые цвета строк в режиме таблицы */
+            .order-row-card.urgent-card { background-color: var(--urgent-bg) !important; }
+            .order-row-card.process-card { background-color: var(--process-bg) !important; }
+            .order-row-card:hover { background-color: #f1f5f9 !important; }
+        }
     </style>
 </head>
 <body>
@@ -243,15 +248,15 @@
         <div class="orders-list">
             <div class="desktop-headers">
                 <tr style="display: table-row;">
-                    <th style="padding-left:10px;">ID</th>
-                    <th>Store</th>
+                    <th style="padding-left:10px; width: 60px;">ID</th>
+                    <th style="width: 80px;">Store</th>
                     <th>Fruit Description</th>
                     <th>Grower</th>
-                    <th>Consignment</th>
+                    <th style="width: 110px;">Consignment</th>
                     <th>Specs (O/S/C)</th>
-                    <th>Qty</th>
+                    <th style="width: 70px;">Qty</th>
                     <th>Driver</th>
-                    <th>Status</th>
+                    <th style="width: 110px;">Status</th>
                 </tr>
             </div>
             <div id="line_orders_body" style="display: contents;">
@@ -388,30 +393,39 @@
                 return `
                 <div class="order-row-card ${rClass}">
                     <div class="card-field" style="padding-left:10px;">
+                        <span class="field-label">ID</span>
                         <span class="field-value" style="color:var(--text-muted);">#${o.id}</span>
                     </div>
                     <div class="card-field">
+                        <span class="field-label">Store</span>
                         <span class="field-value"><span class="store-tag">${o.store || '—'}</span></span>
                     </div>
                     <div class="card-field">
+                        <span class="field-label">Fruit</span>
                         <span class="field-value"><strong>${isUrgent ? '⚠️ ' : ''}${o.description || '—'}</strong></span>
                     </div>
                     <div class="card-field">
+                        <span class="field-label">Grower</span>
                         <span class="field-value">${o.grower || '—'}</span>
                     </div>
                     <div class="card-field">
+                        <span class="field-label">Consignment</span>
                         <span class="field-value"><code>${displayCons}</code></span>
                     </div>
                     <div class="card-field">
+                        <span class="field-label">Specs</span>
                         <span class="field-value">${o.origin || '—'} / ${o.size || '—'} / ${o.count || '—'}</span>
                     </div>
                     <div class="card-field">
+                        <span class="field-label">Qty</span>
                         <span class="field-value"><span class="qty-tag">${o.qty || '0'}</span></span>
                     </div>
                     <div class="card-field">
+                        <span class="field-label">Driver</span>
                         <span class="field-value">${o.driver_name ? '🚚 ' + o.driver_name : 'Waiting...'}</span>
                     </div>
                     <div class="card-field">
+                        <span class="field-label">Status</span>
                         <span class="field-value"><span class="status-badge ${statusClean}">${statusClean}</span></span>
                     </div>
                 </div>`;
