@@ -264,14 +264,16 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Ordered At</th> <th>Store</th>
+                        <th>Ordered At</th>
+                        <th>Store</th>
                         <th>Fruit Description</th>
                         <th>Grower</th>
                         <th>Consignment</th>
                         <th>Specs (O/S/C)</th>
                         <th>Qty</th>
                         <th>Driver</th>
-                        <th>Delivered At</th> <th>Status</th>
+                        <th>Delivered At</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody id="line_requests_body">
@@ -302,10 +304,11 @@
 
     let stockItemsGlobal = [];
 
-    // Добавлена функция форматирования времени
     function formatTime(isoString) {
         if (!isoString) return '-';
         const date = new Date(isoString);
+        // Проверка на корректность даты, чтобы избежать Invalid Date на фронтенде
+        if (isNaN(date.getTime())) return '-';
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
@@ -428,7 +431,7 @@
                 return;
             }
 
-            // ИСПРАВЛЕНО: Теперь выводятся колонки с форматированным временем создано/доставлено
+            // ИСПРАВЛЕНО: Безопасный вывод formatTime(o.delivered_at). Если не доставлено, то выведет прочерк '-'
             const html = orders.map(o => `
                 <tr>
                     <td>#${o.id}</td>
