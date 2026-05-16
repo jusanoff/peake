@@ -2,295 +2,70 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit — Driver Panel (With Scanner)</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peake Fruit — Driver Terminal (Adaptive OCR)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
     <style>
         :root {
-            --bg: #f1f5f9;
+            --bg: #f8fafc;
             --card-bg: #ffffff;
-            --text: #1e293b;
+            --text: #0f172a;
             --text-muted: #64748b;
             --accent: #0288d1;
-            --border: #e2e8f0;
-            --status-new: #ef6c00;
-            --status-done: #2e7d32;
+            --border: #cbd5e1;
+            --status-done: #16a34a;
         }
 
-        body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 10px;
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 8px;
+            -webkit-text-size-adjust: 100%;
         }
 
-        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 12px 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
-        .header-title h1 { margin: 0; font-size: 18px; color: var(--accent); font-weight: 700; }
-        .driver-badge { background: #e0f2fe; color: #0369a1; padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 13px; }
-        .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-        .dashboard-card { background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid var(--border); }
-        .table-responsive { overflow-x: auto; margin-top: 10px; border: 1px solid var(--border); border-radius: 6px; }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
-        th { background: #f8f9fa; color: var(--text-muted); padding: 10px; text-align: left; font-size: 12px; border-bottom: 2px solid var(--border); }
-        td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #edf2f7; }
-
-        /* Стили сканера */
-        #scanner-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 10000;
+        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+        
+        /* Адаптивная шапка */
+        .header { 
+            display: flex; 
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            box-sizing: border-box;
+            gap: 10px;
+            background: var(--card-bg); 
+            padding: 12px; 
+            border-radius: 8px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
         }
-        #reader { width: 100%; max-width: 450px; background: #fff; border-radius: 8px; overflow: hidden; }
-        .scanner-ui { width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-        .btn-close-scanner { background: #e53e3e; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .header-title h1 { margin: 0; font-size: 18px; color: var(--accent); font-weight: 700; text-align: center; }
+        .header-right { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; }
         
-        /* Кнопки в таблице */
-        .btn-action { padding: 6px 12px; border: none; border-radius: 4px; font-weight: 700; font-size: 12px; cursor: pointer; color: white; white-space: nowrap; }
-        .btn-accept { background: #0288d1; }
-        .btn-scan { background: #2e7d32; }
+        .driver-badge { background: #e0f2fe; color: #0369a1; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 13px; flex-grow: 1; text-align: center; }
+        .btn-logout { background: #f1f5f9; color: #e11d48; border: 1px solid #ffe4e6; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
 
-        .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-        .status-badge.new { background: #ffe0b2; color: #e65100; }
-        .status-badge.accepted { background: #e0f2fe; color: #0369a1; }
-    </style>
-</head>
-<body>
+        /* Карточка панели управления */
+        .dashboard-card { background: var(--card-bg); padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #edf2f7; }
+        .dashboard-card h3 { margin-top: 0; margin-bottom: 10px; font-size: 15px; color: #334155; }
 
-<div class="container">
-    <div class="header">
-        <div class="header-title"><h1>Peake Fruit — Driver Terminal</h1></div>
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <div class="driver-badge" id="driver_name_display">Driver: Loading...</div>
-            <button class="btn-logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
-        </div>
-    </div>
+        /* Горизонтальный скролл таблицы на мелких экранах */
+        .table-responsive { overflow-x: auto; margin-top: 5px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; }
+        table { width: 100%; border-collapse: collapse; min-width: 850px; }
+        th { background: #f8fafc; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 14px 10px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
 
-    <div class="dashboard-card">
-        <h3 style="margin-top:0; font-size:16px;">Active Line Pallet Requests</h3>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Line Name</th>
-                        <th>Ordered At</th>
-                        <th>Store</th>
-                        <th>Fruit Description (Variety)</th>
-                        <th>Grower</th>
-                        <th>Consignment</th>
-                        <th>Size</th>
-                        <th>Qty</th>
-                        <th>Driver Assigned</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="driver_orders_body">
-                    <tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Loading requests...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<div id="scanner-modal">
-    <h3 id="scanner-title" style="color: white; margin-top: 0; text-align: center;">Scan Consignment Barcode</h3>
-    <div id="reader"></div>
-    <div class="scanner-ui">
-        <button class="btn-close-scanner" onclick="stopScanner()">❌ CANCEL SCANNING</button>
-    </div>
-</div>
-
-<script>
-    const currentUser = localStorage.getItem('user');
-    const currentRole = localStorage.getItem('role');
-
-    if (!currentUser || currentRole !== 'driver') {
-        alert("Access denied!");
-        localStorage.clear();
-        window.location.href = 'login.html';
-    }
-
-    document.getElementById('driver_name_display').innerText = 'Driver: ' + currentUser;
-
-    const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
-    const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
-    const k3 = 'LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
-
-    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
-    const supabaseKey = k1 + k2 + k3;
-    const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
-
-    let cachedDriverFullName = currentUser;
-    let currentScanningOrder = null; // Храним заказ, который проверяем прямо сейчас
-    let html5QrcodeScanner = null;
-
-    function formatTime(isoString) {
-        if (!isoString) return '-';
-        const date = new Date(isoString);
-        return isNaN(date.getTime()) ? '-' : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-
-    async function fetchDriverFullName() {
-        try {
-            const { data, error } = await clientDb.from('users_table').select('name').eq('u', currentUser).single();
-            if (error) throw error;
-            if (data && data.name) {
-                cachedDriverFullName = data.name;
-                document.getElementById('driver_name_display').innerText = 'Driver: ' + data.name;
-            }
-        } catch (err) { console.error(err); }
-        loadAllOrders();
-    }
-
-    async function loadAllOrders() {
-        try {
-            const { data: orders, error } = await clientDb
-                .from('orders')
-                .select('*')
-                .not('status', 'eq', 'delivered')
-                .order('id', { ascending: false });
-
-            if (error) throw error;
-
-            if (!orders || orders.length === 0) {
-                document.getElementById('driver_orders_body').innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--text-muted);">No active orders.</td></tr>`;
-                return;
-            }
-
-            const html = orders.map(o => {
-                let actionBtn = '';
-                if (o.status === 'new') {
-                    actionBtn = `<button class="btn-action btn-accept" onclick="acceptOrder(${o.id})">✅ Accept</button>`;
-                } else if (o.status === 'accepted' && o.driver_name === cachedDriverFullName) {
-                    // Передаем весь объект заказа в функцию сканирования в виде JSON-строки
-                    const stringified = JSON.stringify(o).replace(/"/g, '&quot;');
-                    actionBtn = `<button class="btn-action btn-scan" onclick="startScanner(${stringified})">📷 Scan & Verify</button>`;
-                } else if (o.status === 'accepted') {
-                    actionBtn = `<span style="color:var(--text-muted); font-size:11px;">Locked</span>`;
-                }
-
-                return `
-                    <tr>
-                        <td>#${o.id}</td>
-                        <td><strong>${o.line || '-'}</strong></td>
-                        <td><span style="color:#4a5568;">⏱ ${formatTime(o.created_at)}</span></td>
-                        <td><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
-                        <td><strong>${o.description || '-'}</strong></td>
-                        <td>${o.grower || '-'}</td>
-                        <td><span style="font-family:monospace; background:#f1f3f5; padding:2px 6px; border-radius:3px; font-weight:600;">${o.consignment || '-'}</span></td>
-                        <td><strong>${o.size || '-'}</strong></td>
-                        <td><strong style="color:#0288d1;">${o.qty || '1'}</strong></td>
-                        <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span class="status-badge new">Free</span>'}</td>
-                        <td>${actionBtn}</td>
-                    </tr>
-                `;
-            }).join('');
-
-            document.getElementById('driver_orders_body').innerHTML = html;
-        } catch (e) { console.error(e); }
-    }
-
-    async function acceptOrder(orderId) {
-        try {
-            const { error } = await clientDb.from('orders').update({ status: 'accepted', driver_name: cachedDriverFullName }).eq('id', orderId);
-            if (error) throw error;
-            loadAllOrders();
-        } catch (e) { alert(e.message); }
-    }
-
-    // Включение камеры для сканирования
-    function startScanner(orderObj) {
-        currentScanningOrder = orderObj;
-        document.getElementById('scanner-modal').style.display = 'flex';
-        document.getElementById('scanner-title').innerText = `Scan Pallet Note for Order #${orderObj.id}\n(Looking for Cons: ${orderObj.consignment})`;
-
-        html5QrcodeScanner = new Html5Qrcode("reader");
-        html5QrcodeScanner.start(
-            { facingMode: "environment" }, // Использовать заднюю камеру смартфона
-            { fps: 10, qrbox: { width: 250, height: 150 } },
-            onScanSuccess,
-            onScanFailure
-        ).catch(err => {
-            alert("Camera access error: " + err);
-            stopScanner();
-        });
-    }
-
-    function stopScanner() {
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.stop().then(() => {
-                document.getElementById('scanner-modal').style.display = 'none';
-                currentScanningOrder = null;
-            }).catch(err => console.error(err));
-        } else {
-            document.getElementById('scanner-modal').style.display = 'none';
+        /* Полностью адаптивное окно OCR сканера */
+        #scanner-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box;
         }
-    }
-
-    // Функция, которая срабатывает, когда камера УСПЕШНО прочитала штрихкод
-    async function onScanSuccess(decodedText, decodedResult) {
-        // Получаем чистый номер из штрихкода (убираем пробелы)
-        const scannedConsignment = decodedText.trim();
+        .scanner-container { width: 100%; max-width: 440px; background: #fff; border-radius: 12px; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); }
+        .scanner-container h3 { margin: 0; text-align: center; color: #1e293b; font-size: 15px; line-height: 1.4; }
         
-        // Берем эталонные значения из заказа линии
-        const expectedConsignment = String(currentScanningOrder.consignment).trim();
-        const expectedDescription = String(currentScanningOrder.description).toLowerCase(); // Сорт (Variety)
-        const expectedSize = String(currentScanningOrder.size).toLowerCase().trim(); // Размер (Size)
-
-        // Прекращаем сканирование, чтобы не пищало повторно во время проверки
-        if (html5QrcodeScanner) {
-            await html5QrcodeScanner.stop();
-        }
-
-        // КРИТИЧЕСКАЯ ТРОЙНАЯ ПРОВЕРКА:
-        // 1. Проверяем Consignment (Штрихкод)
-        if (scannedConsignment !== expectedConsignment) {
-            alert(`🛑 ОШИБКА КОНСИГНАЦИИ!\nВы отсканировали: ${scannedConsignment}\nА линия просила: ${expectedConsignment}\n\nЭТОТ ПАЛЛЕТ БРАТЬ НЕЛЬЗЯ!`);
-            document.getElementById('scanner-modal').style.display = 'none';
-            loadAllOrders();
-            return;
-        }
-
-        // Если консигнация совпала, проверяем сорт и размер, которые сохранены в заказе
-        // (Они автоматически заполнились из Stock Sheet, когда линия нажимала кнопку заказа)
-        alert(`🎉 Штрихкод совпал! (Consignment: ${scannedConsignment})\nПроверяем характеристики фрукта...\n\nСорт: ${currentScanningOrder.description}\nРазмер: ${currentScanningOrder.size}`);
-
-        try {
-            // Если всё сошлось, закрываем окно сканера и закрываем заказ в Supabase
-            const { error } = await clientDb
-                .from('orders')
-                .update({
-                    status: 'delivered',
-                    delivered_at: new Date().toISOString()
-                })
-                .eq('id', currentScanningOrder.id);
-
-            if (error) throw error;
-
-            alert(`✅ ПАЛЛЕТА УСПЕШНО ВЕРИФИЦИРОВАНА!\nЗаказ #${currentScanningOrder.id} доставлен на линию.`);
-        } catch (e) {
-            alert("Ошибка сохранения статуса доставки: " + e.message);
-        }
-
-        document.getElementById('scanner-modal').style.display = 'none';
-        loadAllOrders();
-    }
-
-    function onScanFailure(error) {
-        // Не выводим лог ошибок сканирования на экран, чтобы не спамить водителю во время наведения камеры
-    }
-
-    fetchDriverFullName();
-</script>
-</body>
-</html>
+        /* Контейнер видео с рамкой прицела */
+        .video-wrapper { position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: #000; aspect-ratio: 4/3; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        
+        .status-text { font-size: 13px; font-weight: 700; text-align: center; color: #b45309; min-height: 38px; line-height: 1.4; padding: 4px; background: #fef3c7; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+        
+        /* Круп
