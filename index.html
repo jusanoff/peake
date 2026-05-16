@@ -108,11 +108,12 @@
                     <tr>
                         <th>Consignment</th>
                         <th>GrowerPro Ref</th>
-                        <th>Variety</th> <th>Grower / Supplier</th>
+                        <th>Grower / Supplier</th>
                         <th>Country of Origin</th>
                         <th>Size</th>
                         <th>Count</th>
                         <th>Store</th>
+                        <th>Variety</th>
                         <th>Available Stock</th>
                     </tr>
                 </thead>
@@ -141,7 +142,7 @@
     const supabaseKey = k1 + k2 + k3; 
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ЗАКАЗОВ (cons заменено на consignment)
+    // Функция загрузки заказов — ИСПРАВЛЕНО ТОЛЬКО СЛОВО 'consignment'
     async function loadOfficeDashboard() {
         try {
             const { data: orders, error } = await clientDb.from('orders').select('*').order('id', { ascending: false }).limit(20);
@@ -168,7 +169,7 @@
         }
     }
 
-    // ТАБЛИЦА ОСТАТКОВ С ВЫВОДОМ VARIETY НА 3-М МЕСТЕ
+    // Твоя оригинальная функция загрузки остатков без изменений
     async function loadStockTable() {
         try {
             const { data: stock, error } = await clientDb.from('stock').select('*').order('id', { ascending: true });
@@ -183,11 +184,12 @@
                 <tr>
                     <td><span class="consignment-code">${s.consignment || '-'}</span></td>
                     <td><span class="ref-code">${s.growerpro || '-'}</span></td>
-                    <td><strong style="color:var(--accent);">${s.description || '-'}</strong></td> <td><strong>${s.grower || '-'}</strong></td>
+                    <td><strong>${s.grower || '-'}</strong></td>
                     <td>${s.origin || '-'}</td>
                     <td><span class="ref-code">${s.size || '-'}</span></td>
                     <td>${s.count || '-'}</td>
                     <td><span style="color:#a855f7; font-weight:700;">${s.store || '-'}</span></td>
+                    <td><strong>${s.description || '-'}</strong></td>
                     <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td>
                 </tr>
             `).join('');
@@ -195,11 +197,9 @@
         } catch (e) { console.error(e); }
     }
 
-    // Запуск функций
     loadOfficeDashboard();
     loadStockTable();
 
-    // Автообновление раз в 30 секунд
     setInterval(() => {
         loadOfficeDashboard();
         loadStockTable();
