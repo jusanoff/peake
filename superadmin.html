@@ -12,9 +12,9 @@
         @media (max-width: 800px) { .grid-top { grid-template-columns: 1fr; } }
         .card{background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); height: fit-content;}
         h2{margin-top:0; color:var(--s); border-bottom:2px solid #eee; padding-bottom:10px; font-size: 18px;}
-        .form-box{background:#f9f9f9; padding:12px; border-radius:10px; margin-bottom:15px; border:1px solid #eee; display: flex; gap: 10px;}
+        .form-box{background:#f9f9f9; padding:12px; border-radius:10px; margin-bottom:15px; border:1px solid #eee; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;}
         input, select, button{padding:12px; border-radius:6px; border:1px solid #ccc; font-size:14px; box-sizing:border-box}
-        .form-box input { flex-grow: 1; }
+        .form-box input { flex-grow: 1; min-width: 150px; }
         table{width:100%; border-collapse:collapse}
         th, td{padding:10px; border-bottom:1px solid #eee; text-align:left}
         th{background:#f4f4f4; font-size:12px; color:#666; text-transform:uppercase}
@@ -77,15 +77,20 @@
     <div class="grid-bottom">
         <div class="card">
             <h2 id="title_users">УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (ДОСТУП)</h2>
-            <div class="form-box" style="display: block;">
-                <input type="text" id="new_u" placeholder="Логин" style="width:25%; margin-right:5px;">
-                <input type="text" id="new_p" placeholder="Пароль" style="width:25%; margin-right:5px;">
-                <select id="new_t" style="padding:12px; margin-right:5px;">
+            <div class="form-box">
+                <select id="new_t" onchange="toggleTypeSelection()">
                     <option value="line">Line (Линия)</option>
                     <option value="office">Office (Офис)</option>
                     <option value="driver">Driver (Водитель)</option>
                     <option value="admin">Admin (Администратор)</option>
                 </select>
+
+                <select id="select_line_name" style="display: block; min-width: 150px;"></select>
+
+                <input type="text" id="new_u" placeholder="Логин" style="display: none;">
+                
+                <input type="text" id="new_p" placeholder="Пароль">
+                
                 <button class="btn-add" onclick="addUser()" id="btn_add_u">➕ ДОБАВИТЬ</button>
             </div>
             <table>
@@ -117,6 +122,7 @@
         lt: { t_users:"VARTOTOJŲ VALDYMAS", t_lines:"GAMYBOS LINIJOS", t_drivers:"VAIRUOTOJAI", btn_add:"PRIDĖTI", th_u:"Vartotojas", th_p:"Slaptažodis", th_t:"Tipas", th_a:"Veiksmas", conf_u:"Ištrinti vartotoją?", conf_l:"Ištrinti šią liniją?", conf_d:"Ištrinti vairuotoją?", back:"⬅ Atgal į Prisijungimą", u_ph:"Prisijungimas", p_ph:"Slaptažodis", l_ph:"Linijos pavadinimas", dr_ph:"Vairuotojo vardas", th_ln:"Linijos pavadinimas", th_dr:"Vairuotojo vardas" }
     };
     let curL = localStorage.getItem('dash_lang') || 'ru';
+    let globalLines = []; // Хранилище для линий
 
     function setLang(l) { 
         curL = l; 
@@ -147,6 +153,31 @@
         document.getElementById('new_driver_name').placeholder = t.dr_ph;
     }
 
+    // Переключение инпутов в зависимости от выбранного типа
+    function toggleTypeSelection() {
+        const type = document.getElementById('new_t').value;
+        const lineSelect = document.getElementById('select_line_name');
+        const loginInput = document.getElementById('new_u');
+
+        if (type === 'line') {
+            lineSelect.style.display = 'block';
+            loginInput.style.display = 'none';
+        } else {
+            lineSelect.style.display = 'none';
+            loginInput.style.display = 'block';
+        }
+    }
+
+    // Обновление селекта линий на основе загруженных данных
+    function renderLinesDropdown() {
+        const lineSelect = document.getElementById('select_line_name');
+        if (globalLines.length === 0) {
+            lineSelect.innerHTML = '<option value="">-- Нет линий --</option>';
+            return;
+        }
+        lineSelect.innerHTML = globalLines.map(l => `<option value="${l.line_name}">${l.line_name}</option>`).join('');
+    }
+
     // --- ПОЛЬЗОВАТЕЛИ ---
     async function loadUsers() {
         try {
@@ -162,67 +193,67 @@
         } catch(e) { console.error(e); }
     }
 
-    // --- ОБНОВЛЕННОЕ ДОБАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯ ---
-async function addUser() {
-    const u = document.getElementById('new_u').value.trim();
-    const p = document.getElementById('new_p').value.trim();
-    const t = document.getElementById('new_t').value;
-    
-    if(!u || !p) return alert(curL === 'ru' ? "Заполните все поля!" : "Fill all fields!");
+    async function addUser() {
+        const t = document.getElementById('new_t').value;
+        const p = document.getElementById('new_p').value.trim();
+        let u = '';
 
-    // 1. Добавляем в общую таблицу пользователей (для логина)
-    const { error: userError } = await _db.from('users_table').insert([{ u, p, t }]);
-    
-    if (userError) {
-        alert("Ошибка создания пользователя: " + userError.message);
-        return;
-    }
+        // Если это линия — берем значение из выпадающего списка, иначе — из текстового инпута
+        if (t === 'line') {
+            u = document.getElementById('select_line_name').value;
+        } else {
+            u = document.getElementById('new_u').value.trim();
+        }
+        
+        if(!u || !p) return alert(curL === 'ru' ? "Заполните все поля!" : "Fill all fields!");
 
-    // 2. АВТОМАТИКА: Если это водитель, сразу добавляем его имя в таблицу водителей drivers_table
-    if (t === 'driver') {
-        const { error: driverError } = await _db.from('drivers_table').insert([{ driver_name: u }]);
-        if (driverError) {
-            console.error("Не удалось автоматически добавить в список водителей:", driverError.message);
+        const { error } = await _db.from('users_table').insert([{ u, p, t }]);
+        if (error) {
+            alert(error.message);
+        } else {
+            document.getElementById('new_u').value = '';
+            document.getElementById('new_p').value = '';
+            loadUsers();
+            
+            // Если создавали водителя, обновим и список водителей
+            if (t === 'driver') {
+                await _db.from('drivers_table').insert([{ driver_name: u }]);
+                loadDrivers();
+            }
         }
     }
 
-    // Очищаем поля и обновляем таблицы на экране
-    document.getElementById('new_u').value = '';
-    document.getElementById('new_p').value = '';
-    loadUsers();
-    loadDrivers(); // Обновляем список водителей на экране
-}
-
-// --- ОБНОВЛЕННОЕ УДАЛЕНИЕ ПОЛЬЗОВАТЕЛЯ ---
-async function delUser(id) {
-    if(!confirm(lang[curL].conf_u)) return;
-
-    // Сначала узнаем имя пользователя перед удалением, чтобы почистить таблицу водителей
-    const { data: userToDelete } = await _db.from('users_table').select('u, t').eq('id', id).single();
-
-    // Удаляем из таблицы пользователей
-    const { error: deleteError } = await _db.from('users_table').delete().eq('id', id);
-    
-    if (deleteError) {
-        alert(deleteError.message);
-        return;
+    async function changePass(id, newP) {
+        const { error } = await _db.from('users_table').update({ p: newP }).eq('id', id);
+        if (error) alert(error.message);
+        loadUsers();
     }
 
-    // Если это был водитель, удаляем его и из списка водителей тоже
-    if (userToDelete && userToDelete.t === 'driver') {
-        await _db.from('drivers_table').delete().eq('driver_name', userToDelete.u);
+    async function delUser(id) {
+        if(!confirm(lang[curL].conf_u)) return;
+        
+        const { data: userToDelete } = await _db.from('users_table').select('u, t').eq('id', id).single();
+        const { error } = await _db.from('users_table').delete().eq('id', id);
+        
+        if (error) alert(error.message); 
+        else {
+            if (userToDelete && userToDelete.t === 'driver') {
+                await _db.from('drivers_table').delete().eq('driver_name', userToDelete.u);
+                loadDrivers();
+            }
+            loadUsers();
+        }
     }
-
-    loadUsers();
-    loadDrivers();
-}
 
     // --- ЛИНИИ ---
     async function loadLines() {
         try {
             const { data: lines, error } = await _db.from('lines_table').select('*').order('line_name', { ascending: true });
             if (error) throw error;
-            document.getElementById('lines_list').innerHTML = lines.map((l) => `
+            globalLines = lines || [];
+            renderLinesDropdown(); // Обновляем селект выбора при создании пользователя
+            
+            document.getElementById('lines_list').innerHTML = globalLines.map((l) => `
                 <tr>
                     <td><b>${l.line_name}</b></td>
                     <td><button class="btn-del" onclick="delLine(${l.id})">✖</button></td>
@@ -273,6 +304,7 @@ async function delUser(id) {
     loadUsers();
     loadLines();
     loadDrivers();
+    toggleTypeSelection(); // Инициализация отображения полей
 </script>
 </body>
 </html>
