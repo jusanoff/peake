@@ -303,11 +303,11 @@
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
     let stockItemsGlobal = [];
+    let cachedLineFullName = currentUser; // Глобальная переменная для хранения полного имени
 
     function formatTime(isoString) {
         if (!isoString) return '-';
         const date = new Date(isoString);
-        // Проверка на корректность даты, чтобы избежать Invalid Date на фронтенде
         if (isNaN(date.getTime())) return '-';
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
@@ -323,6 +323,7 @@
             if (error) throw error;
 
             if (data && data.name) {
+                cachedLineFullName = data.name; // Запоминаем полное имя
                 document.getElementById('line_name_display').innerText = 'Line: ' + data.name;
             } else {
                 document.getElementById('line_name_display').innerText = 'Line: ' + currentUser;
@@ -331,6 +332,8 @@
             console.error("Error fetching full name:", err);
             document.getElementById('line_name_display').innerText = 'Line: ' + currentUser;
         }
+        // Загружаем список только после определения имени, чтобы фильтрация истории работала корректно
+        loadActiveRequests();
     }
 
     async function loadStockDropdown() {
@@ -381,8 +384,9 @@
         const isUrgent = document.getElementById('inp_urgent').checked;
 
         try {
+            // ИСПРАВЛЕНО: Теперь в таблицу orders отправляется полное имя cachedLineFullName вместо логина currentUser
             const { error } = await clientDb.from('orders').insert([{
-                line: currentUser, 
+                line: cachedLineFullName, 
                 description: isUrgent ? '⚠️ ' + desc : desc,
                 consignment: cons,
                 store: store,
@@ -418,10 +422,11 @@
 
     async function loadActiveRequests() {
         try {
+            // ИСПРАВЛЕНО: Фильтруем историю заказов по полному имени cachedLineFullName, чтобы видеть свои отправленные заказы
             const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
-                .eq('line', currentUser)
+                .eq('line', cachedLineFullName)
                 .order('id', { ascending: false });
 
             if (error) throw error;
@@ -431,7 +436,6 @@
                 return;
             }
 
-            // ИСПРАВЛЕНО: Безопасный вывод formatTime(o.delivered_at). Если не доставлено, то выведет прочерк '-'
             const html = orders.map(o => `
                 <tr>
                     <td>#${o.id}</td>
@@ -454,7 +458,6 @@
 
     fetchLineFullName();
     loadStockDropdown();
-    loadActiveRequests();
 </script>
 </body>
 </html>
