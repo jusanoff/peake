@@ -1,31 +1,105 @@
-document.getElementById('loginForm').onsubmit = async (e) => {
-    e.preventDefault();
-    
-    // .toLowerCase() превращает любой ввод (например, "AdMiN") в нижний регистр ("admin")
-    const usernameInput = document.getElementById('username').value.trim().toLowerCase();
-    const passwordInput = document.getElementById('password').value.trim();
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход в систему - Peake Fruit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --p:#d32f2f; --s:#1a1a2e; --bg:#f0f2f5; }
+        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 100%; max-width: 360px; box-sizing: border-box; }
+        h2 { margin-top: 0; color: var(--s); text-align: center; margin-bottom: 20px; }
+        input, button { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; box-sizing: border-box; }
+        button { background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #b71c1c; }
+        .lang-select { text-align: center; margin-bottom: 15px; }
+        .lang-select button { width: auto; display: inline-block; padding: 5px 10px; margin: 0 3px; background: #eee; color: #333; font-size: 12px; }
+    </style>
+</head>
+<body>
 
-    // Ищем пользователя в базе данных
-    const { data, error } = await _db
-        .from('users_table')
-        .select('*')
-        .eq('u', usernameInput) // Благодаря citext в базе, поиск сработает идеально
-        .single();
+    <div class="login-card">
+        <div class="lang-select">
+            <button onclick="changeLang('ru')">RU</button>
+            <button onclick="changeLang('en')">EN</button>
+            <button onclick="changeLang('lt')">LT</button>
+        </div>
+        
+        <h2 id="log_title">Авторизация</h2>
+        
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Логин" required autocomplete="username">
+            <input type="password" id="password" placeholder="Пароль" required autocomplete="current-password">
+            <button type="submit" id="btn_enter">ВОЙТИ</button>
+        </form>
+    </div>
 
-    if (error || !data || data.p !== passwordInput) {
-        alert(lang[curL].err);
-        return;
+<script>
+    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+    const _db = supabase.createClient(supabaseUrl, supabaseKey);
+
+    const lang = {
+        ru: { title: "Авторизация", u_ph: "Логин", p_ph: "Пароль", btn: "ВОЙТИ", err: "Неверный логин или пароль!" },
+        en: { title: "Login", u_ph: "Username", p_ph: "Password", btn: "LOG IN", err: "Wrong username or password!" },
+        lt: { title: "Prisijungimas", u_ph: "Prisijungimo vardas", p_ph: "Slaptažodis", btn: "PRISIJUNGTI", err: "Neteisingas vardas arba slaptažodis!" }
+    };
+
+    let curL = localStorage.getItem('dash_lang') || 'ru';
+
+    function changeLang(l) {
+        curL = l;
+        localStorage.setItem('dash_lang', l);
+        updateUI();
     }
 
-    // Сохраняем данные в память браузера для остальных экранов
-    localStorage.setItem('user', data.u);       // Логин
-    localStorage.setItem('role', data.t);       // Роль (line, driver, office, admin)
-    localStorage.setItem('name', data.name || data.u); // Отображаемое имя (Иван / Amazon)
-    localStorage.setItem('lang', curL);         // Язык интерфейса
+    function updateUI() {
+        const t = lang[curL];
+        document.getElementById('log_title').innerText = t.title;
+        document.getElementById('username').placeholder = t.u_ph;
+        document.getElementById('password').placeholder = t.p_ph;
+        document.getElementById('btn_enter').innerText = t.btn;
+    }
 
-    // Перенаправляем на нужный экран в зависимости от роли
-    if (data.t === 'admin') window.location.href = 'superadmin.html';
-    else if (data.t === 'office') window.location.href = 'admin.html';
-    else if (data.t === 'driver') window.location.href = 'driver.html';
-    else if (data.t === 'line') window.location.href = 'index.html';
-};
+    document.getElementById('loginForm').onsubmit = async (e) => {
+        e.preventDefault();
+        
+        // Убираем пробелы и переводим в нижний регистр для независимости от регистра
+        const usernameInput = document.getElementById('username').value.trim().toLowerCase();
+        const passwordInput = document.getElementById('password').value.trim();
+
+        try {
+            const { data, error } = await _db
+                .from('users_table')
+                .select('*')
+                .eq('u', usernameInput)
+                .single();
+
+            if (error || !data || data.p !== passwordInput) {
+                alert(lang[curL]?.err || "Error / Ошибка");
+                return;
+            }
+
+            // Запись сессии в браузер
+            localStorage.setItem('user', data.u);               // Логин (строчные буквы)
+            localStorage.setItem('role', data.t);               // Роль (line, driver, office, admin)
+            localStorage.setItem('name', data.name || data.u);   // КРАСИВОЕ ИМЯ (Иван / Amazon)
+            localStorage.setItem('dash_lang', curL);            // Текущий язык
+
+            // Перенаправление по ролям
+            if (data.t === 'admin') window.location.href = 'superadmin.html';
+            else if (data.t === 'office') window.location.href = 'admin.html';
+            else if (data.t === 'driver') window.location.href = 'driver.html';
+            else if (data.t === 'line') window.location.href = 'index.html';
+
+        } catch (err) {
+            console.error(err);
+            alert("Connection error / Ошибка соединения");
+        }
+    };
+
+    updateUI();
+</script>
+</body>
+</html>
