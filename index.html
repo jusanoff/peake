@@ -48,7 +48,7 @@
 
         .table-responsive {
             overflow-x: auto;
-            max-height: 600px; 
+            max-height: 400px; 
             border: 1px solid var(--border);
             border-radius: 4px;
         }
@@ -72,6 +72,32 @@
     <div class="header">
         <h1>Peake Fruit — Production Live View</h1>
         <button class="btn-logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
+    </div>
+
+    <div class="dashboard-card">
+        <h2>Live Production Orders Pipeline</h2>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Line Name</th>
+                        <th>Item Description</th>
+                        <th>Grower / Supplier</th>
+                        <th>Consignment</th>
+                        <th>Origin</th>
+                        <th>Size</th>
+                        <th>Available</th>
+                        <th>Store</th>
+                        <th>Qty</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="office_orders_body">
+                    <tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Loading live orders...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="dashboard-card">
@@ -99,7 +125,6 @@
 </div>
 
 <script>
-    // Проверка авторизации
     const currentUser = localStorage.getItem('user');
     const currentRole = localStorage.getItem('role');
     
@@ -108,7 +133,6 @@
         window.location.href = 'login.html';
     }
 
-    // Ключи доступа к Supabase
     const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
     const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
     const k3 = 'LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
@@ -117,7 +141,34 @@
     const supabaseKey = k1 + k2 + k3; 
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Загрузка таблицы остатков
+    // ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ЗАКАЗОВ (cons заменено на consignment)
+    async function loadOfficeDashboard() {
+        try {
+            const { data: orders, error } = await clientDb.from('orders').select('*').order('id', { ascending: false }).limit(20);
+            if (error) throw error;
+            
+            const html = orders.map(o => `
+                <tr>
+                    <td>#${o.id}</td>
+                    <td><strong>${o.line || '-'}</strong></td>
+                    <td>${o.description || '-'}</td>
+                    <td>${o.grower || '-'}</td>
+                    <td><span class="consignment-code">${o.consignment || '-'}</span></td> <td>${o.origin || '-'}</td>
+                    <td>${o.size || '-'}</td>
+                    <td>${o.available || '-'}</td>
+                    <td>${o.store || '-'}</td>
+                    <td><strong>${o.qty || '-'}</strong></td>
+                    <td><span class="status-badge new">${o.status || 'new'}</span></td>
+                </tr>
+            `).join('');
+            document.getElementById('office_orders_body').innerHTML = html;
+        } catch (e) { 
+            console.error(e); 
+            document.getElementById('office_orders_body').innerHTML = `<tr><td colspan="11" style="text-align:center; color:#ef4444;">Error: ${e.message}</td></tr>`;
+        }
+    }
+
+    // ТАБЛИЦА ОСТАТКОВ С ВЫВОДОМ VARIETY НА 3-М МЕСТЕ
     async function loadStockTable() {
         try {
             const { data: stock, error } = await clientDb.from('stock').select('*').order('id', { ascending: true });
@@ -128,7 +179,6 @@
                 return;
             }
 
-            // Рендеринг строк с новым порядком (Variety/description идет третьим)
             const html = stock.map(s => `
                 <tr>
                     <td><span class="consignment-code">${s.consignment || '-'}</span></td>
@@ -142,17 +192,18 @@
                 </tr>
             `).join('');
             document.getElementById('stock_base_body').innerHTML = html;
-        } catch (e) { 
-            console.error(e); 
-            document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="9" style="text-align:center; color:#ef4444;">Error loading data: ${e.message}</td></tr>`;
-        }
+        } catch (e) { console.error(e); }
     }
 
-    // Запуск процесса при загрузке страницы
+    // Запуск функций
+    loadOfficeDashboard();
     loadStockTable();
 
-    // Автообновление таблицы каждые 30 секунд, чтобы экран всегда был актуальным
-    setInterval(loadStockTable, 30000);
+    // Автообновление раз в 30 секунд
+    setInterval(() => {
+        loadOfficeDashboard();
+        loadStockTable();
+    }, 30000);
 </script>
 </body>
 </html>
