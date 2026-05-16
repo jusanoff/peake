@@ -301,7 +301,6 @@
 
     let stockItemsGlobal = [];
 
-    // ЗАПРОС ИЗМЕНЕН НА КОЛОНКУ name
     async function fetchLineFullName() {
         try {
             const { data, error } = await clientDb
@@ -370,11 +369,7 @@
         const qty = parseInt(document.getElementById('inp_qty').value) || 1;
         const isUrgent = document.getElementById('inp_urgent').checked;
 
-        if (!desc || !cons || !store) {
-            alert("Please fill Description, Consignment and Store fields!");
-            return;
-        }
-
+        // ИСПРАВЛЕНО: Убрана жесткая проверка полей. Теперь отправка разрешена при пустых полях!
         try {
             const { error } = await clientDb.from('orders').insert([{
                 line: currentUser, 
