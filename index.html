@@ -317,47 +317,39 @@
 
     async function fetchLineFullName() {
     try {
-        // ИСПРАВЛЕНО: Изменили 'user_table' на точное имя из базы 'users_table'
+        // ИСПРАВЛЕНО: Заменили 'user_table' на точное имя 'users_table' из Supabase
         const { data, error } = await clientDb
             .from('users_table')
-            .select('name')
-            .eq('u', currentUser)
-            .single();
+            .select('*')
+            .eq('u', currentUser);
 
-        if (error) throw error;
+        if (error) {
+            console.error("Ошибка Supabase:", error.message);
+            return;
+        }
 
-        if (data && data.name) {
-            cachedLineFullName = data.name; 
-            // Теперь имя (Nobac или Hand Line1) мгновенно отобразится в синей плашке!
-            document.getElementById('line_name_display').innerText = 'Line: ' + data.name;
+        if (data && data.length > 0) {
+            const userRow = data[0];
+            // Берем красивое имя из колонки 'name'
+            const realName = userRow.name;
+
+            if (realName) {
+                cachedLineFullName = realName; 
+                
+                // Находим плашку и принудительно меняем текст hl1 -> Hand Line1 или Nob -> Nobac
+                const badge = document.getElementById('line_name_display');
+                if (badge) {
+                    badge.innerText = 'Line: ' + realName;
+                }
+            }
         }
     } catch (err) {
-        console.error("Error fetching full name:", err);
+        console.error("Критическая ошибка в функции fetchLineFullName:", err);
     }
     
-    // Загружаем историю активных заказов
+    // Запускаем историю активных заказов
     loadActiveRequests();
 }
-    async function loadStockDropdown() {
-        try {
-            const { data: stock, error } = await clientDb.from('stock').select('*');
-            if (error) throw error;
-
-            stockItemsGlobal = stock || [];
-            const selector = document.getElementById('stock_selector');
-
-            stock.forEach(item => {
-                if (parseInt(item.available) > 0) {
-                    const opt = document.createElement('option');
-                    opt.value = item.id;
-                    opt.txt = `[Store ${item.store || '?'}] ${item.description || 'Fruit'} - Cons: ${item.consignment} (Avail: ${item.available})`;
-                    opt.innerText = opt.txt;
-                    selector.appendChild(opt);
-                }
-            });
-        } catch (e) { console.error(e); }
-    }
-
     function handleStockSelect() {
         const selId = document.getElementById('stock_selector').value;
         if (!selId) return;
