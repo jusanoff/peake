@@ -179,20 +179,21 @@
 </div>
 
 <script>
-    // Инициализация базы данных
+    // Подключение к твоей базе Supabase
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLAJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
     let lastKnownMaxId = 0; 
     const driversList = ["Driver 1", "Driver 2", "Driver 3", "Forklift 1", "Forklift 2"];
 
+    // Функция умного разбора Excel (.xlsx) и загрузки в Supabase
     async function uploadMorningExcel() {
         const fileInput = document.getElementById('excel_file');
         const statusDiv = document.getElementById('upload_status');
         
         if (!fileInput.files[0]) {
-            alert("Please select an Excel file first!");
+            alert("Please select an Excel (.xlsx) file first!");
             return;
         }
 
@@ -208,16 +209,18 @@
                     const arrayBuffer = e.target.result;
                     const data = new Uint8Array(arrayBuffer);
                     
-                    // Читаем только значения ячеек (без тяжелых стилей и формул, чтобы исключить баги библиотек)
+                    // Читаем только сырые значения ячеек (без тяжелой графики/стилей)
                     const workbook = XLSX.read(data, { type: 'array', raw: true });
                     
+                    // Ищем лист Daily Stock Sheet или берем самый первый в книге
                     const sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes("sheet") || n.toLowerCase().includes("stock")) || workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[sheetName];
                     
+                    // Переводим данные листа в структурированный массив строк JavaScript
                     const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
                     if (rawRows.length === 0) throw new Error("This file sheet is empty.");
 
-                    // Ищем строку заголовка
+                    // ШАГ 1: Динамически сканируем строчки файла, чтобы найти шапку таблицы
                     let headerRowIndex = -1;
                     for (let i = 0; i < rawRows.length; i++) {
                         const rowStr = JSON.stringify(rawRows[i]).toLowerCase();
@@ -228,12 +231,13 @@
                     }
 
                     if (headerRowIndex === -1) {
-                        throw new Error("Could not find header row containing 'Consignment'.");
+                        throw new Error("Could not find table header row containing 'Consignment'.");
                     }
 
+                    // Приводим названия колонок шапки к нижнему регистру для надежности
                     const headerRow = rawRows[headerRowIndex].map(h => h ? String(h).trim().toLowerCase() : '');
                     
-                    // Находим индексы нужных нам колонок
+                    // Вычисляем точные индексы расположения колонок
                     const idxConsignment = headerRow.indexOf('consignment');
                     const idxConRef = headerRow.indexOf('con. ref.');
                     const idxSupplier = headerRow.indexOf('supplier');
@@ -244,57 +248,55 @@
                     const idxVariety = headerRow.findIndex(h => h.includes('variety') || h.includes('commodity'));
                     const idxAvailable = headerRow.indexOf('available stock');
 
-                  // ... этот кусок находится внутри функции reader.onload в uploadMorningExcel ...
+                    const stockRows = [];
 
-const stockRows = [];
+                    // ШАГ 2: Собираем только полезные данные, отсекая системный мусор Excel
+                    for (let i = headerRowIndex + 1; i < rawRows.length; i++) {
+                        const row = rawRows[i];
+                        if (!row || row.length === 0) continue;
 
-for (let i = headerRowIndex + 1; i < rawRows.length; i++) {
-    const row = rawRows[i];
-    if (!row || row.length === 0) continue;
+                        const valCons = idxConsignment !== -1 ? row[idxConsignment] : null;
+                        const valConRef = idxConRef !== -1 ? row[idxConRef] : null;
+                        const valVariety = idxVariety !== -1 ? row[idxVariety] : null;
+                        
+                        // Пропускаем полностью пустые строчки или текстовые заголовки категорий фруктов
+                        if (!valCons && !valConRef && !valVariety) continue;
+                        if ((valCons === null || valCons === '') && (valConRef === null || valConRef === '')) continue;
 
-    const valCons = idxConsignment !== -1 ? row[idxConsignment] : null;
-    const valConRef = idxConRef !== -1 ? row[idxConRef] : null;
-    const valVariety = idxVariety !== -1 ? row[idxVariety] : null;
-    
-    if (!valCons && !valConRef && !valVariety) continue;
-    if ((valCons === null || valCons === '') && (valConRef === null || valConRef === '')) continue;
+                        // Если есть внутренний референс GrowerPro Ref — берем его, иначе — стандартную консигнацию
+                        const finalCons = valConRef ? String(valConRef).trim() : (valCons ? String(valCons).trim() : null);
 
-    const finalCons = valConRef ? String(valConRef).trim() : (valCons ? String(valCons).trim() : null);
-
-    // СОБИРАЕМ ОБЪЕКТ С ИМЕНАМИ КОЛОНОК ТОЧНО КАК В SUPABASE
-    stockRows.push({
-        consignment: finalCons,
-        grower: idxSupplier !== -1 && row[idxSupplier] ? String(row[idxSupplier]).trim() : null,
-        origin: idxOrigin !== -1 && row[idxOrigin] ? String(row[idxOrigin]).trim() : null,
-        size: idxSize !== -1 && row[idxSize] ? String(row[idxSize]).trim() : null,
-        count: idxCount !== -1 && row[idxCount] ? String(row[idxCount]).trim() : null,
-        store: idxStore !== -1 && row[idxStore] ? String(row[idxStore]).trim() : null,
-        description: valVariety ? String(valVariety).trim() : null,
-        
-        // ЕСЛИ В БАЗЕ КОЛОНКА НАЗЫВАЕТСЯ available_stock, МЫ ПИШЕМ ЕЕ СЮДА:
-        available_stock: idxAvailable !== -1 && row[idxAvailable] ? String(row[idxAvailable]).trim() : null
-    });
-}
-
-// ... дальше идет очистка базы и clientDb.from('stock').insert(stockRows) ...
+                        stockRows.push({
+                            consignment: finalCons,
+                            grower: idxSupplier !== -1 && row[idxSupplier] ? String(row[idxSupplier]).trim() : null,
+                            origin: idxOrigin !== -1 && row[idxOrigin] ? String(row[idxOrigin]).trim() : null,
+                            size: idxSize !== -1 && row[idxSize] ? String(row[idxSize]).trim() : null,
+                            count: idxCount !== -1 && row[idxCount] ? String(row[idxCount]).trim() : null,
+                            store: idxStore !== -1 && row[idxStore] ? String(row[idxStore]).trim() : null,
+                            description: valVariety ? String(valVariety).trim() : null,
+                            
+                            // СИНХРОНИЗИРОВАНО: Строго под твою новую колонку 'available' в Supabase!
+                            available: idxAvailable !== -1 && row[idxAvailable] ? String(row[idxAvailable]).trim() : null
+                        });
+                    }
 
                     if (stockRows.length === 0) {
                         throw new Error("No items matching requirements found in the selected sheet.");
                     }
 
-                    // Переключаем статус на очистку
+                    // ШАГ 3: Очищаем старую базу
                     statusDiv.style.color = "#ef6c00";
                     statusDiv.innerText = "Clearing database rows...";
                     
-                    // Выполняем очистку старых остатков
                     const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                     if (deleteError) throw deleteError;
 
-                    // Заливаем новые остатки
+                    // ШАГ 4: Заливаем свежие лоты пачкой
                     statusDiv.innerText = `Uploading ${stockRows.length} lots to database...`;
                     const { error: insertError } = await clientDb.from('stock').insert(stockRows);
                     if (insertError) throw insertError;
 
+                    // Вывод успеха
                     statusDiv.style.color = "#2e7d32";
                     statusDiv.innerText = `✅ Success! Loaded ${stockRows.length} lots into stock table.`;
                     fileInput.value = '';
@@ -316,7 +318,7 @@ for (let i = headerRowIndex + 1; i < rawRows.length; i++) {
         }
     }
 
-    // Живой конвейер заказов
+    // Живой интерактивный конвейер заказов для офиса
     async function loadOfficeDashboard() {
         try {
             const { data: orders, error } = await clientDb
