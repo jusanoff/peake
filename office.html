@@ -176,6 +176,29 @@
             </table>
         </div>
     </div>
+
+    <div class="dashboard-card">
+        <h2>Current Morning Stock Base (Live Table)</h2>
+        <div style="overflow-x: auto; max-height: 400px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Consignment</th>
+                        <th>Variety / Description</th>
+                        <th>Grower</th>
+                        <th>Origin</th>
+                        <th>Size</th>
+                        <th>Count</th>
+                        <th>Store</th>
+                        <th>Available Stock</th>
+                    </tr>
+                </thead>
+                <tbody id="stock_base_body">
+                    <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Loading stock data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -186,7 +209,7 @@
     let lastKnownMaxId = 0; 
     const driversList = ["Driver 1", "Driver 2", "Driver 3", "Forklift 1", "Forklift 2"];
 
-    // Полностью изолированная и безопасная функция обработки Excel
+    // Безопасная функция обработки и импорта Excel
     function uploadMorningExcel() {
         const fileInput = document.getElementById('excel_file');
         const statusDiv = document.getElementById('upload_status');
@@ -202,13 +225,12 @@
         const file = fileInput.files[0];
         const reader = new FileReader();
         
-        // Читаем как бинарную строку, чтобы исключить конфликты заголовков API в SheetJS
+        // Читаем как бинарную строку, чтобы изолировать SheetJS от сетевых перехватов Supabase
         reader.readAsBinaryString(file);
 
         reader.onload = async function(e) {
             try {
                 const bstr = e.target.result;
-                // Загружаем чистую книгу
                 const workbook = XLSX.read(bstr, { type: 'binary' });
                 
                 const sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes("sheet") || n.toLowerCase().includes("stock")) || workbook.SheetNames[0];
@@ -217,7 +239,7 @@
                 const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
                 if (rawRows.length === 0) throw new Error("Excel sheet is empty.");
 
-                // Находим строку шапки
+                // Поиск строки заголовков
                 let headerRowIndex = -1;
                 for (let i = 0; i < rawRows.length; i++) {
                     const rowStr = JSON.stringify(rawRows[i]).toLowerCase();
@@ -271,10 +293,10 @@
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("No valid fruit records parsed from Excel.");
+                    throw new Error("No valid records parsed from Excel.");
                 }
 
-                // ПОЛНОЕ ОБРАЩЕНИЕ К БАЗЕ ВЫНЕСЕНО ИЗ СТРУКТУРЫ SHEETJS
+                // Работа с Supabase вынесена за пределы SheetJS контекста
                 statusDiv.innerText = "Clearing old database items...";
                 const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                 if (deleteError) throw deleteError;
@@ -286,6 +308,10 @@
                 statusDiv.style.color = "#2e7d32";
                 statusDiv.innerText = `✅ Successfully imported ${stockRows.length} lots from Excel!`;
                 fileInput.value = '';
+                
+                // Сразу же перерисовываем нижнюю таблицу остатков, чтобы они отобразились
+                loadStockTable();
+                
                 setTimeout(() => statusDiv.innerText = '', 5000);
 
             } catch (dbErr) {
@@ -301,7 +327,7 @@
         };
     }
 
-    // Живой конвейер заказов офиса
+    // Загрузка живого конвейера ЗАКАЗОВ (из таблицы orders)
     async function loadOfficeDashboard() {
         try {
             const { data: orders, error } = await clientDb
@@ -374,6 +400,38 @@
         } catch (e) { console.error(e); }
     }
 
+    // Загрузка и отрисовка ОСТАТКОВ (из таблицы stock)
+    async function loadStockTable() {
+        try {
+            const { data: stock, error } = await clientDb
+                .from('stock')
+                .select('*')
+                .order('id', { ascending: true });
+
+            if (error) throw error;
+
+            if (!stock || stock.length === 0) {
+                document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--urgent-text); font-weight:600; padding:30px;">Stock table is empty in Supabase. Please select and upload morning Excel file.</td></tr>`;
+                return;
+            }
+
+            const html = stock.map(s => `
+                <tr>
+                    <td><span class="consignment-code">${s.consignment || '-'}</span></td>
+                    <td><strong>${s.description || '-'}</strong></td>
+                    <td>${s.grower || '-'}</td>
+                    <td>${s.origin || '-'}</td>
+                    <td>${s.size || '-'}</td>
+                    <td>${s.count || '-'}</td>
+                    <td><span style="color: #6b46c1; font-weight:700;">${s.store || '-'}</span></td>
+                    <td><strong style="color: var(--status-done); font-size:14px;">${s.available || '0'}</strong></td>
+                </tr>
+            `).join('');
+
+            document.getElementById('stock_base_body').innerHTML = html;
+        } catch (e) { console.error("Error loading stock view table:", e); }
+    }
+
     async function updateStatus(orderId, newStatus) {
         try {
             const { error } = await clientDb.from('orders').update({ status: newStatus }).eq('id', orderId);
@@ -392,7 +450,11 @@
 
     function logout() { localStorage.clear(); window.location.href = 'login.html'; }
 
+    // Запуск интерфейса при открытии страницы
     loadOfficeDashboard();
+    loadStockTable();
+
+    // Автоматическое живое обновление заказов каждые 4 секунды
     setInterval(loadOfficeDashboard, 4000);
 </script>
 </body>
