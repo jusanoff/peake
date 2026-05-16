@@ -3,113 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <title>Peake Fruit — Office Control Tower</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        :root { 
-            --bg: #f4f6f9; 
-            --card-bg: #ffffff; 
-            --text: #1a1a2e; 
+        :root {
+            --bg: #f4f6f9;
+            --card-bg: #ffffff;
+            --text: #1a1a2e;
             --text-muted: #6c757d;
             --accent: #0288d1;
-            --accent-hover: #0277bd;
-            --excel-green: #2e7d32;
-            --excel-green-hover: #1b5e20;
-            --urgent-bg: #fff5f5;
-            --process-bg: #fff3e0;
+            --border: #e2e8f0;
+            --status-new: #ef6c00;
+            --status-done: #2e7d32;
         }
+
         body {
-            font-family: 'Segoe UI', Roboto, sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            margin: 0; 
-            padding: 15px;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
         }
-        .container {
-            max-width: 100%; 
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
+
+        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+        
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: var(--card-bg);
-            padding: 12px 16px;
+            padding: 15px 25px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
         }
-        .header h1 { margin: 0; font-size: 18px; color: var(--accent); }
+        .header h1 { margin: 0; font-size: 24px; color: var(--accent); font-weight: 700; }
         
-        .logout-btn {
-            background: transparent; color: var(--text-muted); border: 1px solid #cbd5e0;
-            padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
-        }
-        .logout-btn:hover { background: #edf2f7; }
-
-        .main-card {
+        .office-ctrl-panel {
+            display: flex;
+            gap: 20px;
+            align-items: center;
             background: var(--card-bg);
-            padding: 20px;
+            padding: 15px 25px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
         }
-
-        .upload-row { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
-        .btn {
-            padding: 10px 16px; border: none; border-radius: 6px; font-weight: bold; 
-            font-size: 14px; cursor: pointer; color: white;
-        }
-        .btn-primary { background: var(--accent); }
-        .btn-primary:hover { background: var(--accent-hover); }
-        
-        .btn-excel { 
-            background: var(--excel-green); 
+        .excel-upload-box {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            background: #f8f9fa;
+            padding: 8px 15px;
+            border-radius: 6px;
+            border: 1px dashed #2e7d32;
         }
-        .btn-excel:hover { background: var(--excel-green-hover); }
-
-        .pipeline-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 0;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #edf2f7;
-            padding-bottom: 10px;
-        }
-        .pipeline-header h3 { margin: 0; font-size: 16px; color: var(--text); }
-
-        /* Таблицы */
-        .table-responsive { width: 100%; overflow-x: auto; }
-        .orders-table { width: 100%; border-collapse: collapse; text-align: left; }
-        .orders-table th {
-            background: #f8fafc; color: var(--text-muted); padding: 12px 10px;
-            font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; font-weight: bold;
-        }
-        .orders-table td { padding: 12px 10px; border-bottom: 1px solid #edf2f7; font-size: 14px; vertical-align: middle; }
         
-        .orders-table tr.urgent-row { background-color: var(--urgent-bg); }
-        .orders-table tr.process-row { background-color: var(--process-bg); }
-        .orders-table tr:hover { background-color: #f1f5f9; }
-
-        code { background: #edf2f7; padding: 2px 4px; border-radius: 4px; color: #b83280; font-family: monospace; font-weight: bold; }
-        .store-tag { color: #6b46c1; font-weight: bold; background: #f3e8ff; padding: 2px 6px; border-radius: 4px; }
-        .qty-tag { font-weight: bold; background: #e6fffa; border: 1px solid #b2f5ea; padding: 2px 6px; border-radius: 4px; }
-        
-        .time-text { font-size: 12px; color: #4a5568; font-weight: 500; }
-        .time-delivered { font-size: 12px; color: var(--excel-green); font-weight: bold; }
-
-        .status-badge {
-            padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase;
-            display: inline-block;
+        .btn-excel {
+            background: #2e7d32;
+            color: white;
+            border: none;
+            padding: 9px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
         }
-        .status-badge.new { background: #e3f2fd; color: #0288d1; }
-        .status-badge.process { background: #fff3e0; color: #f59e0b; }
-        .status-badge.delivered { background: #e8f5e9; color: var(--excel-green); }
+        .btn-excel:hover { background: #1b5e20; }
+
+        .dashboard-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .dashboard-card h2 { margin-top: 0; font-size: 20px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
+
+        .table-responsive {
+            overflow-x: auto;
+            max-height: 480px; 
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
+        th { position: sticky; top: 0; background: #f8f9fa; z-index: 10; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 12px; text-transform: uppercase; border-bottom: 2px solid var(--border); }
+        td { padding: 14px 10px; font-size: 14px; border-bottom: 1px solid #edf2f7; }
+        
+        #upload_status { font-size: 13px; font-weight: 600; margin-left: 10px; }
+        .consignment-code { font-family: monospace; background: #f1f3f5; color: #495057; padding: 2px 6px; border-radius: 3px; font-size: 13px; font-weight: 600; }
+        .ref-code { font-family: monospace; color: #2d3748; background: #edf2f7; padding: 2px 5px; border-radius: 3px; font-size: 12px; }
+        .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+        
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+        .status-badge.new { background: #fff3e0; color: #e65100; }
     </style>
 </head>
 <body>
@@ -117,61 +104,53 @@
 <div class="container">
     <div class="header">
         <h1>Peake Fruit — Office Control Tower</h1>
-        <button class="logout-btn" onclick="logout()">Log Out</button>
+        <button class="btn-logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
     </div>
 
-    <div class="main-card">
-        <h3 style="margin-top:0; font-size:14px; color:var(--text-muted);">Morning Stock Excel Upload:</h3>
-        <div class="upload-row">
-            <input type="file" id="excel_file" accept=".xlsx, .xls" style="font-size:14px;">
-            <button class="btn btn-primary" onclick="handleStockUpload()">Clear & Upload Excel</button>
+    <div class="office-ctrl-panel">
+        <h3 style="margin: 0; font-size: 16px;">Morning Stock Excel Upload:</h3>
+        <div class="excel-upload-box">
+            <input type="file" id="excel_file" accept=".xlsx, .xls, .csv">
         </div>
+        <button class="btn-excel" onclick="uploadMorningExcel()">Clear & Upload Excel</button>
+        <div id="upload_status"></div>
     </div>
 
-    <div class="main-card">
-        <div class="pipeline-header">
-            <h3>Live Production Orders Pipeline</h3>
-            <button class="btn btn-excel" onclick="exportLogsToExcel()">📊 Export Logs to Excel</button>
-        </div>
-        
+    <div class="dashboard-card">
+        <h2>Live Production Orders Pipeline</h2>
         <div class="table-responsive">
-            <table class="orders-table" id="office_pipeline_table">
+            <table>
                 <thead>
                     <tr>
-                        <th style="width: 50px;">ID</th>
-                        <th>Ordered At</th>
+                        <th>ID</th>
                         <th>Line Name</th>
                         <th>Item Description</th>
                         <th>Grower / Supplier</th>
-                        <th style="width: 100px;">Consignment</th>
+                        <th>Consignment</th>
                         <th>Origin</th>
                         <th>Size</th>
-                        <th>Available</th> <th>Store</th>
-                        <th style="width: 50px;">Qty</th>
-                        <th>Driver</th>
-                        <th>Delivered At</th>
+                        <th>Available</th>
+                        <th>Store</th>
+                        <th>Qty</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody id="office_orders_body">
-                    <tr>
-                        <td colspan="14" style="text-align:center; padding:20px; color:var(--text-muted);">Loading live pipeline...</td>
-                    </tr>
+                    <tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Loading live orders...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <div class="main-card">
-        <h3 style="margin-top:0; font-size:15px; color: var(--text-muted); margin-bottom:15px;">Current Morning Stock Base (Live Table)</h3>
+    <div class="dashboard-card">
+        <h2>Current Morning Stock Base (Live Table)</h2>
         <div class="table-responsive">
-            <table class="orders-table">
+            <table>
                 <thead>
                     <tr>
                         <th>Consignment (A)</th>
                         <th>GrowerPro Ref (B)</th>
-                        <th>Variety (J)</th>
-                        <th>Grower / Supplier (C)</th>
+                        <th>Variety (J)</th> <th>Grower / Supplier (C)</th>
                         <th>Country of Origin (D)</th>
                         <th>Size (E)</th>
                         <th>Count (F)</th>
@@ -179,10 +158,8 @@
                         <th>Available Stock (O)</th>
                     </tr>
                 </thead>
-                <tbody id="office_stock_body">
-                    <tr>
-                        <td colspan="9" style="text-align:center; padding:20px; color:var(--text-muted);">Loading morning stock data...</td>
-                    </tr>
+                <tbody id="stock_base_body">
+                    <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Loading stock data...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -190,224 +167,180 @@
 </div>
 
 <script>
+    const currentUser = localStorage.getItem('user');
+    const currentRole = localStorage.getItem('role');
+    
+    if (!currentUser || currentRole !== 'office') {
+        alert("Access denied!");
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+
+    const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
+    const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
+    const k3 = 'LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
-    const _db = supabase.createClient(supabaseUrl, supabaseKey);
+    const supabaseKey = k1 + k2 + k3; 
+    const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
-    let rawOrdersLog = [];
-
-    function formatTime(isoString) {
-        if (!isoString) return '—';
-        const date = new Date(isoString);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-
-    // Умный поиск значений ключей в объекте без учета регистра и лишних пробелов
-    function getExcelValue(row, possibleNames) {
-        const keys = Object.keys(row);
-        for (let name of possibleNames) {
-            const cleanName = name.toLowerCase().trim();
-            const foundKey = keys.find(k => k.toLowerCase().trim().includes(cleanName) || cleanName.includes(k.toLowerCase().trim()));
-            if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null) {
-                return row[foundKey];
-            }
-        }
-        return '';
-    }
-
-    // УМНЫЙ ОБРАБОТЧИК ИМПОРТА EXCEL
-    async function handleStockUpload() {
+    async function uploadMorningExcel() {
         const fileInput = document.getElementById('excel_file');
-        const file = fileInput.files[0];
+        const statusDiv = document.getElementById('upload_status');
         
-        if (!file) {
+        if (!fileInput.files || !fileInput.files[0]) {
             alert("Please select an Excel file first!");
             return;
         }
 
-        try {
-            const data = await file.arrayBuffer();
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            
-            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        statusDiv.style.color = "#ef6c00"; 
+        statusDiv.innerHTML = "⏳ Reading exact columns from Daily Stock Sheet...";
 
-            if (jsonData.length === 0) {
-                alert("The Excel file is empty or formatted incorrectly!");
-                return;
-            }
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        
+        reader.readAsArrayBuffer(file);
 
-            // Очищаем старую таблицу stock
-            const { error: deleteError } = await _db
-                .from('stock')
-                .delete()
-                .neq('description', 'FOR_SAFETY_CLEAR_ALL_STOCKS');
-
-            if (deleteError) throw deleteError;
-
-            // Маппинг с гибким поиском ключей колонок
-            const formattedStock = jsonData.map(row => {
-                const consignmentVal = String(getExcelValue(row, ['CONSIGNMENT (A)', 'consignment', 'cons', 'con'])).trim();
-                const growerproVal = String(getExcelValue(row, ['GROWERPRO REF (B)', 'growerpro_ref', 'ref', 'growerpro'])).trim();
-                const descriptionVal = String(getExcelValue(row, ['VARIETY (J)', 'description', 'variety', 'desc', 'fruit'])).trim();
-                const growerVal = String(getExcelValue(row, ['GROWER / SUPPLIER (C)', 'grower', 'supplier', 'grower / supplier'])).trim();
-                const originVal = String(getExcelValue(row, ['COUNTRY OF ORIGIN (D)', 'origin', 'country', 'country of origin'])).trim();
-                const sizeVal = String(getExcelValue(row, ['SIZE (E)', 'size'])).trim();
-                const countVal = String(getExcelValue(row, ['COUNT (F)', 'count'])).trim();
-                const storeVal = String(getExcelValue(row, ['STORE (H)', 'store', 'loc'])).trim();
-                const availableVal = parseInt(getExcelValue(row, ['AVAILABLE STOCK (O)', 'available_stock', 'available', 'stock'])) || 0;
-
-                return {
-                    consignment: consignmentVal || '—',
-                    growerpro_ref: growerproVal || '—',
-                    description: descriptionVal || '—',
-                    grower: growerVal || '—',
-                    origin: originVal || '—',
-                    size: sizeVal || '—',
-                    count: countVal || '—',
-                    store: storeVal || '—',
-                    available_stock: availableVal
-                };
-            }).filter(item => item.consignment !== '—' && item.consignment !== '');
-
-            if (formattedStock.length === 0) {
-                alert("Could not match Excel columns! Check header names.");
-                return;
-            }
-
-            // Отправляем в Supabase
-            const { error: insertError } = await _db
-                .from('stock')
-                .insert(formattedStock);
-
-            if (insertError) throw insertError;
-
-            alert("✅ Morning Stock base successfully parsed and uploaded to Supabase!");
-            fetchOfficeStockBase();
-
-        } catch (error) {
-            console.error(error);
-            alert("❌ Database Upload Error: " + error.message);
-        }
-    }
-
-    async function fetchOfficePipeline() {
-        try {
-            const { data: orders, error } = await _db
-                .from('orders')
-                .select('*')
-                .order('id', { ascending: false });
-
-            if (error) throw error;
-            
-            rawOrdersLog = orders || [];
-            const tbody = document.getElementById('office_orders_body');
-            
-            if (!orders || orders.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; padding:20px;">No records inside pipeline.</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = orders.map(o => {
-                const isUrgent = o.urgent === true || o.urgent === 'true';
-                const statusClean = (o.status || 'new').toLowerCase();
+        reader.onload = async function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
                 
-                let rClass = '';
-                if (isUrgent && statusClean !== 'delivered') rClass = 'urgent-row';
-                else if (statusClean === 'process') rClass = 'process-row';
+                let sheetName = workbook.SheetNames.find(n => n.includes("Daily Stock Sheet"));
+                if (!sheetName) {
+                    sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes("stock") || n.toLowerCase().includes("daily"));
+                }
+                
+                const worksheet = workbook.Sheets[sheetName];
+                const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                
+                if (!rawRows || rawRows.length === 0) {
+                    throw new Error("Excel sheet is empty.");
+                }
 
-                return `
-                <tr class="${rClass}">
-                    <td style="color:var(--text-muted); font-weight:bold;">#${o.id}</td>
-                    <td class="time-text">⏱ ${formatTime(o.created_at)}</td>
-                    <td><strong>${o.line || '—'}</strong></td>
-                    <td>${isUrgent ? '⚠️ ' : ''}${o.description || '—'}</td>
-                    <td>${o.grower || '—'}</td>
-                    <td><code>${o.consignment || o.cons || '—'}</code></td>
-                    <td>${o.origin || '—'}</td>
-                    <td>${o.size || '—'}</td>
-                    <td>${o.available_stock !== undefined && o.available_stock !== null ? o.available_stock : '—'}</td> <td><span class="store-tag">${o.store || '—'}</span></td>
-                    <td><span class="qty-tag">${o.qty || '0'}</span></td>
-                    <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span style="color:var(--text-muted);">Waiting...</span>'}</td>
-                    <td class="time-delivered">${statusClean === 'delivered' ? '✅ ' + formatTime(o.delivered_at) : '—'}</td>
-                    <td><span class="status-badge ${statusClean}">${statusClean}</span></td>
-                </tr>`;
-            }).join('');
+                const stockRows = [];
 
-        } catch (e) {
-            console.error(e);
-        }
+                for (let i = 0; i < rawRows.length; i++) {
+                    const row = rawRows[i];
+                    if (!row || row.length === 0) continue;
+
+                    let rawCons = String(row[0] || "").trim(); 
+
+                    if (!rawCons || 
+                        rawCons.toLowerCase().includes("consignment") || 
+                        rawCons.toLowerCase().includes("ltd") || 
+                        rawCons.toLowerCase().includes("braeburn") ||
+                        rawCons.toLowerCase().includes("cox") ||
+                        rawCons.toLowerCase().includes("gala") ||
+                        rawCons.length < 2) {
+                        continue; 
+                    }
+
+                    const sizeVal = String(row[4] || "").trim();
+                    if (!sizeVal || sizeVal.toLowerCase().includes("size")) {
+                        continue; 
+                    }
+
+                    const growerRef = String(row[1] || "").trim();  
+                    const supplier  = String(row[2] || "").trim();  
+                    const origin    = String(row[3] || "").trim();  
+                    const countVal  = String(row[5] || "").trim();  
+                    const storeVal  = String(row[7] || "").trim();  
+                    const variety   = String(row[9] || "").trim();  
+                    const available = String(row[14] || "").trim(); 
+
+                    stockRows.push({
+                        consignment: rawCons,
+                        growerpro: growerRef ? growerRef : null,
+                        grower: supplier ? supplier : null,
+                        origin: origin ? origin : null,
+                        size: sizeVal,
+                        count: countVal ? countVal : null,
+                        store: storeVal ? storeVal : null,
+                        description: variety ? variety : null,
+                        available: available !== "" ? available : "0"
+                    });
+                }
+
+                if (stockRows.length === 0) {
+                    throw new Error("No data rows matched.");
+                }
+
+                statusDiv.innerHTML = `⚙️ Processing ${stockRows.length} rows. Saving to Supabase...`;
+                
+                const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
+                if (deleteError) throw deleteError;
+
+                const { error: insertError } = await clientDb.from('stock').insert(stockRows);
+                if (insertError) throw insertError;
+
+                statusDiv.style.color = "#2e7d32";
+                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} rows into Supabase!`;
+                fileInput.value = '';
+                
+                loadStockTable();
+                setTimeout(() => { statusDiv.innerText = ''; }, 6000);
+
+            } catch (err) {
+                statusDiv.style.color = "#c53030";
+                statusDiv.innerHTML = "❌ Error: " + err.message;
+                console.error(err);
+            }
+        };
     }
 
-    async function fetchOfficeStockBase() {
+    async function loadStockTable() {
         try {
-            const { data: stock, error = null } = await _db.from('stock').select('*');
+            const { data: stock, error } = await clientDb.from('stock').select('*').order('id', { ascending: true });
             if (error) throw error;
 
-            const tbody = document.getElementById('office_stock_body');
             if (!stock || stock.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px;">Stock is completely empty.</td></tr>`;
+                document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Stock database is empty.</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = stock.map(s => `
+            // Перестроили вывод ячеек в строке, чтобы Variety (s.description) шел третьим по счету
+            const html = stock.map(s => `
                 <tr>
-                    <td><code>${s.consignment || '—'}</code></td>
-                    <td style="color:var(--text-muted);">${s.growerpro_ref || '—'}</td>
-                    <td><strong>${s.description || '—'}</strong></td>
-                    <td>${s.grower || '—'}</td>
-                    <td>${s.origin || '—'}</td>
-                    <td>${s.size || '—'}</td>
-                    <td>${s.count || '—'}</td>
-                    <td><span class="store-tag">${s.store || '—'}</span></td>
-                    <td style="font-weight:bold; color:${parseInt(s.available_stock) > 5 ? '#2e7d32' : '#d32f2f'}">${s.available_stock || '0'}</td>
+                    <td><span class="consignment-code">${s.consignment || '-'}</span></td>
+                    <td><span class="ref-code">${s.growerpro || '-'}</span></td>
+                    <td><strong>${s.description || '-'}</strong></td> <td><strong style="color:#2b6cb0;">${s.grower || '-'}</strong></td>
+                    <td>${s.origin || '-'}</td>
+                    <td><span class="ref-code">${s.size || '-'}</span></td>
+                    <td>${s.count || '-'}</td>
+                    <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td>
+                    <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td>
                 </tr>
             `).join('');
-        } catch (e) {
-            console.error(e);
-        }
+            document.getElementById('stock_base_body').innerHTML = html;
+        } catch (e) { console.error(e); }
     }
 
-    function exportLogsToExcel() {
-        if (rawOrdersLog.length === 0) {
-            alert("No data available to export yet!");
-            return;
-        }
-
-        const preparedData = rawOrdersLog.map(o => ({
-            "Order ID": o.id,
-            "Ordered Time": formatTime(o.created_at),
-            "Production Line": o.line || '—',
-            "Description / Fruit": o.description || '—',
-            "Grower / Supplier": o.grower || '—',
-            "Consignment": o.consignment || o.cons || '—',
-            "Origin": o.origin || '—',
-            "Size": o.size || '—',
-            "Store/Location": o.store || '—',
-            "QTY Needed": o.qty || 0,
-            "Assigned Driver": o.driver_name || 'Not picked up',
-            "Delivered Time": formatTime(o.delivered_at),
-            "Current Status": (o.status || 'new').toUpperCase(),
-            "Urgent Mark": o.urgent ? "YES" : "NO"
-        }));
-
-        const worksheet = XLSX.utils.json_to_sheet(preparedData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Production Logs");
-        worksheet['!cols'] = [{wch:10},{wch:15},{wch:18},{wch:22},{wch:20},{wch:15},{wch:12},{wch:10},{wch:15},{wch:12},{wch:18},{wch:15},{wch:15},{wch:12}];
-
-        const todayStr = new Date().toISOString().slice(0, 10);
-        XLSX.writeFile(workbook, `Peake_Fruit_Orders_Report_${todayStr}.xlsx`);
+    async function loadOfficeDashboard() {
+        try {
+            const { data: orders, error } = await clientDb.from('orders').select('*').order('id', { ascending: false }).limit(5);
+            if (error) throw error;
+            const html = orders.map(o => `
+                <tr>
+                    <td>#${o.id}</td>
+                    <td><strong>${o.line || '-'}</strong></td>
+                    <td>${o.description || '-'}</td>
+                    <td>${o.grower || '-'}</td>
+                    <td><span class="consignment-code">${o.consignment || '-'}</span></td>
+                    <td>${o.origin || '-'}</td>
+                    <td>${o.size || '-'}</td>
+                    <td>${o.available || '-'}</td>
+                    <td>${o.store || '-'}</td>
+                    <td><strong>${o.qty || '-'}</strong></td>
+                    <td><span class="status-badge new">${o.status || 'new'}</span></td>
+                </tr>
+            `).join('');
+            document.getElementById('office_orders_body').innerHTML = html;
+        } catch (e) { console.error(e); }
     }
 
-    function logout() {
-        window.location.href = 'login.html';
-    }
-
-    fetchOfficePipeline();
-    fetchOfficeStockBase();
-    setInterval(fetchOfficePipeline, 5000);
+    loadOfficeDashboard();
+    loadStockTable();
 </script>
 </body>
 </html>
