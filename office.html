@@ -58,7 +58,6 @@
         }
         .office-ctrl-panel h3 { margin: 0; font-size: 15px; width: 100%; }
 
-        /* Кастомизация кнопки выбора файла на чистый английский язык */
         .excel-upload-box {
             position: relative;
             display: inline-flex;
@@ -470,8 +469,15 @@
         XLSX.writeFile(workbook, `Peake_Fruit_Office_Report_${dateStr}.xlsx`);
     }
 
+    // Первичная загрузка при открытии страницы
     loadOfficeDashboard();
     loadStockTable();
+
+    // ДОБАВЛЕНО АВТООБНОВЛЕНИЕ: Запуск функций каждые 5000 миллисекунд (5 секунд)
+    setInterval(() => {
+        loadOfficeDashboard();
+        loadStockTable();
+    }, 5000);
 </script>
 </body>
 </html>
