@@ -166,7 +166,7 @@
             grower: document.getElementById('inp_grower').value || null,
             consignment: document.getElementById('inp_cons').value || null,
             store: document.getElementById('inp_store').value || null,
-            quantity: document.getElementById('inp_qty').value || null,
+            quantity: document.getElementById('inp_qty').value ? parseInt(document.getElementById('inp_qty').value) : null,
             urgent: document.getElementById('chk_urgent').checked, // Отправляем true/false
             status: 'new' // Всегда создается со статусом 'new'
         };
