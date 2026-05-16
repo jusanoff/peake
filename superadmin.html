@@ -5,20 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --p:#d32f2f; --s:#1a1a2e; --bg:#f0f2f5; --ok:#2e7d32; --blue:#1976d2; }
+        :root { --p:#d32f2f; --s:#1a1a2e; --bg:#f0f2f5; --ok:#2e7d32; --blue:#1976d2; --orange:#f57c00; }
         body{font-family:sans-serif; background:var(--bg); margin:0; padding:15px;}
-        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1200px; margin: auto; }
-        @media (max-width: 800px) { .container { grid-template-columns: 1fr; } }
+        .grid-top { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1200px; margin: auto; margin-bottom: 20px; }
+        .grid-bottom { max-width: 1200px; margin: auto; }
+        @media (max-width: 800px) { .grid-top { grid-template-columns: 1fr; } }
         .card{background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); height: fit-content;}
         h2{margin-top:0; color:var(--s); border-bottom:2px solid #eee; padding-bottom:10px; font-size: 18px;}
-        .form-box{background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid #eee}
-        input, select, button{padding:12px; margin:5px; border-radius:6px; border:1px solid #ccc; font-size:14px; box-sizing:border-box}
+        .form-box{background:#f9f9f9; padding:12px; border-radius:10px; margin-bottom:15px; border:1px solid #eee; display: flex; gap: 10px;}
+        input, select, button{padding:12px; border-radius:6px; border:1px solid #ccc; font-size:14px; box-sizing:border-box}
+        .form-box input { flex-grow: 1; }
         table{width:100%; border-collapse:collapse}
         th, td{padding:10px; border-bottom:1px solid #eee; text-align:left}
         th{background:#f4f4f4; font-size:12px; color:#666; text-transform:uppercase}
-        .btn-add{background:var(--ok); color:white; border:none; font-weight:bold; cursor:pointer;}
+        .btn-add{background:var(--ok); color:white; border:none; font-weight:bold; cursor:pointer; min-width:120px;}
         .btn-del{background:var(--p); color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px}
-        .lang-btns { margin-bottom: 15px; text-align: right; max-width: 1200px; margin: auto; padding-right: 5px; }
+        .lang-btns { margin-bottom: 15px; text-align: right; max-width: 1200px; margin: auto; }
         .u-badge { padding:3px 6px; border-radius:4px; font-weight:bold; font-size:12px; text-transform:uppercase; display:inline-block;}
         .u-badge.admin { background: #ffebee; color: #c62828; }
         .u-badge.line { background: #e8f5e9; color: #2e7d32; }
@@ -34,14 +36,51 @@
         <button onclick="setLang('lt')">LT</button>
     </div>
 
-    <div class="container">
+    <div class="grid-top">
         
-        <div class="card">
-            <h2 id="title_users">УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ</h2>
+        <div class="card" style="border-top: 4px solid var(--blue);">
+            <h2 id="title_lines">ЛИНИИ ПРОИЗВОДСТВА</h2>
             <div class="form-box">
-                <input type="text" id="new_u" placeholder="Логин">
-                <input type="text" id="new_p" placeholder="Пароль">
-                <select id="new_t">
+                <input type="text" id="new_line_name" placeholder="Название линии">
+                <button class="btn-add" onclick="addLine()" id="btn_add_l" style="background:var(--blue);">➕ ДОБАВИТЬ</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 80%;" id="th_ln">Название линии</th>
+                        <th id="th_a2">Действие</th>
+                    </tr>
+                </thead>
+                <tbody id="lines_list"></tbody>
+            </table>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--orange);">
+            <h2 id="title_drivers">ВОДИТЕЛИ (DRIVERS)</h2>
+            <div class="form-box">
+                <input type="text" id="new_driver_name" placeholder="Имя водителя">
+                <button class="btn-add" onclick="addDriver()" id="btn_add_d" style="background:var(--orange);">➕ ДОБАВИТЬ</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 80%;" id="th_dr">Имя водителя</th>
+                        <th id="th_a3">Действие</th>
+                    </tr>
+                </thead>
+                <tbody id="drivers_list"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <div class="grid-bottom">
+        <div class="card">
+            <h2 id="title_users">УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (ДОСТУП)</h2>
+            <div class="form-box" style="display: block;">
+                <input type="text" id="new_u" placeholder="Логин" style="width:25%; margin-right:5px;">
+                <input type="text" id="new_p" placeholder="Пароль" style="width:25%; margin-right:5px;">
+                <select id="new_t" style="padding:12px; margin-right:5px;">
                     <option value="line">Line (Линия)</option>
                     <option value="office">Office (Офис)</option>
                     <option value="driver">Driver (Водитель)</option>
@@ -61,27 +100,9 @@
                 <tbody id="user_list"></tbody>
             </table>
         </div>
-
-        <div class="card" style="border-top: 4px solid var(--blue);">
-            <h2 id="title_lines">ЛИНИИ ПРОИЗВОДСТВА</h2>
-            <div class="form-box">
-                <input type="text" id="new_line_name" placeholder="Название линии" style="width: calc(100% - 160px);">
-                <button class="btn-add" onclick="addLine()" id="btn_add_l" style="background:var(--blue); width:130px;">➕ ДОБАВИТЬ</button>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 80%;" id="th_ln">Название линии</th>
-                        <th id="th_a2">Действие</th>
-                    </tr>
-                </thead>
-                <tbody id="lines_list"></tbody>
-            </table>
-        </div>
-
     </div>
 
-    <div style="max-width:1200px; margin:20px auto; padding-left:15px;">
+    <div style="max-width:1200px; margin:20px auto; padding-left:5px;">
         <button onclick="location.href='login.html'" style="background:#666; color:white; border:none; padding:12px 20px; border-radius:6px; cursor:pointer;" id="btn_back">⬅ Назад в Логин</button>
     </div>
 
@@ -91,9 +112,9 @@
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
     
     const lang = {
-        ru: { t_users:"УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ", t_lines:"ЛИНИИ ПРОИЗВОДСТВА", btn_add:"ДОБАВИТЬ", th_u:"Пользователь", th_p:"Пароль", th_t:"Тип", th_a:"Действие", conf_u:"Удалить пользователя?", conf_l:"Удалить эту линию?", back:"⬅ Назад в Логин", u_ph:"Логин", p_ph:"Пароль", l_ph:"Название линии", th_ln:"Название линии" },
-        en: { t_users:"USER MANAGEMENT", t_lines:"PRODUCTION LINES", btn_add:"ADD", th_u:"User", th_p:"Password", th_t:"Type", th_a:"Action", conf_u:"Delete this user?", conf_l:"Delete this line?", back:"⬅ Back to Login", u_ph:"Login", p_ph:"Password", l_ph:"Line Name", th_ln:"Line Name" },
-        lt: { t_users:"VARTOTOJŲ VALDYMAS", t_lines:"GAMYBOS LINIJOS", btn_add:"PRIDĖTI", th_u:"Vartotojas", th_p:"Slaptažodis", th_t:"Tipas", th_a:"Veiksmas", conf_u:"Ištrinti vartotoją?", conf_l:"Ištrinti šią liniją?", back:"⬅ Atgal į Prisijungimą", u_ph:"Prisijungimas", p_ph:"Slaptažodis", l_ph:"Linijos pavadinimas", th_ln:"Linijos pavadinimas" }
+        ru: { t_users:"УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (ДОСТУП)", t_lines:"ЛИНИИ ПРОИЗВОДСТВА", t_drivers:"ВОДИТЕЛИ", btn_add:"ДОБАВИТЬ", th_u:"Пользователь", th_p:"Пароль", th_t:"Тип", th_a:"Действие", conf_u:"Удалить пользователя?", conf_l:"Удалить эту линию?", conf_d:"Удалить водителя?", back:"⬅ Назад в Логин", u_ph:"Логин", p_ph:"Пароль", l_ph:"Название линии", dr_ph:"Имя водителя", th_ln:"Название линии", th_dr:"Имя водителя" },
+        en: { t_users:"USER MANAGEMENT (ACCESS)", t_lines:"PRODUCTION LINES", t_drivers:"DRIVERS LIST", btn_add:"ADD", th_u:"User", th_p:"Password", th_t:"Type", th_a:"Action", conf_u:"Delete this user?", conf_l:"Delete this line?", conf_d:"Delete this driver?", back:"⬅ Back to Login", u_ph:"Login", p_ph:"Password", l_ph:"Line Name", dr_ph:"Driver Name", th_ln:"Line Name", th_dr:"Driver Name" },
+        lt: { t_users:"VARTOTOJŲ VALDYMAS", t_lines:"GAMYBOS LINIJOS", t_drivers:"VAIRUOTOJAI", btn_add:"PRIDĖTI", th_u:"Vartotojas", th_p:"Slaptažodis", th_t:"Tipas", th_a:"Veiksmas", conf_u:"Ištrinti vartotoją?", conf_l:"Ištrinti šią liniją?", conf_d:"Ištrinti vairuotoją?", back:"⬅ Atgal į Prisijungimą", u_ph:"Prisijungimas", p_ph:"Slaptažodis", l_ph:"Linijos pavadinimas", dr_ph:"Vairuotojo vardas", th_ln:"Linijos pavadinimas", th_dr:"Vairuotojo vardas" }
     };
     let curL = localStorage.getItem('dash_lang') || 'ru';
 
@@ -107,21 +128,26 @@
         const t = lang[curL];
         document.getElementById('title_users').innerText = t.t_users;
         document.getElementById('title_lines').innerText = t.t_lines;
+        document.getElementById('title_drivers').innerText = t.t_drivers;
         document.getElementById('btn_add_u').innerText = t.btn_add;
         document.getElementById('btn_add_l').innerText = t.btn_add;
+        document.getElementById('btn_add_d').innerText = t.btn_add;
         document.getElementById('th_u').innerText = t.th_u;
         document.getElementById('th_p').innerText = t.th_p;
         document.getElementById('th_t').innerText = t.th_t;
         document.getElementById('th_ln').innerText = t.th_ln;
+        document.getElementById('th_dr').innerText = t.th_dr;
         document.getElementById('th_a1').innerText = t.th_a;
         document.getElementById('th_a2').innerText = t.th_a;
+        document.getElementById('th_a3').innerText = t.th_a;
         document.getElementById('btn_back').innerText = t.back;
         document.getElementById('new_u').placeholder = t.u_ph;
         document.getElementById('new_p').placeholder = t.p_ph;
         document.getElementById('new_line_name').placeholder = t.l_ph;
+        document.getElementById('new_driver_name').placeholder = t.dr_ph;
     }
 
-    // --- ЛОГИКА ПОЛЬЗОВАТЕЛЕЙ ---
+    // --- ПОЛЬЗОВАТЕЛИ ---
     async function loadUsers() {
         try {
             const { data: users, error } = await _db.from('users_table').select('*').order('u', { ascending: true });
@@ -136,62 +162,28 @@
         } catch(e) { console.error(e); }
     }
 
-    // --- ОБНОВЛЕННОЕ ДОБАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯ ---
-async function addUser() {
-    const u = document.getElementById('new_u').value.trim();
-    const p = document.getElementById('new_p').value.trim();
-    const t = document.getElementById('new_t').value;
-    
-    if(!u || !p) return alert(curL === 'ru' ? "Заполните все поля!" : "Fill all fields!");
-
-    // 1. Добавляем в общую таблицу пользователей (для логина)
-    const { error: userError } = await _db.from('users_table').insert([{ u, p, t }]);
-    
-    if (userError) {
-        alert("Ошибка создания пользователя: " + userError.message);
-        return;
+    async function addUser() {
+        const u = document.getElementById('new_u').value.trim();
+        const p = document.getElementById('new_p').value.trim();
+        const t = document.getElementById('new_t').value;
+        if(!u || !p) return alert(curL === 'ru' ? "Заполните все поля!" : "Fill all fields!");
+        const { error } = await _db.from('users_table').insert([{ u, p, t }]);
+        if (error) alert(error.message); else { document.getElementById('new_u').value = ''; document.getElementById('new_p').value = ''; loadUsers(); }
     }
 
-    // 2. АВТОМАТИКА: Если это водитель, сразу добавляем его имя в таблицу водителей drivers_table
-    if (t === 'driver') {
-        const { error: driverError } = await _db.from('drivers_table').insert([{ driver_name: u }]);
-        if (driverError) {
-            console.error("Не удалось автоматически добавить в список водителей:", driverError.message);
-        }
+    async function changePass(id, newP) {
+        const { error } = await _db.from('users_table').update({ p: newP }).eq('id', id);
+        if (error) alert(error.message);
+        loadUsers();
     }
 
-    // Очищаем поля и обновляем таблицы на экране
-    document.getElementById('new_u').value = '';
-    document.getElementById('new_p').value = '';
-    loadUsers();
-    loadDrivers(); // Обновляем список водителей на экране
-}
-
-// --- ОБНОВЛЕННОЕ УДАЛЕНИЕ ПОЛЬЗОВАТЕЛЯ ---
-async function delUser(id) {
-    if(!confirm(lang[curL].conf_u)) return;
-
-    // Сначала узнаем имя пользователя перед удалением, чтобы почистить таблицу водителей
-    const { data: userToDelete } = await _db.from('users_table').select('u, t').eq('id', id).single();
-
-    // Удаляем из таблицы пользователей
-    const { error: deleteError } = await _db.from('users_table').delete().eq('id', id);
-    
-    if (deleteError) {
-        alert(deleteError.message);
-        return;
+    async function delUser(id) {
+        if(!confirm(lang[curL].conf_u)) return;
+        const { error } = await _db.from('users_table').delete().eq('id', id);
+        if (error) alert(error.message); else loadUsers();
     }
 
-    // Если это был водитель, удаляем его и из списка водителей тоже
-    if (userToDelete && userToDelete.t === 'driver') {
-        await _db.from('drivers_table').delete().eq('driver_name', userToDelete.u);
-    }
-
-    loadUsers();
-    loadDrivers();
-}
-
-    // --- ЛОГИКА ЛИНИЙ ---
+    // --- ЛИНИИ ---
     async function loadLines() {
         try {
             const { data: lines, error } = await _db.from('lines_table').select('*').order('line_name', { ascending: true });
@@ -217,9 +209,36 @@ async function delUser(id) {
         if (error) alert(error.message); else loadLines();
     }
 
+    // --- ВОДИТЕЛИ ---
+    async function loadDrivers() {
+        try {
+            const { data: drivers, error } = await _db.from('drivers_table').select('*').order('driver_name', { ascending: true });
+            if (error) throw error;
+            document.getElementById('drivers_list').innerHTML = drivers.map((d) => `
+                <tr>
+                    <td><b>${d.driver_name}</b></td>
+                    <td><button class="btn-del" onclick="delDriver(${d.id})">✖</button></td>
+                </tr>`).join('');
+        } catch(e) { console.error(e); }
+    }
+
+    async function addDriver() {
+        const name = document.getElementById('new_driver_name').value.trim();
+        if(!name) return alert(curL === 'ru' ? "Введите имя водителя!" : "Enter driver name!");
+        const { error } = await _db.from('drivers_table').insert([{ driver_name: name }]);
+        if (error) alert(error.message); else { document.getElementById('new_driver_name').value = ''; loadDrivers(); }
+    }
+
+    async function delDriver(id) {
+        if(!confirm(lang[curL].conf_d)) return;
+        const { error } = await _db.from('drivers_table').delete().eq('id', id);
+        if (error) alert(error.message); else loadDrivers();
+    }
+
     updateUI();
     loadUsers();
     loadLines();
+    loadDrivers();
 </script>
 </body>
 </html>
