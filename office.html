@@ -112,7 +112,7 @@
         <div class="excel-upload-box">
             <input type="file" id="excel_file" accept=".xlsx, .xls, .csv">
         </div>
-        <button class="btn-excel" onclick="uploadMorningExcel()">Clear & Upload Excel (.xlsx)</button>
+        <button class="btn-excel" onclick="uploadMorningExcel()">Clear & Upload Excel</button>
         <div id="upload_status"></div>
     </div>
 
@@ -195,7 +195,7 @@
         }
 
         statusDiv.style.color = "#ef6c00"; 
-        statusDiv.innerHTML = "⏳ Processing Excel rows...";
+        statusDiv.innerHTML = "⏳ Reading exact columns from Daily Stock Sheet...";
 
         const file = fileInput.files[0];
         const reader = new FileReader();
@@ -207,14 +207,17 @@
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 
-                const sheetName = workbook.SheetNames.find(n => 
-                    n.toLowerCase().includes("stock") || n.toLowerCase().includes("daily")
-                ) || workbook.SheetNames[0];
+                // Ищем ТОЛЬКО лист, в котором есть реальные данные.
+                // Отбрасываем "Daily Stock Control" и берем "Daily Stock Sheet"
+                let sheetName = workbook.SheetNames.find(n => n.includes("Daily Stock Sheet"));
+                if (!sheetName) {
+                    // Резервный вариант, если название немного изменилось
+                    sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes("stock") || n.toLowerCase().includes("daily"));
+                }
                 
                 const worksheet = workbook.Sheets[sheetName];
                 
-                // ВАЖНО: Форсируем создание полноценной матрицы, где пустые ячейки заполняются ""
-                // Это гарантирует, что индекс массива всегда строго привязан к букве колонки!
+                // Читаем матрицу строго по индексам (A=0, B=1, C=2...)
                 const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
                 
                 if (!rawRows || rawRows.length === 0) {
@@ -227,31 +230,33 @@
                     const row = rawRows[i];
                     if (!row || row.length === 0) continue;
 
-                    let rawCons = String(row[0] || "").trim(); // Столбец A
+                    let rawCons = String(row[0] || "").trim(); // Индекс 0 = Колонка A
 
-                    // Универсальный фильтр: убираем пустые строки, шапку и итоги
+                    // Универсальный фильтр для Consignment (пропускает номера с буквами, но режет шапку)
                     if (!rawCons || 
                         rawCons.toLowerCase().includes("consignment") || 
                         rawCons.toLowerCase().includes("ltd") || 
-                        rawCons.toLowerCase().includes("total") ||
+                        rawCons.toLowerCase().includes("braeburn") ||
+                        rawCons.toLowerCase().includes("cox") ||
+                        rawCons.toLowerCase().includes("gala") ||
                         rawCons.length < 2) {
                         continue; 
                     }
 
-                    // Размер — Столбец E (Индекс 4)
+                    // Проверка колонки SIZE (Индекс 4 = Колонка E)
                     const sizeVal = String(row[4] || "").trim();
                     if (!sizeVal || sizeVal.toLowerCase().includes("size")) {
                         continue; 
                     }
 
-                    // Жесткая фиксация индексов. Смещение теперь технически исключено:
-                    const growerRef = String(row[1] || "").trim();  // B (Индекс 1)
-                    const supplier  = String(row[2] || "").trim();  // C (Индекс 2)
-                    const origin    = String(row[3] || "").trim();  // D (Индекс 3)
-                    const countVal  = String(row[5] || "").trim();  // F (Индекс 5)
-                    const storeVal  = String(row[7] || "").trim();  // H (Индекс 7)
-                    const variety   = String(row[9] || "").trim();  // J (Индекс 9)
-                    const available = String(row[14] || "").trim(); // O (Индекс 14)
+                    // Сбор данных строго по индексам, подтвержденным твоим CSV файлом
+                    const growerRef = String(row[1] || "").trim();  // Индекс 1 = Колонка B
+                    const supplier  = String(row[2] || "").trim();  // Индекс 2 = Колонка C
+                    const origin    = String(row[3] || "").trim();  // Индекс 3 = Колонка D
+                    const countVal  = String(row[5] || "").trim();  // Индекс 5 = Колонка F
+                    const storeVal  = String(row[7] || "").trim();  // Индекс 7 = Колонка H
+                    const variety   = String(row[9] || "").trim();  // Индекс 9 = Колонка J
+                    const available = String(row[14] || "").trim(); // Индекс 14 = Колонка O
 
                     stockRows.push({
                         consignment: rawCons,
@@ -267,7 +272,7 @@
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("No data rows matched the import criteria.");
+                    throw new Error("No data rows matched. File might be empty or format changed.");
                 }
 
                 statusDiv.innerHTML = `⚙️ Processing ${stockRows.length} rows. Saving to Supabase...`;
