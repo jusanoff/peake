@@ -143,7 +143,7 @@
     <div class="office-ctrl-panel">
         <h3 style="margin: 0; font-size: 16px; color: var(--text);">Morning Stock Excel Upload:</h3>
         <div class="excel-upload-box">
-            <input type="file" id="excel_file" accept=".xlsx, .xls, .csv">
+            <input type="file" id="excel_file" accept=".xlsx, .xls">
         </div>
         <button class="btn-excel" onclick="uploadMorningExcel()">Clear & Upload Excel (.xlsx)</button>
         <div id="upload_status"></div>
@@ -179,14 +179,14 @@
 </div>
 
 <script>
+    // Инициализация базы данных
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLAJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
-    const _db = supabase.createClient(supabaseUrl, supabaseKey);
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+    const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
     let lastKnownMaxId = 0; 
     const driversList = ["Driver 1", "Driver 2", "Driver 3", "Forklift 1", "Forklift 2"];
 
-    // УМНАЯ И ИСПРАВЛЕННАЯ ФУНКЦИЯ ИМПОРТА XLSX
     async function uploadMorningExcel() {
         const fileInput = document.getElementById('excel_file');
         const statusDiv = document.getElementById('upload_status');
@@ -196,8 +196,8 @@
             return;
         }
 
-        statusDiv.style.color = "#ef6c00"; // Исправлено (HEX вместо переменной)
-        statusDiv.innerText = "Reading file...";
+        statusDiv.style.color = "#ef6c00"; 
+        statusDiv.innerText = "Parsing Excel data...";
 
         try {
             const file = fileInput.files[0];
@@ -205,35 +205,35 @@
             
             reader.onload = async function(e) {
                 try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
+                    const arrayBuffer = e.target.result;
+                    const data = new Uint8Array(arrayBuffer);
                     
-                    // Ищем лист Daily Stock Sheet или берем первый
-                    const sheetName = workbook.SheetNames.find(n => n.includes("Daily Stock")) || workbook.SheetNames[0];
+                    // Читаем только значения ячеек (без тяжелых стилей и формул, чтобы исключить баги библиотек)
+                    const workbook = XLSX.read(data, { type: 'array', raw: true });
+                    
+                    const sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes("sheet") || n.toLowerCase().includes("stock")) || workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[sheetName];
                     
-                    // Парсим в массив массивов
                     const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
-                    
-                    if (rawRows.length === 0) throw new Error("Excel sheet is empty.");
+                    if (rawRows.length === 0) throw new Error("This file sheet is empty.");
 
-                    // ШАГ 1: Динамически ищем строку с шапкой таблицы
+                    // Ищем строку заголовка
                     let headerRowIndex = -1;
                     for (let i = 0; i < rawRows.length; i++) {
                         const rowStr = JSON.stringify(rawRows[i]).toLowerCase();
-                        if (rowStr.includes('consignment') && (rowStr.includes('variety') || rowStr.includes('commodity'))) {
+                        if (rowStr.includes('consignment')) {
                             headerRowIndex = i;
                             break;
                         }
                     }
 
                     if (headerRowIndex === -1) {
-                        throw new Error("Could not find the table header row (with 'Consignment' and 'Variety').");
+                        throw new Error("Could not find header row containing 'Consignment'.");
                     }
 
-                    // Сопоставляем названия колонок с их фактическими индексами в массиве
                     const headerRow = rawRows[headerRowIndex].map(h => h ? String(h).trim().toLowerCase() : '');
                     
+                    // Находим индексы нужных нам колонок
                     const idxConsignment = headerRow.indexOf('consignment');
                     const idxConRef = headerRow.indexOf('con. ref.');
                     const idxSupplier = headerRow.indexOf('supplier');
@@ -246,17 +246,14 @@
 
                     const stockRows = [];
 
-                    // ШАГ 2: Собираем данные, начиная со следующей строки после шапки
                     for (let i = headerRowIndex + 1; i < rawRows.length; i++) {
                         const row = rawRows[i];
                         if (!row || row.length === 0) continue;
 
-                        // Вытаскиваем значения по динамическим индексам
                         const valCons = idxConsignment !== -1 ? row[idxConsignment] : null;
                         const valConRef = idxConRef !== -1 ? row[idxConRef] : null;
                         const valVariety = idxVariety !== -1 ? row[idxVariety] : null;
                         
-                        // Если нет консигнации и сорта — это пустая строка или заголовок категории (пропускаем)
                         if (!valCons && !valConRef && !valVariety) continue;
                         if ((valCons === null || valCons === '') && (valConRef === null || valConRef === '')) continue;
 
@@ -275,29 +272,30 @@
                     }
 
                     if (stockRows.length === 0) {
-                        throw new Error("No valid fruit lots extracted. Check file layout.");
+                        throw new Error("No items matching requirements found in the selected sheet.");
                     }
 
-                    // ШАГ 3: Очистка базы данных (теперь доходит сюда!)
+                    // Переключаем статус на очистку
                     statusDiv.style.color = "#ef6c00";
-                    statusDiv.innerText = "Clearing old database items...";
+                    statusDiv.innerText = "Clearing database rows...";
                     
-                    const { error: deleteError } = await _db.from('stock').delete().neq('id', 0);
+                    // Выполняем очистку старых остатков
+                    const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                     if (deleteError) throw deleteError;
 
-                    // ШАГ 4: Загрузка в Supabase
-                    statusDiv.innerText = `Uploading ${stockRows.length} items...`;
-                    const { error: insertError } = await _db.from('stock').insert(stockRows);
+                    // Заливаем новые остатки
+                    statusDiv.innerText = `Uploading ${stockRows.length} lots to database...`;
+                    const { error: insertError } = await clientDb.from('stock').insert(stockRows);
                     if (insertError) throw insertError;
 
                     statusDiv.style.color = "#2e7d32";
-                    statusDiv.innerText = `✅ Successfully imported ${stockRows.length} lots from Excel!`;
+                    statusDiv.innerText = `✅ Success! Loaded ${stockRows.length} lots into stock table.`;
                     fileInput.value = '';
                     setTimeout(() => statusDiv.innerText = '', 5000);
 
                 } catch (parseErr) {
                     statusDiv.style.color = "#c53030";
-                    statusDiv.innerText = "Error parsing: " + parseErr.message;
+                    statusDiv.innerText = "Processing failed: " + parseErr.message;
                     console.error(parseErr);
                 }
             };
@@ -314,7 +312,7 @@
     // Живой конвейер заказов
     async function loadOfficeDashboard() {
         try {
-            const { data: orders, error } = await _db
+            const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
                 .order('id', { ascending: false })
@@ -386,7 +384,7 @@
 
     async function updateStatus(orderId, newStatus) {
         try {
-            const { error } = await _db.from('orders').update({ status: newStatus }).eq('id', orderId);
+            const { error } = await clientDb.from('orders').update({ status: newStatus }).eq('id', orderId);
             if (error) throw error;
             loadOfficeDashboard();
         } catch (e) { alert("Error changing status: " + e.message); }
@@ -394,7 +392,7 @@
 
     async function assignDriver(orderId, driverName) {
         try {
-            const { error } = await _db.from('orders').update({ driver_name: driverName || null }).eq('id', orderId);
+            const { error } = await clientDb.from('orders').update({ driver_name: driverName || null }).eq('id', orderId);
             if (error) throw error;
             loadOfficeDashboard();
         } catch (e) { alert("Error assigning driver: " + e.message); }
