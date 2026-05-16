@@ -1,49 +1,129 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8"><title>Панель Офиса - Peake Fruit</title>
+    <meta charset="UTF-8"><title>Панель Офиса и Отчеты - Peake Fruit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --p:#1a1a2e; --s:#f0f2f5; --ok:#2e7d32; }
+        :root { --p:#1a1a2e; --s:#f0f2f5; --ok:#2e7d32; --accent:#1565c0; --del:#d32f2f; }
         body{font-family:sans-serif; background:var(--s); margin:0; padding:15px;}
-        .card{background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); max-width:1100px; margin:auto}
+        .card{background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); max-width:1200px; margin:auto; margin-bottom: 25px;}
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px;}
-        h2{margin:0; color:var(--p);}
-        table{width:100%; border-collapse:collapse; margin-top:15px;}
-        th, td{padding:12px; border-bottom:1px solid #eee; text-align:left}
-        th{background:#f4f4f4; font-size:12px; color:#666; text-transform:uppercase}
-        select {padding:6px; border-radius:4px; border:1px solid #ccc; font-weight: bold;}
+        h2{margin:0; color:var(--p); font-size: 22px;}
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+        .tab-btn { padding: 10px 20px; border: none; background: #e0e0e0; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 14px; color: #555; }
+        .tab-btn.active { background: var(--accent); color: white; }
+        .filters { background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 15px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .filters label { font-size: 13px; font-weight: bold; color: #444; }
+        input, select, button { padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
+        table{width:100%; border-collapse:collapse; margin-top:10px;}
+        th, td{padding:12px; border-bottom:1px solid #eee; text-align:left; font-size: 14px;}
+        th{background:#f4f4f4; font-size:12px; color:#666; text-transform:uppercase; font-weight: bold;}
         .status { padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold; text-transform:uppercase;}
         .status.new { background:#fff3e0; color:#ef6c00; }
         .status.process { background:#e3f2fd; color:#1565c0; }
         .status.done { background:#e8f5e9; color:#2e7d32; }
         .btn-out { background:#666; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; }
+        .btn-csv { background: var(--ok); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-csv:hover { background: #1b5e20; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .stats-box { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+        .stat-card { background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px 20px; border-radius: 8px; min-width: 150px; }
+        .stat-card div { font-size: 12px; color: #6c757d; text-transform: uppercase; font-weight: bold; }
+        .stat-card span { font-size: 20px; font-weight: bold; color: var(--p); }
     </style>
 </head>
 <body>
 
     <div class="card">
         <div class="header">
-            <h2>Панель управления заказами (Офис)</h2>
+            <h2>Панель управления и Отчетность (Офис)</h2>
             <div>
                 Привет, <b id="office_user">Администратор</b>
                 <button class="btn-out" onclick="logout()" style="margin-left:15px;">Выйти</button>
             </div>
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Откуда (Линия)</th>
-                    <th>Описание заказа</th>
-                    <th>Назначить водителя</th>
-                    <th>Статус</th>
-                </tr>
-            </thead>
-            <tbody id="orders_list"></tbody>
-        </table>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('orders-tab', this)">🗂 Активные заказы</button>
+            <button class="tab-btn" onclick="switchTab('reports-tab', this); loadFullReport();">📊 Полный отчет и Экспорт</button>
+        </div>
+
+        <div id="orders-tab" class="tab-content active">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Откуда (Линия)</th>
+                        <th>Описание заказа</th>
+                        <th>Назначить водителя</th>
+                        <th>Статус</th>
+                    </tr>
+                </thead>
+                <tbody id="orders_list"></tbody>
+            </table>
+        </div>
+
+        <div id="reports-tab" class="tab-content">
+            
+            <div class="stats-box">
+                <div class="stat-card">
+                    <div>Всего заказов в базе</div>
+                    <span id="stat_total">0</span>
+                </div>
+                <div class="stat-card">
+                    <div>Выполнено (Done)</div>
+                    <span id="stat_done" style="color: var(--ok);">0</span>
+                </div>
+                <div class="stat-card">
+                    <div>В процессе (Process)</div>
+                    <span id="stat_process" style="color: var(--accent);">0</span>
+                </div>
+            </div>
+
+            <div class="filters">
+                <div>
+                    <label>Линия:</label><br>
+                    <select id="filter_line" onchange="filterReport()">
+                        <option value="">Все линии</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Водитель:</label><br>
+                    <select id="filter_driver" onchange="filterReport()">
+                        <option value="">Все водители</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Статус:</label><br>
+                    <select id="filter_status" onchange="filterReport()">
+                        <option value="">Все статусы</option>
+                        <option value="new">Новый (New)</option>
+                        <option value="process">В процессе (Process)</option>
+                        <option value="done">Выполнен (Done)</option>
+                    </select>
+                </div>
+                <div style="margin-left: auto; align-self: flex-end;">
+                    <button class="btn-csv" onclick="exportToCSV()">📥 Скачать отчет в CSV</button>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Дата / Время заказа</th>
+                        <th>Откуда (Линия)</th>
+                        <th>Описание заказа</th>
+                        <th>Кто везет (Водитель)</th>
+                        <th>Статус</th>
+                    </tr>
+                </thead>
+                <tbody id="report_table_body"></tbody>
+            </table>
+        </div>
+
     </div>
 
 <script>
@@ -51,7 +131,6 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Проверка прав доступа при входе на экран
     const currentUser = localStorage.getItem('user');
     const currentRole = localStorage.getItem('role');
     const displayName = localStorage.getItem('name');
@@ -62,25 +141,55 @@
         document.getElementById('office_user').innerText = displayName;
     }
 
-    let driversList = []; // Массив для хранения имен водителей
+    let driversList = [];
+    let allLinesList = [];
+    let rawReportData = []; 
 
-    // Шаг 1: Загружаем реальные имена водителей прямо из общей таблицы users_table
-    async function loadDriversData() {
-        const { data, error } = await _db.from('users_table').select('name').eq('t', 'driver').order('name');
-        if (!error && data) {
-            driversList = data.map(d => d.name).filter(Boolean);
-        }
-        loadOrders(); // После водителей загружаем сами заказы
+    // Переключение между вкладками
+    function switchTab(tabId, btn) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        btn.classList.add('active');
     }
 
-    // Шаг 2: Загружаем заказы из таблицы заказов
+    // Шаг 1: Инициализация списков для фильтров
+    async function loadInitialData() {
+        // Получаем водителей
+        const { data: drData } = await _db.from('users_table').select('name').eq('t', 'driver').order('name');
+        if (drData) {
+            driversList = drData.map(d => d.name).filter(Boolean);
+            const fDr = document.getElementById('filter_driver');
+            driversList.forEach(name => {
+                fDr.innerHTML += `<option value="${name}">${name}</option>`;
+            });
+        }
+
+        // Получаем линии
+        const { data: lnData } = await _db.from('users_table').select('name').eq('t', 'line').order('name');
+        if (lnData) {
+            allLinesList = lnData.map(l => l.name).filter(Boolean);
+            const fLn = document.getElementById('filter_line');
+            allLinesList.forEach(name => {
+                fLn.innerHTML += `<option value="${name}">${name}</option>`;
+            });
+        }
+        
+        loadOrders();
+        setInterval(loadOrders, 5000); // Автообновление активных каждые 5 секунд
+    }
+
+    // Шаг 2: Вывод текущих активных заказов (Вкладка 1)
     async function loadOrders() {
         try {
             const { data: orders, error } = await _db.from('orders').select('*').order('id', { ascending: false });
             if (error) throw error;
 
-            document.getElementById('orders_list').innerHTML = orders.map((o) => {
-                // Динамически строим выпадающий список водителей
+            // Показываем в оперативной вкладке только новые заказы и заказы в процессе
+            const activeOrders = orders.filter(o => o.status !== 'done');
+
+            document.getElementById('orders_list').innerHTML = activeOrders.map((o) => {
                 let selectOptions = `<option value="">-- Назначить --</option>`;
                 selectOptions += driversList.map(name => `
                     <option value="${name}" ${o.driver_name === name ? 'selected' : ''}>${name}</option>
@@ -90,7 +199,7 @@
                 <tr>
                     <td>#${o.id}</td>
                     <td><b>${o.line || 'Не указана'}</b></td>
-                    <td>${o.description || 'Порожний поддон / Запрос'}</td>
+                    <td>${o.description || 'Запрос поддонов'}</td>
                     <td>
                         <select onchange="assignDriver(${o.id}, this.value)">
                             ${selectOptions}
@@ -102,17 +211,117 @@
         } catch(e) { console.error(e); }
     }
 
-    // Шаг 3: Связываем заказ с выбранным водителем
+    // Шаг 3: Связывание заказа и водителя
     async function assignDriver(orderId, driverName) {
-        // Если имя выбрано — ставим статус 'process' (в процессе), если сбросили — возвращаем 'new'
         const status = driverName ? 'process' : 'new';
-        
         const { error } = await _db.from('orders')
             .update({ driver_name: driverName, status: status })
             .eq('id', orderId);
             
-        if (error) alert("Ошибка назначения: " + error.message);
+        if (error) alert("Ошибка: " + error.message);
         loadOrders();
+    }
+
+    // Шаг 4: Загрузка всей истории для Полного отчета (Вкладка 2)
+    async function loadFullReport() {
+        try {
+            const { data: orders, error } = await _db.from('orders').select('*').order('id', { ascending: false });
+            if (error) throw error;
+
+            rawReportData = orders; 
+            
+            // Считаем показатели аналитики
+            document.getElementById('stat_total').innerText = orders.length;
+            document.getElementById('stat_done').innerText = orders.filter(o => o.status === 'done').length;
+            document.getElementById('stat_process').innerText = orders.filter(o => o.status === 'process').length;
+
+            renderReportTable(rawReportData);
+        } catch(e) { console.error(e); }
+    }
+
+    // Шаг 5: Отрисовка строк в таблице отчета
+    function renderReportTable(data) {
+        document.getElementById('report_table_body').innerHTML = data.map((o) => {
+            let formattedDate = "-";
+            if (o.created_at) {
+                const d = new Date(o.created_at);
+                formattedDate = d.toLocaleDateString('ru-RU') + ' ' + d.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
+            }
+
+            return `
+            <tr>
+                <td>#${o.id}</td>
+                <td style="color:#555; font-size:13px; font-weight:bold;">${formattedDate}</td>
+                <td><b>${o.line || '-'}</b></td>
+                <td>${o.description || '-'}</td>
+                <td><i style="color:#222;">${o.driver_name || 'Не назначен'}</i></td>
+                <td><span class="status ${o.status || 'new'}">${o.status || 'new'}</span></td>
+            </tr>`;
+        }).join('');
+    }
+
+    // Шаг 6: Фильтрация отчета "на лету" без перезагрузки страниц
+    function filterReport() {
+        const fLine = document.getElementById('filter_line').value;
+        const fDriver = document.getElementById('filter_driver').value;
+        const fStatus = document.getElementById('filter_status').value;
+
+        let filtered = rawReportData;
+
+        if (fLine) filtered = filtered.filter(o => o.line === fLine);
+        if (fDriver) filtered = filtered.filter(o => o.driver_name === fDriver);
+        if (fStatus) filtered = filtered.filter(o => o.status === fStatus);
+
+        renderReportTable(filtered);
+    }
+
+    // Шаг 7: Генерация и скачивание CSV файла с учетом выбранных фильтров
+    function exportToCSV() {
+        const fLine = document.getElementById('filter_line').value;
+        const fDriver = document.getElementById('filter_driver').value;
+        const fStatus = document.getElementById('filter_status').value;
+
+        let dataToExport = rawReportData;
+        if (fLine) dataToExport = dataToExport.filter(o => o.line === fLine);
+        if (fDriver) dataToExport = dataToExport.filter(o => o.driver_name === fDriver);
+        if (fStatus) dataToExport = dataToExport.filter(o => o.status === fStatus);
+
+        if (dataToExport.length === 0) {
+            alert("Нет данных для экспорта!");
+            return;
+        }
+
+        // Формируем CSV. Используем точку с запятой (;) и BOM-заголовок для корректного отображения кириллицы в Excel
+        let csvContent = "\uFEFF"; 
+        csvContent += "ID заказа;Дата и время создания;Линия (Кто заказал);Описание заказа;Назначенный водитель;Текущий статус\n";
+
+        dataToExport.forEach(o => {
+            let dateStr = "-";
+            if (o.created_at) {
+                const d = new Date(o.created_at);
+                dateStr = d.toLocaleDateString('ru-RU') + ' ' + d.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
+            }
+            
+            const id = o.id;
+            const line = (o.line || '-').replace(/;/g, ','); 
+            const desc = (o.description || '-').replace(/;/g, ',');
+            const driver = (o.driver_name || 'Не назначен').replace(/;/g, ',');
+            const status = o.status || 'new';
+
+            csvContent += `${id};${dateStr};${line};${desc};${driver};${status}\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        
+        const currentDate = new Date().toISOString().slice(0,10);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `peake_fruit_report_${currentDate}.csv`);
+        document.body.appendChild(link);
+        
+        link.click();
+        document.body.removeChild(link);
     }
 
     function logout() {
@@ -120,8 +329,7 @@
         window.location.href = 'login.html';
     }
 
-    // Инициализация панели при загрузке страницы
-    loadDriversData();
+    loadInitialData();
 </script>
 </body>
 </html>
