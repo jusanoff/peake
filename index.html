@@ -316,26 +316,32 @@
     }
 
     async function fetchLineFullName() {
-        try {
-            const { data, error } = await clientDb
-                .from('user_table')
-                .select('name')
-                .eq('username', currentUser)
-                .single();
+    try {
+        // 1. Делаем запрос к таблице 'user_table' в Supabase
+        const { data, error } = await clientDb
+            .from('user_table')
+            .select('name')
+            .eq('username', currentUser) // Ищем строку, где username совпадает с логином (hl1, Nob)
+            .single();
 
-            if (error) throw error;
+        if (error) throw error;
 
-            if (data && data.name) {
-                cachedLineFullName = data.name; 
-                // ИСПРАВЛЕНО: Меняем текст в синем значке на полное имя (например, Hand Line1)
-                document.getElementById('line_name_display').innerText = 'Line: ' + data.name;
-            }
-        } catch (err) {
-            console.error("Error fetching full name:", err);
+        // 2. Если база данных вернула красивое имя (name), сохраняем и выводим его
+        if (data && data.name) {
+            cachedLineFullName = data.name; // Записываем, например, "Hand Line1" в глобальную переменную
+            
+            // ПРИНУДИТЕЛЬНО ЗАМЕНЯЕМ логин на красивое имя в синей плашке на экране
+            document.getElementById('line_name_display').innerText = 'Line: ' + data.name;
         }
-        // Загружаем заказы линии (и по логину, и по полному имени для надежности)
-        loadActiveRequests();
+    } catch (err) {
+        console.error("Error fetching full name:", err);
+        // В случае ошибки или если интернета нет, в шапке так и останется логин (currentUser)
     }
+    
+    // 3. ТОЛЬКО ТЕПЕРЬ запускаем загрузку истории заказов
+    // Это гарантирует, что мы будем искать заказы уже по правильному имени
+    loadActiveRequests();
+}
 
     async function loadStockDropdown() {
         try {
