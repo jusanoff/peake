@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit — Office Control</title>
+    <title>Peake Fruit — Office Control Tower</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -191,8 +191,9 @@
                 <thead>
                     <tr>
                         <th>Consignment</th>
-                        <th>GrowerPro Ref</th>
+                        <th>Growerpro / Supplier</th>
                         <th>Variety / Description</th>
+                        <th>Grower / Supplier</th>
                         <th>Origin</th>
                         <th>Size</th>
                         <th>Store</th>
@@ -237,14 +238,13 @@
                 const bstr = e.target.result;
                 const workbook = XLSX.read(bstr, { type: 'binary' });
                 
-                // Ищем нужный лист (Daily Stock Sheet или Stock)
                 const sheetName = workbook.SheetNames.find(n => 
                     n.toLowerCase().includes("stock") || n.toLowerCase().includes("daily")
                 ) || workbook.SheetNames[0];
                 
                 const worksheet = workbook.Sheets[sheetName];
                 
-                // Парсим файл жестко связывая ячейки с буквами колонок Excel A, B, C...
+                // Читаем по буквам колонок Excel (A, B, C...)
                 const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
                 if (rawRows.length === 0) throw new Error("Excel sheet is empty.");
 
@@ -254,28 +254,36 @@
                     const row = rawRows[i];
                     if (!row) continue;
 
-                    const consignment  = String(row["A"] || "").trim(); // Колонка A (Consignment)
-                    const growerProRef = String(row["B"] || "").trim(); // Колонка B (GrowerPro Ref)
-                    const origin       = String(row["D"] || "").trim(); // Колонка D (Origin)
-                    const size         = String(row["E"] || "").trim(); // Колонка E (Size)
-                    const store        = String(row["F"] || "").trim(); // Колонка F (Store)
-                    const variety      = String(row["H"] || "").trim(); // Колонка H (Variety/Commodity)
-                    const available    = String(row["M"] || "").trim(); // Колонка M (Available stock)
+                    let rawCons = String(row["A"] || "").trim();
+                    let consignmentNum = parseInt(rawCons, 10);
 
-                    // ЖЕСТКИЙ СКВОЗНОЙ ФИЛЬТР:
-                    // Если в ячейке А пусто, ИЛИ это текст ("Consignment", "Braeburn"), ИЛИ это ноль —
-                    // скрипт ПОЛНОСТЬЮ ИГНОРИРУЕТ эту строку и идет дальше.
-                    if (!consignment || isNaN(consignment) || consignment === "0") {
+                    // СТРОГИЙ ФИЛЬТР: Пропускаем только реальные 4-5 значные номера лотов (от 1000 до 99999)
+                    // Это отсекает даты, года, пустые текстовые строки и названия сортов посреди таблиц
+                    if (isNaN(consignmentNum) || consignmentNum < 1000 || consignmentNum > 99999) {
                         continue; 
                     }
 
-                    // Защита от дублирования строк шапки
-                    if (growerProRef.toLowerCase().includes("growerpro")) continue;
+                    const variety = String(row["H"] || "").trim(); // Колонка H: Variety
+                    const available = String(row["M"] || "").trim(); // Колонка M: Available stock
+                    
+                    // Если строка пустая по смыслу — игнорируем
+                    if (!variety && !available) continue;
 
-                    // Добавляем только чистые данные
+                    const consignment  = String(consignmentNum); // Колонка A
+                    const growerProRef = String(row["B"] || "").trim(); // Колонка B (Growerpro  Ref)
+                    const grower       = String(row["С"] || "").trim(); // Колонка С (Grower / Supplier)
+                    const origin       = String(row["D"] || "").trim(); // Колонка D: Origin
+                    const size         = String(row["E"] || "").trim(); // Колонка E: Size
+                    const store        = String(row["F"] || "").trim(); // Колонка F: Store
+
+                    // Исключаем случайное попадание технического заголовка
+                    if (growerProRef.toLowerCase().includes("growerpro") || consignment.toLowerCase().includes("consignment")) {
+                        continue;
+                    }
+
                     stockRows.push({
                         consignment: consignment,
-                        grower: growerProRef ? growerProRef : null, 
+                        grower: growerProRef ? growerProRef : null, // Записываем сюда код из колонки B
                         description: variety ? variety : null,      
                         origin: origin ? origin : null,             
                         size: size ? size : null,                   
@@ -285,21 +293,21 @@
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("No real item rows found. Check if Column A has numbers.");
+                    throw new Error("No real item rows matched the strict 4-5 digit Consignment filter.");
                 }
 
-                statusDiv.innerHTML = `⚙️ Validated ${stockRows.length} rows. Updating database...`;
+                statusDiv.innerHTML = `⚙️ Verified ${stockRows.length} real rows. Updating database...`;
                 
-                // Чистим старую базу стока в Supabase
+                // Очищаем старый сток в Supabase
                 const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                 if (deleteError) throw deleteError;
 
-                // Загружаем чистые, выровненные данные
+                // Загружаем чистый проверенный сток
                 const { error: insertError } = await clientDb.from('stock').insert(stockRows);
                 if (insertError) throw insertError;
 
                 statusDiv.style.color = "#2e7d32";
-                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} items with 100% precision!`;
+                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} items with strict alignment!`;
                 fileInput.value = '';
                 
                 loadStockTable();
@@ -366,7 +374,7 @@
         } catch (e) { console.error(e); }
     }
 
-    // ИДЕАЛЬНАЯ РАССТАНОВКА КОЛОНОК НА UI: ВСЁ СТРОГО НА СВОИХ МЕСТАХ
+    // ИДЕАЛЬНАЯ И ЧИСТАЯ ИНТЕГРАЦИЯ С ЭКРАНОМ (БЕЗ КОЛОНКИ C)
     async function loadStockTable() {
         try {
             const { data: stock, error } = await clientDb.from('stock').select('*').order('id', { ascending: true });
@@ -379,11 +387,7 @@
 
             const html = stock.map(s => `
                 <tr>
-                    <td><span class="consignment-code">${s.consignment || '-'}</span></td> 
-                    <td><span class="ref-code">${s.grower || '-'}</span></td> 
-                    <td><strong>${s.description || '-'}</strong></td> <td>${s.origin || '-'}</td> 
-                    <td>${s.size || '-'}</td> <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td> <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td> 
-                </tr>
+                    <td><span class="consignment-code">${s.consignment || '-'}</span></td> <td><span class="ref-code">${s.grower || '-'}</span></td> <td><strong>${s.description || '-'}</strong></td> <td>${s.origin || '-'}</td> <td>${s.size || '-'}</td> <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td> <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td> </tr>
             `).join('');
             document.getElementById('stock_base_body').innerHTML = html;
         } catch (e) { console.error(e); }
