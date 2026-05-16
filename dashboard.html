@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Peake Fruit - TV Dashboard</title>
@@ -69,7 +69,7 @@
         td {
             background: var(--card-bg);
             padding: 16px 15px;
-            font-size: 18px; /* Крупный размер для ТВ экрана */
+            font-size: 18px; 
             color: var(--text);
             border-top: 1px solid #e2e8f0;
             border-bottom: 1px solid #e2e8f0;
@@ -79,7 +79,7 @@
         td:first-child { border-left: 1px solid #e2e8f0; border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
         td:last-child { border-right: 1px solid #e2e8f0; border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
         
-        /* Стили и анимация для Срочных (Urgent) строк */
+        /* Urgent Styles & Pulse Animation */
         tr.urgent-row td {
             background: var(--urgent-bg);
             border-top: 1px solid var(--urgent-border);
@@ -114,4 +114,140 @@
         
         .urgent-label {
             color: #d32f2f;
-            font-weight:
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 14px;
+            display: inline-block;
+            margin-right: 4px;
+        }
+
+        .driver-text { font-weight: bold; color: #1a1a2e; }
+        .no-driver { color: var(--text-muted); font-style: italic; }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            display: inline-block;
+            text-align: center;
+            width: 95px;
+        }
+        .status-badge.new { background: #fff3e0; color: #e65100; border: 1px solid var(--new); }
+        .status-badge.process { background: #e3f2fd; color: #0d47a1; border: 1px solid var(--process); }
+        .status-badge.delivered, .status-badge.done { background: #e8f5e9; color: #1b5e20; border: 1px solid var(--done); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>PEAKE FRUIT — LOGISTICS BOARD</h1>
+        <div class="live-indicator">
+            <div class="dot"></div>
+            <span>Live Monitoring</span>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 5%">ID</th>
+                <th style="width: 12%">Ordered By</th>
+                <th style="width: 11%">Time</th>
+                <th style="width: 18%">Description</th>
+                <th style="width: 13%">Grower</th>
+                <th style="width: 11%">Consignment</th>
+                <th style="width: 8%">Store</th>
+                <th style="width: 7%">Qty</th>
+                <th style="width: 10%">Taken By</th>
+                <th style="width: 5%; text-align: center;">Status</th>
+            </tr>
+        </thead>
+        <tbody id="tv_orders_body">
+            </tbody>
+    </table>
+
+<script>
+    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+    const _db = supabase.createClient(supabaseUrl, supabaseKey);
+
+    async function loadTVDashboard() {
+        try {
+            const { data: orders, error } = await _db
+                .from('orders')
+                .select('*')
+                .order('id', { ascending: false });
+
+            if (error) throw error;
+
+            const now = new Date();
+
+            // Auto-hide delivered/done orders after 1 minute (60,000 ms)
+            const activeOrders = orders.filter(o => {
+                const status = (o.status || 'new').toLowerCase();
+                if (status === 'delivered' || status === 'done') {
+                    const createdTime = new Date(o.created_at);
+                    if (now - createdTime > 60000) {
+                        return false; 
+                    }
+                }
+                return true;
+            });
+
+            // Sorting: Urgent orders pinned to the top. Then sorted by status: process -> new -> delivered
+            const sortedOrders = activeOrders.sort((a, b) => {
+                if (a.urgent && !b.urgent) return -1;
+                if (!a.urgent && b.urgent) return 1;
+
+                const weights = { 'process': 1, 'new': 2, 'delivered': 3, 'done': 3 };
+                return (weights[(a.status || 'new').toLowerCase()] || 2) - (weights[(b.status || 'new').toLowerCase()] || 2);
+            });
+
+            const html = sortedOrders.map(o => {
+                let timeStr = "-";
+                if (o.created_at) {
+                    const d = new Date(o.created_at);
+                    timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                }
+
+                const driverDisplay = o.driver_name 
+                    ? `<span class="driver-text">🚚 ${o.driver_name}</span>` 
+                    : `<span class="no-driver">—</span>`;
+
+                const statusClass = (o.status || 'new').toLowerCase();
+                
+                const isUrgent = o.urgent === true || o.urgent === 'true';
+                const rowClass = isUrgent ? 'class="urgent-row"' : '';
+                const urgentPrefix = isUrgent ? '<span class="urgent-label">⚠️ URGENT:</span> ' : '';
+
+                return `
+                <tr ${rowClass}>
+                    <td><span style="color: var(--text-muted);">#${o.id}</span></td>
+                    <td><span class="line-text">${o.line || '-'}</span></td>
+                    <td><span class="time-text">${timeStr}</span></td>
+                    <td><span class="desc-text">${urgentPrefix}${o.description || '-'}</span></td>
+                    <td><span class="grower-text">${o.grower || '-'}</span></td>
+                    <td><code>${o.consignment || '-'}</code></td>
+                    <td><span class="store-text">${o.store || '-'}</span></td>
+                    <td><span class="qty-text">${o.quantity || '-'}</span></td>
+                    <td>${driverDisplay}</td>
+                    <td style="text-align: center;">
+                        <span class="status-badge ${statusClass}">${o.status || 'new'}</span>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('tv_orders_body').innerHTML = html;
+
+        } catch (e) {
+            console.error("TV Update Error: ", e);
+        }
+    }
+
+    loadTVDashboard();
+    setInterval(loadTVDashboard, 5000);
+</script>
+</body>
+</html>
