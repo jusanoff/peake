@@ -166,7 +166,7 @@
                         <th>Line Name</th>
                         <th>Time</th>
                         <th>Item Description</th>
-                        <th>Grower</th>
+                        <th>Supplier</th>
                         <th>Consignment</th>
                         <th>Origin</th>
                         <th>Size</th>
@@ -191,7 +191,7 @@
                 <thead>
                     <tr>
                         <th>Consignment</th>
-                        <th>Grower / Supplier</th>
+                        <th>Supplier / Grower</th>
                         <th>Variety / Description</th>
                         <th>Origin</th>
                         <th>Size</th>
@@ -242,9 +242,8 @@
                 ) || workbook.SheetNames[0];
                 
                 const worksheet = workbook.Sheets[sheetName];
-                
-                // Читаем по буквам колонок Excel (A, B, C...)
                 const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
+                
                 if (rawRows.length === 0) throw new Error("Excel sheet is empty.");
 
                 const stockRows = [];
@@ -256,32 +255,24 @@
                     let rawCons = String(row["A"] || "").trim();
                     let consignmentNum = parseInt(rawCons, 10);
 
-                    // СТРОГИЙ ФИЛЬТР: Пропускаем только реальные 4-5 значные номера лотов (от 1000 до 99999)
-                    // Это отсекает даты, года, пустые текстовые строки и названия сортов посреди таблиц
+                    // ПУЛЕНЕПРОБИВАЕМЫЙ ФИЛЬТР: Пропускаем только строки с реальным номером лота в колонке A (4-5 цифр)
                     if (isNaN(consignmentNum) || consignmentNum < 1000 || consignmentNum > 99999) {
                         continue; 
                     }
 
-                    const variety = String(row["H"] || "").trim(); // Колонка H: Variety
-                    const available = String(row["M"] || "").trim(); // Колонка M: Available stock
-                    
-                    // Если строка пустая по смыслу — игнорируем
+                    const supplier  = String(row["C"] || "").trim(); // Колонка C (Supplier / Имя поставщика)
+                    const variety   = String(row["H"] || "").trim(); // Колонка H (Variety / Сорт)
+                    const origin    = String(row["D"] || "").trim(); // Колонка D (Country of origin)
+                    const size      = String(row["E"] || "").trim(); // Колонка E (Size)
+                    const store     = String(row["F"] || "").trim(); // Колонка F (Store / Камера)
+                    const available = String(row["M"] || "").trim(); // Колонка M (Available stock)
+
+                    // Если строка пустая по смыслу — идем дальше
                     if (!variety && !available) continue;
 
-                    const consignment  = String(consignmentNum); // Колонка A
-                    const growerProRef = String(row["B"] || "").trim(); // Колонка B (Grower / Supplier Ref)
-                    const origin       = String(row["D"] || "").trim(); // Колонка D: Origin
-                    const size         = String(row["E"] || "").trim(); // Колонка E: Size
-                    const store        = String(row["F"] || "").trim(); // Колонка F: Store
-
-                    // Исключаем случайное попадание технического заголовка
-                    if (growerProRef.toLowerCase().includes("growerpro") || consignment.toLowerCase().includes("consignment")) {
-                        continue;
-                    }
-
                     stockRows.push({
-                        consignment: consignment,
-                        grower: growerProRef ? growerProRef : null, // Записываем сюда код из колонки B
+                        consignment: String(consignmentNum),
+                        grower: supplier ? supplier : null, // Пишем имя Supplier напрямую сюда
                         description: variety ? variety : null,      
                         origin: origin ? origin : null,             
                         size: size ? size : null,                   
@@ -291,21 +282,21 @@
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("No real item rows matched the strict 4-5 digit Consignment filter.");
+                    throw new Error("No valid items found matching the 4-5 digit filter.");
                 }
 
                 statusDiv.innerHTML = `⚙️ Verified ${stockRows.length} real rows. Updating database...`;
                 
-                // Очищаем старый сток в Supabase
+                // Очистка старой базы стока
                 const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                 if (deleteError) throw deleteError;
 
-                // Загружаем чистый проверенный сток
+                // Загрузка точных отфильтрованных данных
                 const { error: insertError } = await clientDb.from('stock').insert(stockRows);
                 if (insertError) throw insertError;
 
                 statusDiv.style.color = "#2e7d32";
-                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} items with strict alignment!`;
+                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} items with Supplier alignment!`;
                 fileInput.value = '';
                 
                 loadStockTable();
@@ -372,7 +363,6 @@
         } catch (e) { console.error(e); }
     }
 
-    // ИДЕАЛЬНАЯ И ЧИСТАЯ ИНТЕГРАЦИЯ С ЭКРАНОМ (БЕЗ КОЛОНКИ C)
     async function loadStockTable() {
         try {
             const { data: stock, error } = await clientDb.from('stock').select('*').order('id', { ascending: true });
@@ -385,7 +375,7 @@
 
             const html = stock.map(s => `
                 <tr>
-                    <td><span class="consignment-code">${s.consignment || '-'}</span></td> <td><span class="ref-code">${s.grower || '-'}</span></td> <td><strong>${s.description || '-'}</strong></td> <td>${s.origin || '-'}</td> <td>${s.size || '-'}</td> <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td> <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td> </tr>
+                    <td><span class="consignment-code">${s.consignment || '-'}</span></td> <td><span class="ref-code" style="color:#2b6cb0; font-weight:600;">${s.grower || '-'}</span></td> <td><strong>${s.description || '-'}</strong></td> <td>${s.origin || '-'}</td> <td>${s.size || '-'}</td> <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td> <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td> </tr>
             `).join('');
             document.getElementById('stock_base_body').innerHTML = html;
         } catch (e) { console.error(e); }
