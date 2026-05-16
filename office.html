@@ -191,9 +191,8 @@
                 <thead>
                     <tr>
                         <th>Consignment</th>
-                        <th>Growerpro / Supplier</th>
-                        <th>Variety / Description</th>
                         <th>Grower / Supplier</th>
+                        <th>Variety / Description</th>
                         <th>Origin</th>
                         <th>Size</th>
                         <th>Store</th>
@@ -270,8 +269,7 @@
                     if (!variety && !available) continue;
 
                     const consignment  = String(consignmentNum); // Колонка A
-                    const growerProRef = String(row["B"] || "").trim(); // Колонка B (Growerpro  Ref)
-                    const grower       = String(row["С"] || "").trim(); // Колонка С (Grower / Supplier)
+                    const growerProRef = String(row["B"] || "").trim(); // Колонка B (Grower / Supplier Ref)
                     const origin       = String(row["D"] || "").trim(); // Колонка D: Origin
                     const size         = String(row["E"] || "").trim(); // Колонка E: Size
                     const store        = String(row["F"] || "").trim(); // Колонка F: Store
