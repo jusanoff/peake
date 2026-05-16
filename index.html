@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit - Place Order</title>
+    <title>Peake Fruit - Line Dashboard & Order</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -10,9 +10,13 @@
             --bg: #f4f6f9; 
             --card-bg: #ffffff; 
             --text: #1a1a2e; 
+            --text-muted: #6c757d;
             --accent: #0288d1;
             --accent-hover: #0277bd;
             --urgent: #d32f2f;
+            --new: #ef6c00; 
+            --process: #1565c0; 
+            --done: #2e7d32; 
         }
         body {
             font-family: 'Segoe UI', Roboto, sans-serif; 
@@ -20,46 +24,63 @@
             color: var(--text); 
             margin: 0; 
             padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            box-sizing: border-box;
         }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .header h1 { margin: 0; font-size: 22px; color: var(--accent); }
+        .user-badge { font-weight: bold; color: #4a5568; background: #e3f2fd; padding: 6px 12px; border-radius: 4px; }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) { .main-content { grid-template-columns: 1fr; } }
+
+        /* Стили формы */
         .order-card {
             background: var(--card-bg);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            width: 100%;
-            max-width: 500px;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            height: fit-content;
         }
-        h2 { margin-top: 0; color: var(--text); font-size: 24px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
-        .info-box { background: #e3f2fd; padding: 10px 15px; border-radius: 6px; color: #0d47a1; font-weight: bold; margin-bottom: 20px; }
-        
-        .form-group { margin-bottom: 18px; }
-        label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 14px; color: #4a5568; }
-        input, select, textarea {
+        .order-card h2 { margin-top: 0; font-size: 18px; margin-bottom: 15px; border-bottom: 2px solid #edf2f7; padding-bottom: 8px; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 13px; color: #4a5568; }
+        input {
             width: 100%;
-            padding: 10px;
+            padding: 8px 12px;
             border: 1px solid #cbd5e0;
             border-radius: 6px;
-            font-size: 15px;
+            font-size: 14px;
             box-sizing: border-box;
         }
-        textarea { resize: vertical; min-height: 80px; }
-        
         .urgent-zone {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             background: #fff5f5;
             border: 1px solid #fed7d7;
-            padding: 12px;
+            padding: 10px;
             border-radius: 6px;
-            margin-bottom: 20px;
+            margin: 15px 0;
         }
-        .urgent-zone input[type="checkbox"] { width: auto; cursor: pointer; }
+        .urgent-zone input { width: auto; cursor: pointer; }
         .urgent-zone label { margin-bottom: 0; color: var(--urgent); cursor: pointer; }
 
         .btn-submit {
@@ -67,8 +88,8 @@
             color: white;
             border: none;
             width: 100%;
-            padding: 12px;
-            font-size: 16px;
+            padding: 10px;
+            font-size: 15px;
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
@@ -80,24 +101,50 @@
             color: #718096;
             border: 1px solid #cbd5e0;
             width: 100%;
-            padding: 8px;
-            font-size: 14px;
-            margin-top: 10px;
+            padding: 6px;
+            font-size: 13px;
+            margin-top: 8px;
             border-radius: 6px;
             cursor: pointer;
         }
-        .btn-logout:hover { background: #edf2f7; color: var(--text); }
+        .btn-logout:hover { background: #edf2f7; }
+
+        /* Стили таблицы истории */
+        .history-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .history-card h2 { margin-top: 0; font-size: 18px; margin-bottom: 15px; border-bottom: 2px solid #edf2f7; padding-bottom: 8px; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f7fafc; color: var(--text-muted); padding: 10px; text-align: left; font-size: 12px; text-transform: uppercase; border-bottom: 2px solid #edf2f7; }
+        td { padding: 12px 10px; font-size: 14px; border-bottom: 1px solid #edf2f7; }
+        
+        tr.urgent-row { background: #fff5f5; }
+        
+        .status-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+        .status-badge.new { background: #fff3e0; color: #e65100; }
+        .status-badge.process { background: #e3f2fd; color: #0d47a1; }
+        .status-badge.delivered, .status-badge.done { background: #e8f5e9; color: #1b5e20; }
     </style>
 </head>
 <body>
 
 <script>
-    // --- СТРОГАЯ ПРОВЕРКА БЕЗОПАСНОСТИ ДО РЕНДЕРИНГА СТРАНИЦЫ ---
+    // --- ЗАЩИТА: ТОЛЬКО ЛИНИИ ---
     const currentUser = localStorage.getItem('user');
     const currentRole = localStorage.getItem('role');
     const displayName = localStorage.getItem('name') || currentUser;
 
-    // Если не авторизован или роль НЕ является 'line' — выкидываем на логин
     if (!currentUser || currentRole !== 'line') {
         alert("Access denied! Only production lines are allowed to place orders.");
         localStorage.clear();
@@ -105,47 +152,68 @@
     }
 </script>
 
-<div class="order-card">
-    <h2>Create New Order</h2>
-    
-    <div class="info-box">
-        Ordering from: <span id="lbl_line_name">Line Name</span>
+<div class="container">
+    <div class="header">
+        <h1>Peake Fruit — Production Panel</h1>
+        <div class="user-badge" id="lbl_line_top">Line: -</div>
     </div>
 
-    <form id="order_form" onsubmit="submitOrder(event)">
-        <div class="form-group">
-            <label for="inp_desc">Description / Item Name *</label>
-            <input type="text" id="inp_desc" placeholder="e.g., Apple Bins, Empty Pallets" required>
+    <div class="main-content">
+        <div class="order-card">
+            <h2>Place New Order</h2>
+            <form id="order_form" onsubmit="submitOrder(event)">
+                <div class="form-group">
+                    <label>Description / Item *</label>
+                    <input type="text" id="inp_desc" placeholder="e.g., Apple Bins" required>
+                </div>
+                <div class="form-group">
+                    <label>Grower</label>
+                    <input type="text" id="inp_grower" placeholder="e.g., Smith Orchard">
+                </div>
+                <div class="form-group">
+                    <label>Consignment Number</label>
+                    <input type="text" id="inp_cons" placeholder="e.g., CS1023">
+                </div>
+                <div class="form-group">
+                    <label>Store / Location</label>
+                    <input type="text" id="inp_store" placeholder="e.g., Cold Store 2">
+                </div>
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input type="number" id="inp_qty" placeholder="e.g., 5" min="1">
+                </div>
+
+                <div class="urgent-zone">
+                    <input type="checkbox" id="chk_urgent">
+                    <label for="chk_urgent">⚠️ MARK AS URGENT</label>
+                </div>
+
+                <button type="submit" class="btn-submit">Send Order</button>
+                <button type="button" class="btn-logout" onclick="logout()">Log Out</button>
+            </form>
         </div>
 
-        <div class="form-group">
-            <label for="inp_grower">Grower Name</label>
-            <input type="text" id="inp_grower" placeholder="e.g., Smith Orchard">
+        <div class="history-card">
+            <h2>Your Recent Orders (Live History)</h2>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Time</th>
+                            <th>Description</th>
+                            <th>Consignment</th>
+                            <th>Qty</th>
+                            <th>Driver</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history_body">
+                        </tbody>
+                </table>
+            </div>
         </div>
-
-        <div class="form-group">
-            <label for="inp_cons">Consignment Number</label>
-            <input type="text" id="inp_cons" placeholder="e.g., CS90210">
-        </div>
-
-        <div class="form-group">
-            <label for="inp_store">Store / Location</label>
-            <input type="text" id="inp_store" placeholder="e.g., Cold Store 3">
-        </div>
-
-        <div class="form-group">
-            <label for="inp_qty">Quantity</label>
-            <input type="number" id="inp_qty" placeholder="e.g., 5" min="1">
-        </div>
-
-        <div class="urgent-zone">
-            <input type="checkbox" id="chk_urgent">
-            <label for="chk_urgent">⚠️ MARK AS URGENT (High Priority)</label>
-        </div>
-
-        <button type="submit" class="btn-submit">Send Order</button>
-        <button type="button" class="btn-logout" onclick="logout()">Log Out</button>
-    </form>
+    </div>
 </div>
 
 <script>
@@ -153,37 +221,73 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Выводим имя текущей линии на экран
-    document.getElementById('lbl_line_name').innerText = displayName;
+    document.getElementById('lbl_line_top').innerText = "Line: " + displayName;
 
-    async function submitOrder(e) {
-        e.preventDefault();
-
-        // Формируем данные заказа
-       const orderData = {
-    line: displayName,
-    description: document.getElementById('inp_desc').value,
-    grower: document.getElementById('inp_grower').value || null,
-    cons: document.getElementById('inp_cons').value || null,       // Поменяли ключ на cons
-    store: document.getElementById('inp_store').value || null,
-    qty: parseInt(document.getElementById('inp_qty').value) || null, // Поменяли ключ на qty
-    urgent: document.getElementById('chk_urgent').checked,
-    status: 'new'
-};
-
+    // Функция загрузки личной истории этой Линии
+    async function loadMyHistory() {
         try {
-            const { error } = await _db
+            const { data: orders, error } = await _db
                 .from('orders')
-                .insert([orderData]);
+                .select('*')
+                .eq('line', displayName) // Показываем только заказы этой конкретной линии
+                .order('id', { ascending: false })
+                .limit(15); // Последние 15 штук
 
             if (error) throw error;
 
-            alert("Order successfully sent to TV Board!");
+            const html = orders.map(o => {
+                let timeStr = "-";
+                if (o.created_at) {
+                    const d = new Date(o.created_at);
+                    timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                }
+
+                const isUrgent = o.urgent === true || o.urgent === 'true';
+                const rowClass = isUrgent ? 'class="urgent-row"' : '';
+                const statusClass = (o.status || 'new').toLowerCase();
+
+                return `
+                <tr ${rowClass}>
+                    <td><span style="color: var(--text-muted);">#${o.id}</span></td>
+                    <td>${timeStr}</td>
+                    <td><strong>${isUrgent ? '⚠️ ' : ''}${o.description || '-'}</strong></td>
+                    <td><code>${o.cons || o.consignment || '-'}</code></td>
+                    <td>${o.qty || o.quantity || '-'}</td>
+                    <td>${o.driver_name ? '🚚 ' + o.driver_name : '—'}</td>
+                    <td><span class="status-badge ${statusClass}">${o.status || 'new'}</span></td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('history_body').innerHTML = html;
+        } catch (e) {
+            console.error("History loading error:", e);
+        }
+    }
+
+    // Создание заказа
+    async function submitOrder(e) {
+        e.preventDefault();
+
+        const orderData = {
+            line: displayName,
+            description: document.getElementById('inp_desc').value,
+            grower: document.getElementById('inp_grower').value || null,
+            store: document.getElementById('inp_store').value || null,
+            cons: document.getElementById('inp_cons').value || null, // Новое поле базы
+            qty: document.getElementById('inp_qty').value ? parseInt(document.getElementById('inp_qty').value) : null, // Запись числом
+            urgent: document.getElementById('chk_urgent').checked,
+            status: 'new'
+        };
+
+        try {
+            const { error } = await _db.from('orders').insert([orderData]);
+            if (error) throw error;
+
+            alert("Order created successfully!");
             document.getElementById('order_form').reset();
-            document.getElementById('lbl_line_name').innerText = displayName; // возвращаем текст после сброса формы
-            
+            loadMyHistory(); // Сразу обновляем историю на экране
         } catch (error) {
-            alert("Error sending order: " + error.message);
+            alert("Error: " + error.message);
         }
     }
 
@@ -191,6 +295,10 @@
         localStorage.clear();
         window.location.href = 'login.html';
     }
+
+    // Первичный запуск и цикл обновлений истории каждые 7 секунд
+    loadMyHistory();
+    setInterval(loadMyHistory, 7000);
 </script>
 </body>
 </html>
