@@ -60,16 +60,14 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
 
-        /* Табы переключения режимов ввода */
-        .tabs { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid #edf2f7; padding-bottom: 8px; }
-        .tab-btn {
-            background: #edf2f7; border: none; padding: 10px 16px; border-radius: 6px;
-            cursor: pointer; font-weight: bold; font-size: 13px; color: var(--text-muted);
+        /* Блок выбора из базы/стока */
+        .stock-section {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
         }
-        .tab-btn.active { background: var(--accent); color: white; }
-
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
 
         /* Стили формы */
         .form-grid {
@@ -79,13 +77,15 @@
             margin-bottom: 15px;
         }
         .form-group { display: flex; flex-direction: column; gap: 4px; }
-        .form-group.full-width { grid-column: 1 / -1; }
         label { font-size: 11px; text-transform: uppercase; font-weight: bold; color: var(--text-muted); }
         input, select {
             padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px;
             background: #fff; color: var(--text); box-sizing: border-box; width: 100%;
         }
         input:focus, select:focus { border-color: var(--accent); outline: none; }
+        
+        /* Подсветка автоматически заполненных полей */
+        input.auto-filled { background: #fafafa; border-color: #cbd5e0; }
 
         /* Чекбокс Urgent */
         .urgent-lock {
@@ -102,7 +102,7 @@
         }
         .submit-btn:hover { background: var(--accent-hover); }
 
-        /* Списки и таблицы заказов снизу */
+        /* Таблица/карточки заказов снизу */
         .orders-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
         .order-row-card {
             background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;
@@ -149,7 +149,6 @@
 <body>
 
 <script>
-    // Проверка авторизации
     const currentUser = localStorage.getItem('user');
     const currentRole = localStorage.getItem('role');
     if (!currentUser || currentRole !== 'line') {
@@ -172,56 +171,48 @@
     </div>
 
     <div class="main-card">
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('stock')">📦 Select from Stock</button>
-            <button class="tab-btn" onclick="switchTab('manual')">✍️ Enter Manually</button>
+        <div class="stock-section">
+            <div class="form-group">
+                <label for="stock_select" style="color: var(--accent); margin-bottom: 4px;">⚡ Quick Select from Stock Sheet</label>
+                <select id="stock_select" onchange="handleStockSelection()">
+                    <option value="">-- Choose fruit pallet (Auto-fills fields below) --</option>
+                </select>
+            </div>
         </div>
 
         <form id="order_form" onsubmit="handleFormSubmit(event)">
-            
-            <div id="tab_stock" class="tab-content active">
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label for="stock_select">Available Pallets (Stock Sheet)</label>
-                    <select id="stock_select" onchange="handleStockChange()">
-                        <option value="">-- Choose fruit pallet from stock --</option>
-                    </select>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Description / Fruit</label>
+                    <input type="text" id="m_description" placeholder="e.g. Royal Gala" required>
+                </div>
+                <div class="form-group">
+                    <label>Consignment (Cons)</label>
+                    <input type="text" id="m_cons" placeholder="e.g. 8885" required>
+                </div>
+                <div class="form-group">
+                    <label>Store / Location</label>
+                    <input type="text" id="m_store" placeholder="e.g. 41" required>
+                </div>
+                <div class="form-group">
+                    <label>Grower</label>
+                    <input type="text" id="m_grower" placeholder="e.g. Clemente">
+                </div>
+                <div class="form-group">
+                    <label>Origin</label>
+                    <input type="text" id="m_origin" placeholder="Chile">
+                </div>
+                <div class="form-group">
+                    <label>Size</label>
+                    <input type="text" id="m_size" placeholder="73-78">
+                </div>
+                <div class="form-group">
+                    <label>Count</label>
+                    <input type="text" id="m_count" placeholder="100">
                 </div>
             </div>
 
-            <div id="tab_manual" class="tab-content">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Description / Fruit</label>
-                        <input type="text" id="m_description" placeholder="e.g. Royal Gala">
-                    </div>
-                    <div class="form-group">
-                        <label>Consignment (Cons)</label>
-                        <input type="text" id="m_cons" placeholder="e.g. 8885">
-                    </div>
-                    <div class="form-group">
-                        <label>Store / Location</label>
-                        <input type="text" id="m_store" placeholder="e.g. 41">
-                    </div>
-                    <div class="form-group">
-                        <label>Grower</label>
-                        <input type="text" id="m_grower" placeholder="e.g. Clemente">
-                    </div>
-                    <div class="form-group">
-                        <label>Origin</label>
-                        <input type="text" id="m_origin" placeholder="Chile">
-                    </div>
-                    <div class="form-group">
-                        <label>Size</label>
-                        <input type="text" id="m_size" placeholder="73-78">
-                    </div>
-                    <div class="form-group">
-                        <label>Count</label>
-                        <input type="text" id="m_count" placeholder="100">
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-grid" style="grid-template-columns: 1fr;">
+            <div class="form-grid" style="grid-template-columns: 1fr; margin-bottom: 10px;">
                 <div class="form-group">
                     <label for="inp_qty" style="color:var(--accent);">Quantity Needed (QTY)</label>
                     <input type="number" id="inp_qty" min="1" value="1" required style="font-size:18px; font-weight:bold; text-align:center; border: 2px solid var(--accent);">
@@ -265,27 +256,9 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    let currentMode = 'stock'; // Переключатель режимов: 'stock' или 'manual'
-    let selectedStockItem = null;
-
     document.getElementById('lbl_line_top').innerText = "Line: " + currentUser;
 
-    // Вкладки переключения ввода
-    function switchTab(mode) {
-        currentMode = mode;
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        
-        if(mode === 'stock') {
-            document.querySelectorAll('.tab-btn')[0].classList.add('active');
-            document.getElementById('tab_stock').classList.add('active');
-        } else {
-            document.querySelectorAll('.tab-btn')[1].classList.add('active');
-            document.getElementById('tab_manual').classList.add('active');
-        }
-    }
-
-    // Имитация базы данных стока (твои данные из CSV)
+    // База данных стока (CSV)
     const mockStockData = [
         { cons: '8885', store: '41', desc: 'Royal Gala', grower: 'Clemente Chile', origin: 'Chile', size: '73-78', count: '100' },
         { cons: '8902', store: '41', desc: 'Royal Gala', grower: 'Clemente Chile', origin: 'Chile', size: '73-78', count: '100' },
@@ -293,71 +266,75 @@
         { cons: '9065', store: '14', desc: 'Vermont Beauty', grower: 'Trucape', origin: 'South Africa', size: '80', count: '90' }
     ];
 
-    // Заполнение выпадающего списка из стока
     function loadStockDropdown() {
         const select = document.getElementById('stock_select');
         mockStockData.forEach((item, index) => {
             const opt = document.createElement('option');
             opt.value = index;
-            opt.innerText = `Cons: ${item.cons} — ${item.desc} (Store: ${item.store}, Qty Avail)`;
+            opt.innerText = `Cons: ${item.cons} — ${item.desc} (Store: ${item.store})`;
             select.appendChild(opt);
         });
     }
 
-    function handleStockChange() {
+    // АВТОМАТИЧЕСКОЕ ЗАПОЛНЕНИЕ ПОЛЕЙ ПРИ ВЫБОРЕ ИЗ СТОКА
+    function handleStockSelection() {
         const idx = document.getElementById('stock_select').value;
-        selectedStockItem = idx !== "" ? mockStockData[idx] : null;
+        
+        if (idx !== "") {
+            const item = mockStockData[idx];
+            // Заполняем поля формы значениями из базы данных
+            document.getElementById('m_description').value = item.desc;
+            document.getElementById('m_cons').value = item.cons;
+            document.getElementById('m_store').value = item.store;
+            document.getElementById('m_grower').value = item.grower;
+            document.getElementById('m_origin').value = item.origin;
+            document.getElementById('m_size').value = item.size;
+            document.getElementById('m_count').value = item.count;
+            
+            // Добавляем класс для визуального подтверждения автозаполнения
+            document.querySelectorAll('.form-grid input').forEach(i => i.classList.add('auto-filled'));
+        } else {
+            // Если выбрали пустую строку, очищаем форму под ручной ввод
+            document.getElementById('order_form').reset();
+            document.getElementById('inp_qty').value = 1;
+            document.querySelectorAll('.form-grid input').forEach(i => i.classList.remove('auto-filled'));
+        }
     }
 
-    // Отправка запроса в Supabase
+    // Отправка данных в Supabase
     async function handleFormSubmit(e) {
         e.preventDefault();
         
-        let finalOrderData = {
+        const finalOrderData = {
             line: currentUser,
             qty: parseInt(document.getElementById('inp_qty').value) || 1,
             urgent: document.getElementById('chk_urgent').checked,
-            status: 'new'
+            status: 'new',
+            description: document.getElementById('m_description').value,
+            cons: document.getElementById('m_cons').value,
+            store: document.getElementById('m_store').value,
+            grower: document.getElementById('m_grower').value || '—',
+            origin: document.getElementById('m_origin').value || '—',
+            size: document.getElementById('m_size').value || '—',
+            count: document.getElementById('m_count').value || '—'
         };
-
-        if (currentMode === 'stock') {
-            if (!selectedStockItem) {
-                alert("Please select an item from stock!");
-                return;
-            }
-            finalOrderData.description = selectedStockItem.desc;
-            finalOrderData.cons = selectedStockItem.cons;
-            finalOrderData.store = selectedStockItem.store;
-            finalOrderData.grower = selectedStockItem.grower;
-            finalOrderData.origin = selectedStockItem.origin;
-            finalOrderData.size = selectedStockItem.size;
-            finalOrderData.count = selectedStockItem.count;
-        } else {
-            // Ручной ввод
-            finalOrderData.description = document.getElementById('m_description').value || 'Manual Pallet';
-            finalOrderData.cons = document.getElementById('m_cons').value || '—';
-            finalOrderData.store = document.getElementById('m_store').value || '—';
-            finalOrderData.grower = document.getElementById('m_grower').value || '—';
-            finalOrderData.origin = document.getElementById('m_origin').value || '—';
-            finalOrderData.size = document.getElementById('m_size').value || '—';
-            finalOrderData.count = document.getElementById('m_count').value || '—';
-        }
 
         try {
             const { error } = await _db.from('orders').insert([finalOrderData]);
             if (error) throw error;
             
-            alert("🚀 Order submitted successfully!");
+            alert("🚀 Request sent to warehouse drivers!");
             document.getElementById('order_form').reset();
-            switchTab('stock');
-            selectedStockItem = null;
+            document.getElementById('stock_select').value = "";
+            document.getElementById('inp_qty').value = 1;
+            document.querySelectorAll('.form-grid input').forEach(i => i.classList.remove('auto-filled'));
+            
             fetchMyLineRequests();
         } catch (err) {
             alert("Error sending order: " + err.message);
         }
     }
 
-    // Получение live-заказов только для текущей линии
     async function fetchMyLineRequests() {
         try {
             const { data: orders, error } = await _db
@@ -365,13 +342,13 @@
                 .select('*')
                 .eq('line', currentUser)
                 .order('id', { ascending: false })
-                .limit(15);
+                .limit(10);
 
             if (error) throw error;
 
             const tbody = document.getElementById('line_orders_body');
             if (!orders || orders.length === 0) {
-                tbody.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); display:block; width:100%;">No requests sent yet today.</div>`;
+                tbody.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); display:block; width:100%;">No requests sent yet.</div>`;
                 return;
             }
 
@@ -434,11 +411,9 @@
         window.location.href = 'login.html';
     }
 
-    // Старт
     loadStockDropdown();
-    switchTab('stock');
     fetchMyLineRequests();
-    setInterval(fetchMyLineRequests, 6000);
+    setInterval(fetchMyLineRequests, 5000);
 </script>
 </body>
 </html>
