@@ -32,20 +32,30 @@
         <h3 id="h_title">Tasks</h3>
         <div id="warning" class="warning-box"></div>
         <div id="driver_list">Loading...</div>
-        <button onclick="logout()" style="background:#666; color:white; border:none; padding:10px; width:100%; border-radius:8px; margin-top:20px; cursor:pointer;">LOGOUT</button>
+        <button onclick="logout()" style="background:#666; color:white; border:none; padding:10px; width:100%; border-radius:8px; margin-top:20px; cursor:pointer;" id="btn_logout">LOGOUT</button>
     </div>
 </div>
 <script>
-    if (!localStorage.getItem('user')) { window.location.href = 'login.html'; }
+    // Проверка авторизации и роли безопасности
+    if (!localStorage.getItem('user') || localStorage.getItem('role') !== 'driver') { 
+        localStorage.clear(); window.location.href = 'login.html'; 
+    }
+    
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
     const driverName = localStorage.getItem('user'), lang = localStorage.getItem('lang') || 'en';
 
     const i18n = {
-        en: { take: "TAKE ORDER", done: "DELIVERED", empty: "No orders", urg: "URGENT", limit: "Finish current order first!", grower: "Grower", store: "Store", consign: "Consignment" },
-        ru: { take: "ВЗЯТЬ ЗАКАЗ", done: "ДОСТАВЛЕНО", empty: "Нет заказов", urg: "СРОЧНО", limit: "Сначала завершите текущий заказ!", grower: "Гровер", store: "Склад", consign: "Партия" }
+        en: { title: "Active Tasks", take: "TAKE ORDER", done: "DELIVERED", empty: "No orders", urg: "URGENT", limit: "Finish current order first!", grower: "Grower", store: "Store", consign: "Consignment", logout: "LOGOUT" },
+        ru: { title: "Активные задачи", take: "ВЗЯТЬ ЗАКАЗ", done: "ДОСТАВЛЕНО", empty: "Нет заказов", urg: "СРОЧНО", limit: "Сначала завершите текущий заказ!", grower: "Гровер", store: "Склад", consign: "Партия", logout: "ВЫЙТИ" },
+        lt: { title: "Aktyvios Užduotys", take: "PRIIMTI UŽSAKYMĄ", done: "PRISTATYTA", empty: "Užsakymų nėra", urg: "SKUBIAI", limit: "Pirmiausia užbaikite dabartinį užsakymą!", grower: "Augintojas", store: "Sandėlis", consign: "Partija", logout: "IŠEITI" }
     };
+
+    function applyLang() {
+        document.getElementById('h_title').innerText = i18n[lang].title;
+        document.getElementById('btn_logout').innerText = i18n[lang].logout;
+    }
 
     async function loadDriverOrders() {
         const { data, error } = await _db.from('orders')
@@ -99,6 +109,7 @@
         loadDriverOrders();
     }
     function logout() { localStorage.clear(); window.location.href='login.html'; }
+    applyLang();
     loadDriverOrders(); setInterval(loadDriverOrders, 5000);
 </script>
 </body>
