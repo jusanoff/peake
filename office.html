@@ -148,15 +148,15 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Consignment</th>
-                        <th>GrowerPro Ref</th>
-                        <th>Grower / Supplier</th>
-                        <th>Country of Origin</th>
-                        <th>Size</th>
-                        <th>Count</th>
-                        <th>Store</th>
-                        <th>Variety</th>
-                        <th>Available Stock</th>
+                        <th>Consignment (A)</th>
+                        <th>GrowerPro Ref (B)</th>
+                        <th>Grower / Supplier (C)</th>
+                        <th>Country of Origin (D)</th>
+                        <th>Size (E)</th>
+                        <th>Count (F)</th>
+                        <th>Store (H)</th>
+                        <th>Variety (J)</th>
+                        <th>Available Stock (O)</th>
                     </tr>
                 </thead>
                 <tbody id="stock_base_body">
@@ -195,7 +195,7 @@
         }
 
         statusDiv.style.color = "#ef6c00"; 
-        statusDiv.innerHTML = "⏳ Smart parsing Excel structure...";
+        statusDiv.innerHTML = "⏳ Processing Excel rows...";
 
         const file = fileInput.files[0];
         const reader = new FileReader();
@@ -213,73 +213,45 @@
                 
                 const worksheet = workbook.Sheets[sheetName];
                 
-                // Переводим лист в массив массивов, чтобы найти заголовки
-                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                // ВАЖНО: Форсируем создание полноценной матрицы, где пустые ячейки заполняются ""
+                // Это гарантирует, что индекс массива всегда строго привязан к букве колонки!
+                const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
                 
-                if (!rows || rows.length === 0) {
+                if (!rawRows || rawRows.length === 0) {
                     throw new Error("Excel sheet is empty.");
-                }
-
-                // Шаг 1: Автоматически ищем строку с шапкой таблицы по ключевым словам
-                let headerRowIndex = -1;
-                for (let i = 0; i < rows.length; i++) {
-                    const rowStr = rows[i].join(" ").toLowerCase();
-                    if (rowStr.includes("consignment") && (rowStr.includes("grower") || rowStr.includes("supplier"))) {
-                        headerRowIndex = i;
-                        break;
-                    }
-                }
-
-                // Если явную шапку не нашли, берём 15-ю строку по умолчанию (индекс 14)
-                if (headerRowIndex === -1) {
-                    headerRowIndex = 14; 
-                }
-
-                const headers = rows[headerRowIndex].map(h => String(h || "").trim().toLowerCase());
-
-                // Шаг 2: Вычисляем динамические индексы колонок на основе текста в шапке
-                const idxConsignment = headers.findIndex(h => h.includes("consignment") || h === "lot" || h === "con");
-                const idxGrowerPro   = headers.findIndex(h => h.includes("growerpro") || h.includes("ref") || h.includes("pro"));
-                const idxGrower      = headers.findIndex(h => h.includes("grower") || h.includes("supplier") || h.includes("customer"));
-                const idxOrigin      = headers.findIndex(h => h.includes("origin") || h.includes("country"));
-                const idxSize        = headers.findIndex(h => h.includes("size"));
-                const idxCount       = headers.findIndex(h => h.includes("count") || h === "cnt" || h === "f");
-                const idxStore       = headers.findIndex(h => h.includes("store") || h.includes("loc") || h === "h");
-                const idxVariety     = headers.findIndex(h => h.includes("variety") || h.includes("desc") || h.includes("item") || h === "j");
-                const idxAvailable   = headers.findIndex(h => h.includes("available") || h.includes("stock") || h.includes("qty") || h === "o");
-
-                // Маленькая проверка: если даже консигнацию и размер не смогли сопоставить — это критично
-                if (idxConsignment === -1 || idxSize === -1) {
-                    throw new Error("Could not map columns automatically. Make sure 'Consignment' and 'Size' headers exist.");
                 }
 
                 const stockRows = [];
 
-                // Шаг 3: Начинаем сбор данных со следующей строки после шапки
-                for (let i = headerRowIndex + 1; i < rows.length; i++) {
-                    const row = rows[i];
+                for (let i = 0; i < rawRows.length; i++) {
+                    const row = rawRows[i];
                     if (!row || row.length === 0) continue;
 
-                    // Вытаскиваем значения строго по вычисленным индексам
-                    let rawCons = idxConsignment !== -1 ? String(row[idxConsignment] || "").trim() : "";
-                    
-                    // Фильтр: игнорируем пустые строки и общие итоги (Total) внизу таблицы
-                    if (!rawCons || rawCons.toLowerCase().includes("total") || rawCons.toLowerCase().includes("peake")) {
-                        continue;
+                    let rawCons = String(row[0] || "").trim(); // Столбец A
+
+                    // Универсальный фильтр: убираем пустые строки, шапку и итоги
+                    if (!rawCons || 
+                        rawCons.toLowerCase().includes("consignment") || 
+                        rawCons.toLowerCase().includes("ltd") || 
+                        rawCons.toLowerCase().includes("total") ||
+                        rawCons.length < 2) {
+                        continue; 
                     }
 
-                    const sizeVal = idxSize !== -1 ? String(row[idxSize] || "").trim() : "";
+                    // Размер — Столбец E (Индекс 4)
+                    const sizeVal = String(row[4] || "").trim();
                     if (!sizeVal || sizeVal.toLowerCase().includes("size")) {
-                        continue;
+                        continue; 
                     }
 
-                    const growerRef = idxGrowerPro !== -1 ? String(row[idxGrowerPro] || "").trim() : "";
-                    const supplier  = idxGrower !== -1 ? String(row[idxGrower] || "").trim() : "";
-                    const origin    = idxOrigin !== -1 ? String(row[idxOrigin] || "").trim() : "";
-                    const countVal  = idxCount !== -1 ? String(row[idxCount] || "").trim() : "";
-                    const storeVal  = idxStore !== -1 ? String(row[idxStore] || "").trim() : "";
-                    const variety   = idxVariety !== -1 ? String(row[idxVariety] || "").trim() : "";
-                    const available = idxAvailable !== -1 ? String(row[idxAvailable] || "").trim() : "";
+                    // Жесткая фиксация индексов. Смещение теперь технически исключено:
+                    const growerRef = String(row[1] || "").trim();  // B (Индекс 1)
+                    const supplier  = String(row[2] || "").trim();  // C (Индекс 2)
+                    const origin    = String(row[3] || "").trim();  // D (Индекс 3)
+                    const countVal  = String(row[5] || "").trim();  // F (Индекс 5)
+                    const storeVal  = String(row[7] || "").trim();  // H (Индекс 7)
+                    const variety   = String(row[9] || "").trim();  // J (Индекс 9)
+                    const available = String(row[14] || "").trim(); // O (Индекс 14)
 
                     stockRows.push({
                         consignment: rawCons,
@@ -295,10 +267,10 @@
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("Zero matching stock rows processed.");
+                    throw new Error("No data rows matched the import criteria.");
                 }
 
-                statusDiv.innerHTML = `⚙️ Formatted ${stockRows.length} rows perfectly. Saving to database...`;
+                statusDiv.innerHTML = `⚙️ Processing ${stockRows.length} rows. Saving to Supabase...`;
                 
                 const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                 if (deleteError) throw deleteError;
@@ -316,7 +288,7 @@
             } catch (err) {
                 statusDiv.style.color = "#c53030";
                 statusDiv.innerHTML = "❌ Error: " + err.message;
-                console.error("Smart parsing crash details:", err);
+                console.error(err);
             }
         };
     }
