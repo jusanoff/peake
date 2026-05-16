@@ -2,32 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit — Office Management Panel</title>
+    <title>Peake Fruit — Office Control Tower</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* НОВАЯ СВЕТЛАЯ И ПРИЯТНАЯ ПАЛИТРА */
         :root {
-            --bg: #1e1e2f;
-            --card-bg: #27293d;
-            --text: #ffffff;
-            --text-muted: #a9afd3;
-            --accent: #e14eca;
-            --accent-hover: #e12eca;
-            --border: #2b3553;
-            --urgent: #fd5d93;
-            --new: #ff8d72;
-            --process: #1d8cf8;
-            --done: #00f2c4;
+            --bg: #f4f6f9;           /* Фон всей страницы (светло-серый) */
+            --card-bg: #ffffff;      /* Фон карточек и таблиц (чистый белый) */
+            --text: #1a1a2e;         /* Основной текст (темно-синий) */
+            --text-muted: #6c757d;   /* Приглушенный текст (серый) */
+            --accent: #0288d1;       /* Акцентный цвет (приятный синий, как на линиях) */
+            --accent-hover: #0277bd; /* Синий при наведении */
+            --border: #e2e8f0;       /* Цвет границ и разделителей */
+            
+            --urgent-bg: #fff5f5;    /* Фон срочной строки (очень бледно-красный) */
+            --urgent-text: #c53030;  /* Текст срочной строки */
+            
+            /* Цвета статусов */
+            --status-new: #ef6c00;      /* Новый (оранжевый) */
+            --status-process: #1565c0;  /* В процессе (синий) */
+            --status-done: #2e7d32;     /* Доставлен (зеленый) */
         }
+
         body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: var(--bg);
             color: var(--text);
             margin: 0;
             padding: 20px;
+            -webkit-font-smoothing: antialiased;
         }
+
         .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
         
+        /* Шапка */
         .header {
             display: flex;
             justify-content: space-between;
@@ -35,12 +44,12 @@
             background: var(--card-bg);
             padding: 15px 25px;
             border-radius: 8px;
-            border: 1px solid var(--border);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); /* Легкая тень */
         }
-        .header h1 { margin: 0; font-size: 24px; color: var(--accent); }
-        .user-badge { font-weight: bold; color: #fff; background: rgba(225, 78, 202, 0.2); padding: 6px 12px; border-radius: 4px; border: 1px solid var(--accent); }
+        .header h1 { margin: 0; font-size: 24px; color: var(--accent); font-weight: 700; }
+        .user-badge { font-weight: 600; color: #fff; background: var(--accent); padding: 6px 12px; border-radius: 4px; font-size: 13px; }
 
-        /* НАШ НОВЫЙ БЛОК ДЛЯ ЗАГРУЗКИ CSV (Встроен в верхнюю панель) */
+        /* Панель управления CSV (Светлая) */
         .office-ctrl-panel {
             display: flex;
             gap: 20px;
@@ -55,58 +64,73 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            background: rgba(255,255,255,0.05);
+            background: #f8f9fa;
             padding: 8px 15px;
             border-radius: 6px;
-            border: 1px dashed var(--text-muted);
+            border: 1px dashed #cbd5e0;
         }
-        .csv-upload-box input[type="file"] { color: var(--text-muted); font-size: 13px; }
+        .csv-upload-box input[type="file"] { color: var(--text-muted); font-size: 13px; cursor: pointer; }
+        
         .btn-csv {
-            background: var(--process);
-            color: white;
-            border: none;
-            padding: 8px 15px;
+            background: #fff;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 8px 18px;
             border-radius: 4px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
             font-size: 13px;
-            transition: opacity 0.2s;
+            transition: all 0.2s;
         }
-        .btn-csv:hover { opacity: 0.9; }
+        .btn-csv:hover { background: var(--accent); color: #fff; }
 
-        /* Оригинальные стили таблицы и карточек офиса */
+        /* Таблица (Светлая и чистая) */
         .dashboard-card {
             background: var(--card-bg);
             padding: 25px;
             border-radius: 8px;
-            border: 1px solid var(--border);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
-        .dashboard-card h2 { margin-top: 0; font-size: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text-muted); }
+        .dashboard-card h2 { margin-top: 0; font-size: 20px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 12px; color: var(--text); font-weight: 600; }
 
-        table { width: 100%; border-collapse: collapse; }
-        th { background: rgba(0,0,0,0.2); color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 12px; text-transform: uppercase; border-bottom: 2px solid var(--border); }
-        td { padding: 14px 10px; font-size: 14px; border-bottom: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
+        th { background: #f8f9fa; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border); }
+        td { padding: 14px 10px; font-size: 14px; border-bottom: 1px solid #edf2f7; color: var(--text); }
         
-        tr.urgent-row { background: rgba(253, 93, 147, 0.15); }
-        tr.urgent-row td { border-bottom: 1px solid rgba(253, 93, 147, 0.3); }
+        /* Срочная строка (Мягкая светлая подсветка) */
+        tr.urgent-row { background: var(--urgent-bg); }
+        tr.urgent-row td { border-bottom: 1px solid #fed7d7; color: var(--urgent-text); }
+        tr.urgent-row td strong { color: var(--urgent-text); }
 
-        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; display: inline-block; }
-        .status-badge.new { background: rgba(255, 141, 114, 0.2); color: var(--new); }
-        .status-badge.process { background: rgba(29, 140, 248, 0.2); color: var(--process); }
-        .status-badge.delivered, .status-badge.done { background: rgba(0, 242, 196, 0.2); color: var(--done); }
+        /* Статусы (Светлые баджи) */
+        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
+        .status-badge.new { background: #fff3e0; color: var(--status-new); }
+        .status-badge.process { background: #e3f2fd; color: var(--status-process); }
+        .status-badge.delivered, .status-badge.done { background: #e8f5e9; color: var(--status-done); }
 
-        select.driver-select { background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 6px; border-radius: 4px; font-size: 13px; }
+        /* Селектор водителя */
+        select.driver-select { background: #fff; color: var(--text); border: 1px solid var(--border); padding: 6px; border-radius: 4px; font-size: 13px; cursor: pointer; }
+        select.driver-select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.1); }
         
-        .action-btn { border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; margin-right: 5px; transition: opacity 0.2s; }
-        .action-btn.btn-process { background: var(--process); color: white; }
-        .action-btn.btn-done { background: var(--done); color: #1e1e2f; }
-        .action-btn:hover { opacity: 0.9; }
-
-        .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-        .btn-logout:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        /* Кнопки действий */
+        .action-btn { border: none; padding: 7px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; margin-right: 5px; transition: background 0.2s; }
         
-        #csv_status { font-size: 13px; font-weight: bold; }
+        .action-btn.btn-process { background: var(--status-process); color: white; }
+        .action-btn.btn-process:hover { background: #115293; }
+        
+        .action-btn.btn-done { background: var(--status-done); color: white; }
+        .action-btn.btn-done:hover { background: #1b5e20; }
+        
+        .closed-text { color: var(--status-done); font-weight: bold; font-size: 13px; }
+
+        /* Выход */
+        .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
+        .btn-logout:hover { background: #f8f9fa; color: var(--text); border-color: #cbd5e0; }
+        
+        #csv_status { font-size: 13px; font-weight: 600; margin-left: 10px; }
+        .consignment-code { font-family: 'Roboto Mono', monospace; background: #f1f3f5; color: #495057; padding: 2px 5px; border-radius: 3px; font-size: 13px; }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -128,13 +152,13 @@
     <div class="header">
         <h1>Peake Fruit — Office Control Tower</h1>
         <div style="display: flex; align-items: center; gap: 15px;">
-            <div class="user-badge">Role: Coordinator</div>
+            <div class="user-badge">Coordinator Panel</div>
             <button class="btn-logout" onclick="logout()">Log Out</button>
         </div>
     </div>
 
     <div class="office-ctrl-panel">
-        <h3 style="margin: 0; font-size: 16px; color: var(--accent);">Morning Stock Update:</h3>
+        <h3 style="margin: 0; font-size: 16px; color: var(--text);">Morning Stock Update:</h3>
         <div class="csv-upload-box">
             <input type="file" id="csv_file" accept=".csv">
         </div>
@@ -180,7 +204,7 @@
     let lastKnownMaxId = 0; 
     const driversList = ["Driver 1", "Driver 2", "Driver 3", "Forklift 1", "Forklift 2"];
 
-    // Функция загрузки утренней базы остатков из CSV (Новая функция)
+    // Функция загрузки CSV (сохранена)
     async function uploadMorningStock() {
         const fileInput = document.getElementById('csv_file');
         const statusDiv = document.getElementById('csv_status');
@@ -190,11 +214,10 @@
             return;
         }
 
-        statusDiv.style.color = "#ff8d72";
-        statusDiv.innerText = "Clearing old database & loading...";
+        statusDiv.style.color = var(--status-new);
+        statusDiv.innerText = "Processing CSV...";
 
         try {
-            // Очищаем вчерашнюю таблицу stock
             const { error: deleteError } = await _db.from('stock').delete().neq('id', 0);
             if (deleteError) throw deleteError;
 
@@ -223,19 +246,20 @@
                 const { error: insertError } = await _db.from('stock').insert(stockRows);
                 if (insertError) throw insertError;
 
-                statusDiv.style.color = "#00f2c4";
-                statusDiv.innerText = `✅ Successfully loaded ${stockRows.length} items to Stock database!`;
+                statusDiv.style.color = var(--status-done);
+                statusDiv.innerText = `✅ Loaded ${stockRows.length} items to Stock database!`;
                 fileInput.value = '';
+                setTimeout(() => statusDiv.innerText = '', 4000); // Убираем сообщение через 4 сек
             };
             reader.readAsText(file);
 
         } catch (err) {
-            statusDiv.style.color = "#fd5d93";
+            statusDiv.style.color = var(--urgent-text);
             statusDiv.innerText = "Error: " + err.message;
         }
     }
 
-    // ТВОЯ ОРИГИНАЛЬНАЯ ФУНКЦИЯ ДЛЯ ЗАГРУЗКИ ТАБЛИЦЫ ЗАКАЗОВ С ЛИНИЙ
+    // Загрузка таблицы (сохранена)
     async function loadOfficeDashboard() {
         try {
             const { data: orders, error } = await _db
@@ -249,7 +273,6 @@
             if (orders.length > 0) {
                 const currentMaxId = Math.max(...orders.map(o => o.id));
                 if (lastKnownMaxId !== 0 && currentMaxId > lastKnownMaxId) {
-                    // Пищим, если прилетел новый заказ
                     document.getElementById('alert_sound').play().catch(e => console.log("Sound play blocked"));
                 }
                 lastKnownMaxId = currentMaxId;
@@ -266,37 +289,35 @@
                 const rowClass = isUrgent ? 'class="urgent-row"' : '';
                 const currentStatus = (o.status || 'new').toLowerCase();
 
-                // Генерация выпадающего списка водителей
                 let driverOptions = `<option value="">-- Assign Driver --</option>`;
                 driversList.forEach(d => {
                     const selected = o.driver_name === d ? 'selected' : '';
                     driverOptions += `<option value="${d}" ${selected}>${d}</option>`;
                 });
 
-                // Кнопки управления статусом
                 let actionButtons = '';
                 if (currentStatus === 'new') {
                     actionButtons = `<button class="action-btn btn-process" onclick="updateStatus(${o.id}, 'In Process')">Accept</button>`;
                 } else if (currentStatus === 'in process' || currentStatus === 'process') {
                     actionButtons = `<button class="action-btn btn-done" onclick="updateStatus(${o.id}, 'Delivered')">Delivered</button>`;
                 } else {
-                    actionButtons = `<span style="color:var(--done); font-weight:bold;">Closed</span>`;
+                    actionButtons = `<span class="closed-text">✅ Closed</span>`;
                 }
 
                 return `
                 <tr ${rowClass}>
-                    <td><span style="color: var(--text-muted);">#${o.id}</span></td>
-                    <td><span style="color: var(--accent); font-weight:bold;">${o.line || 'Unknown'}</span></td>
-                    <td><span class="time-text">${timeStr}</span></td>
+                    <td><span style="color: var(--text-muted); font-weight:500;">#${o.id}</span></td>
+                    <td><span style="color: var(--accent); font-weight:700;">${o.line || 'Unknown'}</span></td>
+                    <td><span style="color: #4a5568; font-weight:500;">${timeStr}</span></td>
                     <td><strong>${isUrgent ? '⚠️ ' : ''}${o.description || '-'}</strong></td>
                     <td>${o.grower || '-'}</td>
-                    <td><code>${o.cons || o.consignment || '-'}</code></td>
+                    <td><span class="consignment-code">${o.cons || o.consignment || '-'}</span></td>
                     <td>${o.origin || '-'}</td>
                     <td>${o.size || '-'}</td>
                     <td>${o.count || '-'}</td>
                     <td>${o.available || '-'}</td>
-                    <td><span style="color: #b388ff; font-weight:600;">${o.store || '-'}</span></td>
-                    <td><strong style="font-size:15px;">${o.qty || o.quantity || '-'}</strong></td>
+                    <td><span style="color: #6b46c1; font-weight:700;">${o.store || '-'}</span></td>
+                    <td><strong style="font-size:15px; color: var(--text);">${o.qty || o.quantity || '-'}</strong></td>
                     <td>
                         <select class="driver-select" onchange="assignDriver(${o.id}, this.value)">
                             ${driverOptions}
@@ -308,36 +329,31 @@
             }).join('');
 
             document.getElementById('office_orders_body').innerHTML = html;
-        } catch (e) {
-            console.error("Dashboard reload error:", e);
-        }
+        } catch (e) { console.error(e); }
     }
 
-    // ТВОИ ОРИГИНАЛЬНЫЕ ФУНКЦИИ ИЗМЕНЕНИЯ СТАТУСОВ И ВОДИТЕЛЕЙ
+    // Изменение статуса (сохранена)
     async function updateStatus(orderId, newStatus) {
         try {
             const { error } = await _db.from('orders').update({ status: newStatus }).eq('id', orderId);
             if (error) throw error;
             loadOfficeDashboard();
-        } catch (e) { alert("Error changing status: " + e.message); }
+        } catch (e) { alert("Error: " + e.message); }
     }
 
+    // Назначение водителя (сохранена)
     async function assignDriver(orderId, driverName) {
         try {
             const { error } = await _db.from('orders').update({ driver_name: driverName || null }).eq('id', orderId);
             if (error) throw error;
             loadOfficeDashboard();
-        } catch (e) { alert("Error assigning driver: " + e.message); }
+        } catch (e) { alert("Error: " + e.message); }
     }
 
-    function logout() {
-        localStorage.clear();
-        window.location.href = 'login.html';
-    }
+    function logout() { localStorage.clear(); window.location.href = 'login.html'; }
 
-    // Запуск цикла обновления
     loadOfficeDashboard();
-    setInterval(loadOfficeDashboard, 4000);
+    setInterval(loadOfficeDashboard, 4000); // Обновление раз в 4 сек
 </script>
 </body>
 </html>
