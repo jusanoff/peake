@@ -244,32 +244,37 @@
                     const idxVariety = headerRow.findIndex(h => h.includes('variety') || h.includes('commodity'));
                     const idxAvailable = headerRow.indexOf('available stock');
 
-                    const stockRows = [];
+                    // ... внутри функции reader.onload в uploadMorningExcel ...
 
-                    for (let i = headerRowIndex + 1; i < rawRows.length; i++) {
-                        const row = rawRows[i];
-                        if (!row || row.length === 0) continue;
+const stockRows = [];
 
-                        const valCons = idxConsignment !== -1 ? row[idxConsignment] : null;
-                        const valConRef = idxConRef !== -1 ? row[idxConRef] : null;
-                        const valVariety = idxVariety !== -1 ? row[idxVariety] : null;
-                        
-                        if (!valCons && !valConRef && !valVariety) continue;
-                        if ((valCons === null || valCons === '') && (valConRef === null || valConRef === '')) continue;
+for (let i = headerRowIndex + 1; i < rawRows.length; i++) {
+    const row = rawRows[i];
+    if (!row || row.length === 0) continue;
 
-                        const finalCons = valConRef ? String(valConRef).trim() : (valCons ? String(valCons).trim() : null);
+    const valCons = idxConsignment !== -1 ? row[idxConsignment] : null;
+    const valConRef = idxConRef !== -1 ? row[idxConRef] : null;
+    const valVariety = idxVariety !== -1 ? row[idxVariety] : null;
+    
+    if (!valCons && !valConRef && !valVariety) continue;
+    if ((valCons === null || valCons === '') && (valConRef === null || valConRef === '')) continue;
 
-                        stockRows.push({
-                            consignment: finalCons,
-                            grower: idxSupplier !== -1 && row[idxSupplier] ? String(row[idxSupplier]).trim() : null,
-                            origin: idxOrigin !== -1 && row[idxOrigin] ? String(row[idxOrigin]).trim() : null,
-                            size: idxSize !== -1 && row[idxSize] ? String(row[idxSize]).trim() : null,
-                            count: idxCount !== -1 && row[idxCount] ? String(row[idxCount]).trim() : null,
-                            store: idxStore !== -1 && row[idxStore] ? String(row[idxStore]).trim() : null,
-                            description: valVariety ? String(valVariety).trim() : null,
-                            available: idxAvailable !== -1 && row[idxAvailable] ? String(row[idxAvailable]).trim() : null
-                        });
-                    }
+    const finalCons = valConRef ? String(valConRef).trim() : (valCons ? String(valCons).trim() : null);
+
+    stockRows.push({
+        consignment: finalCons,
+        grower: idxSupplier !== -1 && row[idxSupplier] ? String(row[idxSupplier]).trim() : null,
+        origin: idxOrigin !== -1 && row[idxOrigin] ? String(row[idxOrigin]).trim() : null,
+        size: idxSize !== -1 && row[idxSize] ? String(row[idxSize]).trim() : null,
+        count: idxCount !== -1 && row[idxCount] ? String(row[idxCount]).trim() : null,
+        store: idxStore !== -1 && row[idxStore] ? String(row[idxStore]).trim() : null,
+        description: valVariety ? String(valVariety).trim() : null,
+        
+        // ВНИМАНИЕ: Слово слева должно ОДИН В ОДИН совпадать с именем колонки в таблице stock в Supabase!
+        // Если в Supabase колонка называется available_stock, замените левое слово на available_stock
+        available: idxAvailable !== -1 && row[idxAvailable] ? String(row[idxAvailable]).trim() : null
+    });
+}
 
                     if (stockRows.length === 0) {
                         throw new Error("No items matching requirements found in the selected sheet.");
