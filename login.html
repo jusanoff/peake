@@ -88,10 +88,10 @@
             localStorage.setItem('dash_lang', curL);            // Текущий язык
 
             // Перенаправление по ролям
-            if (data.t === 'admin') window.location.href = 'superadmin.html';
-            else if (data.t === 'office') window.location.href = 'admin.html';
-            else if (data.t === 'driver') window.location.href = 'driver.html';
-            else if (data.t === 'line') window.location.href = 'index.html';
+if (data.t === 'admin') window.location.href = 'superadmin.html';
+else if (data.t === 'office') window.location.href = 'office.html'; // <-- ИСПРАВЛЕНО ТУТ
+else if (data.t === 'driver') window.location.href = 'driver.html';
+else if (data.t === 'line') window.location.href = 'index.html';
 
         } catch (err) {
             console.error(err);
