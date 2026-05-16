@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit — Office Control</title>
+    <title>Peake Fruit — Office Control Tower</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -150,7 +150,7 @@
     <div class="office-ctrl-panel">
         <h3 style="margin: 0; font-size: 16px;">Morning Stock Excel Upload:</h3>
         <div class="excel-upload-box">
-            <input type="file" id="excel_file" accept=".xlsx, .xls">
+            <input type="file" id="excel_file" accept=".xlsx, .xls, .csv">
         </div>
         <button class="btn-excel" onclick="uploadMorningExcel()">Clear & Upload Excel (.xlsx)</button>
         <div id="upload_status"></div>
@@ -221,12 +221,12 @@
         const statusDiv = document.getElementById('upload_status');
         
         if (!fileInput.files[0]) {
-            alert("Please select an Excel file first!");
+            alert("Please select a file first!");
             return;
         }
 
         statusDiv.style.color = "#ef6c00"; 
-        statusDiv.innerHTML = "⏳ Reading Excel file structure...";
+        statusDiv.innerHTML = "⏳ Reading file structure...";
 
         const file = fileInput.files[0];
         const reader = new FileReader();
@@ -244,9 +244,9 @@
                 
                 const worksheet = workbook.Sheets[sheetName];
                 
-                // Читаем файл строго по буквам колонок
+                // Читаем в режиме матрицы, чтобы пустые ячейки не ломали буквы столбцов
                 const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
-                if (rawRows.length === 0) throw new Error("Excel sheet is empty.");
+                if (rawRows.length === 0) throw new Error("File sheet is empty.");
 
                 const stockRows = [];
 
@@ -257,18 +257,19 @@
                     let rawCons = String(row["A"] || "").trim();
                     let consignmentNum = parseInt(rawCons, 10);
 
-                    // 1. ПРАВИЛО: В колонке A должно быть строго число. Текст игнорируем!
-                    if (isNaN(consignmentNum)) {
+                    // СТРОЖАЙШИЙ ФИЛЬТР: Проверяем, что в А действительно 4-5 значный реальный номер лота
+                    // Это полностью отсечет "Braeburn", "Cox" и любой левый текст из заголовков!
+                    if (isNaN(consignmentNum) || consignmentNum < 1000 || consignmentNum > 99999) {
                         continue; 
                     }
 
-                    // 2. ПРАВИЛО: Если колонка E (size) пустая, строку полностью игнорируем
+                    // Фильтр по колонке E (Size): если пусто — полностью скипаем строку
                     const size = String(row["E"] || "").trim();
                     if (!size) {
                         continue; 
                     }
 
-                    // Читаем строго по твоей новой карте колонок
+                    // Считываем данные СТРОГО по твоей карте столбцов:
                     const growerRef = String(row["B"] || "").trim(); // B - GrowerPro Ref
                     const supplier  = String(row["C"] || "").trim(); // C - Grower/Supplier
                     const origin    = String(row["D"] || "").trim(); // D - Country of Origin
@@ -277,37 +278,35 @@
                     const variety   = String(row["J"] || "").trim(); // J - Variety
                     const available = String(row["O"] || "").trim(); // O - Available stock
 
-                    // Формируем чистый объект для Supabase, упаковывая новые колонки
                     stockRows.push({
                         consignment: String(consignmentNum),
-                        grower: supplier ? supplier : (growerRef ? growerRef : null), // Используем Поставщика/Grower
-                        description: variety ? variety : null,      
-                        origin: origin ? origin : null,             
-                        size: size, // Гарантированно не пустой (73-78, C120 и т.д.)
-                        store: store ? store : null,                 
-                        available: available !== "" ? available : "0",
-                        // Сохраняем дополнительные важные поля как метаданные (или в соответствующие колонки, если они есть)
-                        count_field: count ? count : null,
-                        grower_ref: growerRef ? growerRef : null
+                        grower: supplier ? supplier : null,          // Сюда пишем имя поставщика из С
+                        description: variety ? variety : null,       // Название сорта из J
+                        origin: origin ? origin : null,              // Страна из D
+                        size: size,                                  // Точный размер из E
+                        store: store ? store : null,                 // Камера из H
+                        available: available !== "" ? available : "0", // Сток из O
+                        count_field: count ? count : null,           // Количество из F
+                        grower_ref: growerRef ? growerRef : null     // Код из B
                     });
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("No data rows matched your strict criteria (Column A number & Column E non-empty).");
+                    throw new Error("No rows matched the strict criteria (Column A number + Column E size).");
                 }
 
-                statusDiv.innerHTML = `⚙️ Verified ${stockRows.length} real rows. Updating database...`;
+                statusDiv.innerHTML = `⚙️ Verified ${stockRows.length} rows. Syncing database...`;
                 
-                // Очищаем старый сток
+                // Стираем старые данные
                 const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                 if (deleteError) throw deleteError;
 
-                // Загружаем новый точный сток
+                // Загружаем точный, чистый массив данных
                 const { error: insertError } = await clientDb.from('stock').insert(stockRows);
                 if (insertError) throw insertError;
 
                 statusDiv.style.color = "#2e7d32";
-                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} rows. Data is 100% accurate!`;
+                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} stock rows!`;
                 fileInput.value = '';
                 
                 loadStockTable();
