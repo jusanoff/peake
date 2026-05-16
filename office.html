@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit — Office Control Tower</title>
+    <title>Peake Fruit — Office Control</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -237,70 +237,64 @@
                 const bstr = e.target.result;
                 const workbook = XLSX.read(bstr, { type: 'binary' });
                 
+                // Ищем нужный лист (Daily Stock Sheet или Stock)
                 const sheetName = workbook.SheetNames.find(n => 
                     n.toLowerCase().includes("stock") || n.toLowerCase().includes("daily")
                 ) || workbook.SheetNames[0];
                 
                 const worksheet = workbook.Sheets[sheetName];
                 
-                // Читаем строго по буквам колонок
+                // Парсим файл жестко связывая ячейки с буквами колонок Excel A, B, C...
                 const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
                 if (rawRows.length === 0) throw new Error("Excel sheet is empty.");
 
-                // Находим строку шапки таблицы
-                let headerIndex = -1;
-                for (let i = 0; i < Math.min(rawRows.length, 20); i++) {
-                    if (rawRows[i] && String(rawRows[i]["A"]).toLowerCase().trim() === 'consignment') {
-                        headerIndex = i;
-                        break;
-                    }
-                }
-
-                if (headerIndex === -1) {
-                    throw new Error("Could not find start row containing 'Consignment' in column A.");
-                }
-
                 const stockRows = [];
 
-                // Парсим данные строго по верифицированной диагностической карте
-                for (let i = headerIndex + 1; i < rawRows.length; i++) {
+                for (let i = 0; i < rawRows.length; i++) {
                     const row = rawRows[i];
                     if (!row) continue;
 
-                    const consignment  = String(row["A"] || "").trim(); // Колонка A: Consignment
-                    const growerProRef = String(row["B"] || "").trim(); // Колонка B: Con. Ref. / GrowerPro Ref
-                    const origin       = String(row["D"] || "").trim(); // Колонка D: COUNTRY OF ORIGIN
-                    const size         = String(row["E"] || "").trim(); // Колонка E: SIZE
-                    const store        = String(row["F"] || "").trim(); // Колонка F: Store
-                    const variety      = String(row["H"] || "").trim(); // Колонка H: Variety/Commodity
-                    const available    = String(row["M"] || "").trim(); // Колонка M: Available stock
+                    const consignment  = String(row["A"] || "").trim(); // Колонка A (Consignment)
+                    const growerProRef = String(row["B"] || "").trim(); // Колонка B (GrowerPro Ref)
+                    const origin       = String(row["D"] || "").trim(); // Колонка D (Origin)
+                    const size         = String(row["E"] || "").trim(); // Колонка E (Size)
+                    const store        = String(row["F"] || "").trim(); // Колонка F (Store)
+                    const variety      = String(row["H"] || "").trim(); // Колонка H (Variety/Commodity)
+                    const available    = String(row["M"] || "").trim(); // Колонка M (Available stock)
 
-                    // Чистим итоговые строки, заголовки и пустые ячейки
-                    if (!consignment || consignment === "0" || consignment.toLowerCase().includes("total")) continue;
-                    if (consignment.toLowerCase().includes("consignment")) continue;
+                    // ЖЕСТКИЙ СКВОЗНОЙ ФИЛЬТР:
+                    // Если в ячейке А пусто, ИЛИ это текст ("Consignment", "Braeburn"), ИЛИ это ноль —
+                    // скрипт ПОЛНОСТЬЮ ИГНОРИРУЕТ эту строку и идет дальше.
+                    if (!consignment || isNaN(consignment) || consignment === "0") {
+                        continue; 
+                    }
 
+                    // Защита от дублирования строк шапки
+                    if (growerProRef.toLowerCase().includes("growerpro")) continue;
+
+                    // Добавляем только чистые данные
                     stockRows.push({
                         consignment: consignment,
-                        grower: growerProRef ? growerProRef : null, // GrowerPro Ref сохраняем в 'grower'
-                        description: variety ? variety : null,      // Название сорта
-                        origin: origin ? origin : null,             // Страна происхождения
-                        size: size ? size : null,                   // Размер фрукта
-                        store: store ? store : null,                 // Номер камеры хранения
-                        available: available !== "" ? available : "0" // Доступный остаток
+                        grower: growerProRef ? growerProRef : null, 
+                        description: variety ? variety : null,      
+                        origin: origin ? origin : null,             
+                        size: size ? size : null,                   
+                        store: store ? store : null,                 
+                        available: available !== "" ? available : "0" 
                     });
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("No valid data records matched the column layout.");
+                    throw new Error("No real item rows found. Check if Column A has numbers.");
                 }
 
-                statusDiv.innerHTML = `⚙️ Processed ${stockRows.length} lines. Uploading to database...`;
+                statusDiv.innerHTML = `⚙️ Validated ${stockRows.length} rows. Updating database...`;
                 
-                // Чистим старые записи
+                // Чистим старую базу стока в Supabase
                 const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                 if (deleteError) throw deleteError;
 
-                // Загружаем выровненные записи
+                // Загружаем чистые, выровненные данные
                 const { error: insertError } = await clientDb.from('stock').insert(stockRows);
                 if (insertError) throw insertError;
 
@@ -372,7 +366,7 @@
         } catch (e) { console.error(e); }
     }
 
-    // Идеальная сквозная отрисовка данных на экране по цепочке: A -> B -> H -> D -> E -> F -> M
+    // ИДЕАЛЬНАЯ РАССТАНОВКА КОЛОНОК НА UI: ВСЁ СТРОГО НА СВОИХ МЕСТАХ
     async function loadStockTable() {
         try {
             const { data: stock, error } = await clientDb.from('stock').select('*').order('id', { ascending: true });
@@ -385,7 +379,11 @@
 
             const html = stock.map(s => `
                 <tr>
-                    <td><span class="consignment-code">${s.consignment || '-'}</span></td> <td><span class="ref-code">${s.grower || '-'}</span></td> <td><strong>${s.description || '-'}</strong></td> <td>${s.origin || '-'}</td> <td>${s.size || '-'}</td> <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td> <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td> </tr>
+                    <td><span class="consignment-code">${s.consignment || '-'}</span></td> 
+                    <td><span class="ref-code">${s.grower || '-'}</span></td> 
+                    <td><strong>${s.description || '-'}</strong></td> <td>${s.origin || '-'}</td> 
+                    <td>${s.size || '-'}</td> <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td> <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td> 
+                </tr>
             `).join('');
             document.getElementById('stock_base_body').innerHTML = html;
         } catch (e) { console.error(e); }
