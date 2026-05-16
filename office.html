@@ -148,15 +148,15 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Consignment (A)</th>
-                        <th>GrowerPro Ref (B)</th>
-                        <th>Grower / Supplier (C)</th>
-                        <th>Country of Origin (D)</th>
-                        <th>Size (E)</th>
-                        <th>Count (F)</th>
-                        <th>Store (H)</th>
-                        <th>Variety (J)</th>
-                        <th>Available Stock (O)</th>
+                        <th>Consignment</th>
+                        <th>GrowerPro Ref</th>
+                        <th>Grower / Supplier</th>
+                        <th>Country of Origin</th>
+                        <th>Size</th>
+                        <th>Count</th>
+                        <th>Store</th>
+                        <th>Variety</th>
+                        <th>Available Stock</th>
                     </tr>
                 </thead>
                 <tbody id="stock_base_body">
@@ -168,7 +168,6 @@
 </div>
 
 <script>
-    // 1. Авторизация — объявляем переменные первыми, чтобы избежать ReferenceError
     const currentUser = localStorage.getItem('user');
     const currentRole = localStorage.getItem('role');
     
@@ -178,7 +177,6 @@
         window.location.href = 'login.html';
     }
 
-    // 2. Безопасная сборка ключа Supabase (разбита, чтобы визуальный редактор не обрезал строку точками)
     const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
     const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
     const k3 = 'LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
@@ -187,7 +185,6 @@
     const supabaseKey = k1 + k2 + k3; 
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // 3. Функция загрузки Excel с жёсткой адресацией по координатам ячеек (A, B, C...)
     async function uploadMorningExcel() {
         const fileInput = document.getElementById('excel_file');
         const statusDiv = document.getElementById('upload_status');
@@ -198,7 +195,7 @@
         }
 
         statusDiv.style.color = "#ef6c00"; 
-        statusDiv.innerHTML = "⏳ Reading exact Excel coordinates...";
+        statusDiv.innerHTML = "⏳ Smart parsing Excel structure...";
 
         const file = fileInput.files[0];
         const reader = new FileReader();
@@ -210,58 +207,82 @@
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 
-                // Ищем рабочий лист со стоком
                 const sheetName = workbook.SheetNames.find(n => 
                     n.toLowerCase().includes("stock") || n.toLowerCase().includes("daily")
                 ) || workbook.SheetNames[0];
                 
                 const worksheet = workbook.Sheets[sheetName];
                 
-                // Декодируем границы заполненных ячеек листа
-                const range = XLSX.utils.decode_range(worksheet['!ref']);
+                // Переводим лист в массив массивов, чтобы найти заголовки
+                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                
+                if (!rows || rows.length === 0) {
+                    throw new Error("Excel sheet is empty.");
+                }
+
+                // Шаг 1: Автоматически ищем строку с шапкой таблицы по ключевым словам
+                let headerRowIndex = -1;
+                for (let i = 0; i < rows.length; i++) {
+                    const rowStr = rows[i].join(" ").toLowerCase();
+                    if (rowStr.includes("consignment") && (rowStr.includes("grower") || rowStr.includes("supplier"))) {
+                        headerRowIndex = i;
+                        break;
+                    }
+                }
+
+                // Если явную шапку не нашли, берём 15-ю строку по умолчанию (индекс 14)
+                if (headerRowIndex === -1) {
+                    headerRowIndex = 14; 
+                }
+
+                const headers = rows[headerRowIndex].map(h => String(h || "").trim().toLowerCase());
+
+                // Шаг 2: Вычисляем динамические индексы колонок на основе текста в шапке
+                const idxConsignment = headers.findIndex(h => h.includes("consignment") || h === "lot" || h === "con");
+                const idxGrowerPro   = headers.findIndex(h => h.includes("growerpro") || h.includes("ref") || h.includes("pro"));
+                const idxGrower      = headers.findIndex(h => h.includes("grower") || h.includes("supplier") || h.includes("customer"));
+                const idxOrigin      = headers.findIndex(h => h.includes("origin") || h.includes("country"));
+                const idxSize        = headers.findIndex(h => h.includes("size"));
+                const idxCount       = headers.findIndex(h => h.includes("count") || h === "cnt" || h === "f");
+                const idxStore       = headers.findIndex(h => h.includes("store") || h.includes("loc") || h === "h");
+                const idxVariety     = headers.findIndex(h => h.includes("variety") || h.includes("desc") || h.includes("item") || h === "j");
+                const idxAvailable   = headers.findIndex(h => h.includes("available") || h.includes("stock") || h.includes("qty") || h === "o");
+
+                // Маленькая проверка: если даже консигнацию и размер не смогли сопоставить — это критично
+                if (idxConsignment === -1 || idxSize === -1) {
+                    throw new Error("Could not map columns automatically. Make sure 'Consignment' and 'Size' headers exist.");
+                }
+
                 const stockRows = [];
 
-                // Перебираем строки от самой первой до самой последней
-                for (let R = range.s.r; R <= range.e.r; R++) {
-                    const rowNum = R + 1; // Номер строки в формате Excel (1, 2, 3... 16...)
+                // Шаг 3: Начинаем сбор данных со следующей строки после шапки
+                for (let i = headerRowIndex + 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length === 0) continue;
 
-                    // Забираем данные ЖЁСТКО ИЗ КОНКРЕТНЫХ КООРДИНАТ ЯЧЕЙКИ
-                    const cellA = worksheet[`A${rowNum}`];
-                    const cellB = worksheet[`B${rowNum}`];
-                    const cellC = worksheet[`C${rowNum}`];
-                    const cellD = worksheet[`D${rowNum}`];
-                    const cellE = worksheet[`E${rowNum}`];
-                    const cellF = worksheet[`F${rowNum}`];
-                    const cellH = worksheet[`H${rowNum}`];
-                    const cellJ = worksheet[`J${rowNum}`];
-                    const cellO = worksheet[`O${rowNum}`];
-
-                    // Переводим значения в чистые строки без лишних пробелов
-                    let rawCons = cellA ? String(cellA.v || "").trim() : "";
-                    let consignmentNum = parseInt(rawCons, 10);
-
-                    // ФИЛЬТР А: Проверяем, что в колонке А находится реальный номер лота (число)
-                    if (isNaN(consignmentNum) || consignmentNum < 1000 || consignmentNum > 99999) {
-                        continue; 
+                    // Вытаскиваем значения строго по вычисленным индексам
+                    let rawCons = idxConsignment !== -1 ? String(row[idxConsignment] || "").trim() : "";
+                    
+                    // Фильтр: игнорируем пустые строки и общие итоги (Total) внизу таблицы
+                    if (!rawCons || rawCons.toLowerCase().includes("total") || rawCons.toLowerCase().includes("peake")) {
+                        continue;
                     }
 
-                    // ФИЛЬТР E: Если ячейка размера (E) пустая — пропускаем всю строку
-                    const sizeVal = cellE ? String(cellE.v || "").trim() : "";
-                    if (!sizeVal) {
-                        continue; 
+                    const sizeVal = idxSize !== -1 ? String(row[idxSize] || "").trim() : "";
+                    if (!sizeVal || sizeVal.toLowerCase().includes("size")) {
+                        continue;
                     }
 
-                    // Теперь данные гарантированно берутся только из своих колонок:
-                    const growerRef = cellB ? String(cellB.v || "").trim() : ""; // Из B
-                    const supplier  = cellC ? String(cellC.v || "").trim() : ""; // Из C
-                    const origin    = cellD ? String(cellD.v || "").trim() : ""; // Из D
-                    const countVal  = cellF ? String(cellF.v || "").trim() : ""; // Из F
-                    const storeVal  = cellH ? String(cellH.v || "").trim() : ""; // Из H
-                    const variety   = cellJ ? String(cellJ.v || "").trim() : ""; // Из J
-                    const available = cellO ? String(cellO.v || "").trim() : ""; // Из O
+                    const growerRef = idxGrowerPro !== -1 ? String(row[idxGrowerPro] || "").trim() : "";
+                    const supplier  = idxGrower !== -1 ? String(row[idxGrower] || "").trim() : "";
+                    const origin    = idxOrigin !== -1 ? String(row[idxOrigin] || "").trim() : "";
+                    const countVal  = idxCount !== -1 ? String(row[idxCount] || "").trim() : "";
+                    const storeVal  = idxStore !== -1 ? String(row[idxStore] || "").trim() : "";
+                    const variety   = idxVariety !== -1 ? String(row[idxVariety] || "").trim() : "";
+                    const available = idxAvailable !== -1 ? String(row[idxAvailable] || "").trim() : "";
 
                     stockRows.push({
-                        consignment: String(consignmentNum),
+                        consignment: rawCons,
                         growerpro: growerRef ? growerRef : null,
                         grower: supplier ? supplier : null,
                         origin: origin ? origin : null,
@@ -274,21 +295,19 @@
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("No data lines matched criteria (Valid Consignment number & Size required).");
+                    throw new Error("Zero matching stock rows processed.");
                 }
 
-                statusDiv.innerHTML = `⚙️ Synced ${stockRows.length} lines. Syncing database...`;
+                statusDiv.innerHTML = `⚙️ Formatted ${stockRows.length} rows perfectly. Saving to database...`;
                 
-                // Стираем старый сток в Supabase
                 const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                 if (deleteError) throw deleteError;
 
-                // Загружаем новый точный поэлементный сток
                 const { error: insertError } = await clientDb.from('stock').insert(stockRows);
                 if (insertError) throw insertError;
 
                 statusDiv.style.color = "#2e7d32";
-                statusDiv.innerHTML = `✅ Successfully uploaded ${stockRows.length} rows into Supabase!`;
+                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} rows into Supabase!`;
                 fileInput.value = '';
                 
                 loadStockTable();
@@ -297,12 +316,11 @@
             } catch (err) {
                 statusDiv.style.color = "#c53030";
                 statusDiv.innerHTML = "❌ Error: " + err.message;
-                console.error("Upload process crash log:", err);
+                console.error("Smart parsing crash details:", err);
             }
         };
     }
 
-    // 4. Отрисовка таблицы стока на веб-странице
     async function loadStockTable() {
         try {
             const { data: stock, error } = await clientDb.from('stock').select('*').order('id', { ascending: true });
@@ -330,7 +348,6 @@
         } catch (e) { console.error(e); }
     }
 
-    // 5. Отрисовка живых заказов сверху панели управления
     async function loadOfficeDashboard() {
         try {
             const { data: orders, error } = await clientDb.from('orders').select('*').order('id', { ascending: false }).limit(5);
@@ -354,7 +371,6 @@
         } catch (e) { console.error(e); }
     }
 
-    // Первичный запуск функций при загрузке страницы
     loadOfficeDashboard();
     loadStockTable();
 </script>
