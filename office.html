@@ -56,7 +56,6 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
 
-        /* Кнопки и интерфейс загрузки */
         .upload-row { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
         .btn {
             padding: 10px 16px; border: none; border-radius: 6px; font-weight: bold; 
@@ -84,7 +83,7 @@
         }
         .pipeline-header h3 { margin: 0; font-size: 16px; color: var(--text); }
 
-        /* Стили таблиц */
+        /* Таблицы */
         .table-responsive { width: 100%; overflow-x: auto; }
         .orders-table { width: 100%; border-collapse: collapse; text-align: left; }
         .orders-table th {
@@ -147,7 +146,7 @@
                         <th style="width: 100px;">Consignment</th>
                         <th>Origin</th>
                         <th>Size</th>
-                        <th>Store</th>
+                        <th>Available</th> <th>Store</th>
                         <th style="width: 50px;">Qty</th>
                         <th>Driver</th>
                         <th>Delivered At</th>
@@ -156,7 +155,7 @@
                 </thead>
                 <tbody id="office_orders_body">
                     <tr>
-                        <td colspan="13" style="text-align:center; padding:20px; color:var(--text-muted);">Loading live pipeline...</td>
+                        <td colspan="14" style="text-align:center; padding:20px; color:var(--text-muted);">Loading live pipeline...</td>
                     </tr>
                 </tbody>
             </table>
@@ -203,7 +202,20 @@
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    // 1. ЗАГРУЗКА И ПАРСИНГ EXCEL В БАЗУ ДАННЫХ SUPABASE
+    // Умный поиск значений ключей в объекте без учета регистра и лишних пробелов
+    function getExcelValue(row, possibleNames) {
+        const keys = Object.keys(row);
+        for (let name of possibleNames) {
+            const cleanName = name.toLowerCase().trim();
+            const foundKey = keys.find(k => k.toLowerCase().trim().includes(cleanName) || cleanName.includes(k.toLowerCase().trim()));
+            if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null) {
+                return row[foundKey];
+            }
+        }
+        return '';
+    }
+
+    // УМНЫЙ ОБРАБОТЧИК ИМПОРТА EXCEL
     async function handleStockUpload() {
         const fileInput = document.getElementById('excel_file');
         const file = fileInput.files[0];
@@ -219,7 +231,6 @@
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
             
-            // Превращаем Excel строки в объекты JavaScript
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
             if (jsonData.length === 0) {
@@ -227,7 +238,7 @@
                 return;
             }
 
-            // ШАГ А: Полностью очищаем старую таблицу stock в Supabase перед заливкой новой
+            // Очищаем старую таблицу stock
             const { error: deleteError } = await _db
                 .from('stock')
                 .delete()
@@ -235,20 +246,37 @@
 
             if (deleteError) throw deleteError;
 
-            // ШАГ Б: Маппинг колонок Экселя под структуру вашей базы данных
-            const formattedStock = jsonData.map(row => ({
-                consignment: String(row['CONSIGNMENT (A)'] || row['consignment'] || row['Cons'] || '').trim(),
-                growerpro_ref: String(row['GROWERPRO REF (B)'] || row['growerpro_ref'] || '—').trim(),
-                description: String(row['VARIETY (J)'] || row['description'] || '—').trim(),
-                grower: String(row['GROWER / SUPPLIER (C)'] || row['grower'] || '—').trim(),
-                origin: String(row['COUNTRY OF ORIGIN (D)'] || row['origin'] || '—').trim(),
-                size: String(row['SIZE (E)'] || row['size'] || '—').trim(),
-                count: String(row['COUNT (F)'] || row['count'] || '—').trim(),
-                store: String(row['STORE (H)'] || row['store'] || '—').trim(),
-                available_stock: String(row['AVAILABLE STOCK (O)'] || row['available_stock'] || '0').trim()
-            })).filter(item => item.consignment !== ''); // Исключаем пустые строки
+            // Маппинг с гибким поиском ключей колонок
+            const formattedStock = jsonData.map(row => {
+                const consignmentVal = String(getExcelValue(row, ['CONSIGNMENT (A)', 'consignment', 'cons', 'con'])).trim();
+                const growerproVal = String(getExcelValue(row, ['GROWERPRO REF (B)', 'growerpro_ref', 'ref', 'growerpro'])).trim();
+                const descriptionVal = String(getExcelValue(row, ['VARIETY (J)', 'description', 'variety', 'desc', 'fruit'])).trim();
+                const growerVal = String(getExcelValue(row, ['GROWER / SUPPLIER (C)', 'grower', 'supplier', 'grower / supplier'])).trim();
+                const originVal = String(getExcelValue(row, ['COUNTRY OF ORIGIN (D)', 'origin', 'country', 'country of origin'])).trim();
+                const sizeVal = String(getExcelValue(row, ['SIZE (E)', 'size'])).trim();
+                const countVal = String(getExcelValue(row, ['COUNT (F)', 'count'])).trim();
+                const storeVal = String(getExcelValue(row, ['STORE (H)', 'store', 'loc'])).trim();
+                const availableVal = parseInt(getExcelValue(row, ['AVAILABLE STOCK (O)', 'available_stock', 'available', 'stock'])) || 0;
 
-            // ШАГ В: Пакетная вставка новых строк в Supabase
+                return {
+                    consignment: consignmentVal || '—',
+                    growerpro_ref: growerproVal || '—',
+                    description: descriptionVal || '—',
+                    grower: growerVal || '—',
+                    origin: originVal || '—',
+                    size: sizeVal || '—',
+                    count: countVal || '—',
+                    store: storeVal || '—',
+                    available_stock: availableVal
+                };
+            }).filter(item => item.consignment !== '—' && item.consignment !== '');
+
+            if (formattedStock.length === 0) {
+                alert("Could not match Excel columns! Check header names.");
+                return;
+            }
+
+            // Отправляем в Supabase
             const { error: insertError } = await _db
                 .from('stock')
                 .insert(formattedStock);
@@ -256,17 +284,14 @@
             if (insertError) throw insertError;
 
             alert("✅ Morning Stock base successfully parsed and uploaded to Supabase!");
-            
-            // Сразу обновляем таблицу на экране
             fetchOfficeStockBase();
 
         } catch (error) {
-            console.error("Upload process error:", error);
+            console.error(error);
             alert("❌ Database Upload Error: " + error.message);
         }
     }
 
-    // 2. ЗАГРУЗКА ЖИВОЙ ЛЕНТЫ ЗАКАЗОВ В ТАБЛИЦУ ОФИСА
     async function fetchOfficePipeline() {
         try {
             const { data: orders, error } = await _db
@@ -280,7 +305,7 @@
             const tbody = document.getElementById('office_orders_body');
             
             if (!orders || orders.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; padding:20px;">No records inside pipeline.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; padding:20px;">No records inside pipeline.</td></tr>`;
                 return;
             }
 
@@ -302,7 +327,7 @@
                     <td><code>${o.consignment || o.cons || '—'}</code></td>
                     <td>${o.origin || '—'}</td>
                     <td>${o.size || '—'}</td>
-                    <td><span class="store-tag">${o.store || '—'}</span></td>
+                    <td>${o.available_stock !== undefined && o.available_stock !== null ? o.available_stock : '—'}</td> <td><span class="store-tag">${o.store || '—'}</span></td>
                     <td><span class="qty-tag">${o.qty || '0'}</span></td>
                     <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span style="color:var(--text-muted);">Waiting...</span>'}</td>
                     <td class="time-delivered">${statusClean === 'delivered' ? '✅ ' + formatTime(o.delivered_at) : '—'}</td>
@@ -311,14 +336,13 @@
             }).join('');
 
         } catch (e) {
-            console.error("Pipeline crash:", e);
+            console.error(e);
         }
     }
 
-    // 3. ЗАГРУЗКА НИЖНЕЙ ТАБЛИЦЫ ТЕКУЩЕГО СТОКА ИЗ SUPABASE
     async function fetchOfficeStockBase() {
         try {
-            const { data: stock, error } = await _db.from('stock').select('*');
+            const { data: stock, error = null } = await _db.from('stock').select('*');
             if (error) throw error;
 
             const tbody = document.getElementById('office_stock_body');
@@ -329,7 +353,7 @@
 
             tbody.innerHTML = stock.map(s => `
                 <tr>
-                    <td><code>${s.consignment || s.cons || '—'}</code></td>
+                    <td><code>${s.consignment || '—'}</code></td>
                     <td style="color:var(--text-muted);">${s.growerpro_ref || '—'}</td>
                     <td><strong>${s.description || '—'}</strong></td>
                     <td>${s.grower || '—'}</td>
@@ -341,11 +365,10 @@
                 </tr>
             `).join('');
         } catch (e) {
-            console.error("Stock list load failed:", e);
+            console.error(e);
         }
     }
 
-    // 4. ЭКСПОРТ ИСТОРИИ ЗАКАЗОВ В EXCEL С ВРЕМЕНЕМ И ВОДИТЕЛЯМИ
     function exportLogsToExcel() {
         if (rawOrdersLog.length === 0) {
             alert("No data available to export yet!");
@@ -372,8 +395,6 @@
         const worksheet = XLSX.utils.json_to_sheet(preparedData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Production Logs");
-
-        // Установка автоматической ширины колонок в файле Excel
         worksheet['!cols'] = [{wch:10},{wch:15},{wch:18},{wch:22},{wch:20},{wch:15},{wch:12},{wch:10},{wch:15},{wch:12},{wch:18},{wch:15},{wch:15},{wch:12}];
 
         const todayStr = new Date().toISOString().slice(0, 10);
@@ -384,10 +405,9 @@
         window.location.href = 'login.html';
     }
 
-    // Старт работы страницы
     fetchOfficePipeline();
     fetchOfficeStockBase();
-    setInterval(fetchOfficePipeline, 5000); // Автообновление пайплайна каждые 5 секунд
+    setInterval(fetchOfficePipeline, 5000);
 </script>
 </body>
 </html>
