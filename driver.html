@@ -7,105 +7,175 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
-            --bg: #111827; 
-            --card-bg: #1f2937; 
-            --text: #f9fafb; 
-            --text-muted: #9ca3af;
-            --accent: #3b82f6;
-            --urgent: #dc2626;
+            --bg: #f4f6f9; 
+            --card-bg: #ffffff; 
+            --text: #1a1a2e; 
+            --text-muted: #6c757d;
+            --accent: #0288d1;
+            --urgent: #d32f2f;
+            --urgent-bg: #fff5f5;
             --process: #f59e0b; 
-            --done: #10b981; 
+            --process-bg: #fef8e7;
+            --done: #2e7d32; 
         }
         body {
             font-family: 'Segoe UI', Roboto, sans-serif; 
             background: var(--bg); 
             color: var(--text); 
             margin: 0; 
-            padding: 15px;
+            padding: 10px;
         }
         .container {
             max-width: 100%; 
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
         }
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: var(--card-bg);
-            padding: 15px 20px;
+            padding: 12px 16px;
             border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            flex-wrap: wrap;
+            gap: 10px;
         }
-        .header h1 { margin: 0; font-size: 20px; color: #60a5fa; }
-        .user-badge { font-weight: bold; color: #fff; background: #2563eb; padding: 6px 14px; border-radius: 6px; font-size: 14px; }
+        .header h1 { margin: 0; font-size: 18px; color: var(--accent); }
+        .header-right { display: flex; align-items: center; gap: 10px; }
+        .user-badge { font-weight: bold; color: #01579b; background: #e3f2fd; padding: 6px 12px; border-radius: 6px; font-size: 13px; }
         
         .logout-btn {
             background: transparent;
             color: var(--text-muted);
-            border: 1px solid #4b5563;
+            border: 1px solid #cbd5e0;
             padding: 6px 12px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
         }
-        .logout-btn:hover { background: #374151; color: #fff; }
+        .logout-btn:hover { background: #edf2f7; }
 
         .main-card {
             background: var(--card-bg);
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
-        .main-card h2 { margin-top: 0; font-size: 18px; color: #f3f4f6; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
+        .main-card h2 { 
+            margin-top: 0; 
+            font-size: 16px; 
+            color: var(--text); 
+            margin-bottom: 12px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px;
+        }
         
         .pulse-dot {
-            width: 10px; height: 10px; background: #ef4444; border-radius: 50%;
+            width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
             animation: blink 1.2s infinite;
         }
         @keyframes blink { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
 
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #111827; color: var(--text-muted); padding: 14px 10px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #374151; }
-        td { padding: 16px 10px; font-size: 15px; border-bottom: 1px solid #374151; color: #e5e7eb; }
-        
-        tr.urgent-row { background: #450a0a !important; border-left: 5px solid var(--urgent); }
-        tr.process-row { background: #1e1b4b; }
+        /* Оболочка для адаптивности списка */
+        .orders-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
 
+        /* Карточка заказа (включается автоматически на смартфонах) */
+        .order-item-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        
+        /* Цветовые схемы состояний */
+        .order-item-card.urgent-card { border-left: 6px solid var(--urgent); background: var(--urgent-bg); }
+        .order-item-card.process-card { border-left: 6px solid var(--process); background: var(--process-bg); }
+        .order-item-card.new-card { border-left: 6px solid var(--accent); }
+
+        /* Строки с данными внутри мобильной карточки */
+        .card-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #edf2f7; padding-bottom: 6px; }
+        .card-row:last-of-type { border-bottom: none; padding-bottom: 0; }
+        
+        .card-label { font-size: 12px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+        .card-value { font-size: 14px; font-weight: 500; }
+
+        /* Важные крупные акценты для водителя */
+        .store-highlight { color: #6b46c1; font-weight: 800; font-size: 18px; background: #f3e8ff; padding: 2px 8px; border-radius: 4px; }
+        .line-highlight { color: #0288d1; font-weight: bold; font-size: 15px; }
+        .qty-highlight { font-size: 20px; color: #000; font-weight: 900; background: #e6fffa; border: 1px solid #b2f5ea; padding: 2px 10px; border-radius: 4px; }
+        code { background: #edf2f7; padding: 2px 6px; border-radius: 4px; color: #b83280; font-family: monospace; font-size: 14px; font-weight: bold; }
+
+        /* Крупные, жирные мобильные кнопки под пальцы */
         .action-btn {
-            display: inline-block;
+            display: block;
             width: 100%;
-            padding: 12px 8px;
+            padding: 14px 10px;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 15px;
             text-align: center;
             border: none;
             border-radius: 6px;
             cursor: pointer;
             color: white;
-            transition: background 0.2s;
             box-sizing: border-box;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .btn-take { background: var(--accent); }
-        .btn-take:hover { background: #1d4ed8; }
         .btn-complete { background: var(--done); }
-        .btn-complete:hover { background: #059669; }
-
+        
         .status-tag {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
+            padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase;
         }
-        .status-tag.new { background: #ef6c00; color: #fff; }
-        .status-tag.process { background: var(--process); color: #000; }
+        .status-tag.new { background: #e3f2fd; color: #0288d1; }
+        .status-tag.process { background: #fff3e0; color: #f59e0b; }
 
-        code { background: #111827; padding: 4px 8px; border-radius: 4px; color: #f472b6; font-family: monospace; font-size: 15px; font-weight: bold; }
-        .store-highlight { color: #a78bfa; font-weight: bold; font-size: 17px; background: rgba(167, 139, 250, 0.1); padding: 4px 8px; border-radius: 4px; }
-        .line-highlight { color: #38bdf8; font-weight: bold; }
+        /* На планшетах и ПК разворачиваем карточки обратно в красивую компактную таблицу */
+        @media (min-width: 768px) {
+            body { padding: 20px; }
+            .container { gap: 15px; }
+            .header h1 { font-size: 22px; }
+            .main-card { padding: 20px; }
+            
+            .orders-list { display: table; width: 100%; border-collapse: collapse; }
+            .order-item-card { display: table-row; background: transparent !important; box-shadow: none; border: none; }
+            .order-item-card Severities { border-left: none; }
+            
+            /* Создаем псевдо-заголовок таблицы на больших экранах */
+            .orders-list::before {
+                content: "ID\a0\a0\a0\a0\a0\a0LINE (Куда)\a0\a0\a0\a0\a0\a0STORE (Где взять)\a0\a0\a0\a0\a0\a0FRUIT / DESC\a0\a0\a0\a0\a0\a0GROWER\a0\a0\a0\a0\a0\a0CONSIGNMENT\a0\a0\a0\a0\a0\a0DETAILS (O/S/C)\a0\a0\a0\a0\a0\a0QTY\a0\a0\a0\a0\a0\a0STATUS\a0\a0\a0\a0\a0\a0ACTION";
+                display: none; /* Для чистой структуры используем классический table-layout ниже */
+            }
+
+            /* Переключаем элементы карточки в ячейки таблицы */
+            .card-row { display: table-cell; vertical-align: middle; padding: 12px 10px; border-bottom: 1px solid #edf2f7; }
+            .card-label { display: none; } /* Прячем мобильные подписи */
+            .card-value { font-size: 14px; }
+            
+            /* Индивидуальные стили строк для ПК/планшетов */
+            .order-item-card.urgent-card { background-color: var(--urgent-bg) !important; }
+            .order-item-card.process-card { background-color: var(--process-bg) !important; }
+            .order-item-card:hover { background-color: #f7fafc !important; }
+
+            .action-btn { padding: 8px 10px; font-size: 13px; }
+            .desktop-header { display: table-header-group !important; }
+        }
+        
+        .desktop-header { display: none; background: #f7fafc; }
+        .desktop-header th { color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #edf2f7; }
     </style>
 </head>
 <body>
@@ -125,10 +195,10 @@
 <div class="container">
     <div class="header">
         <div>
-            <h1>Peake Fruit — Driver Mission Control</h1>
-            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Live Delivery Feed</div>
+            <h1>Peake Fruit — Driver Panel</h1>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Live Adaptive Delivery Feed</div>
         </div>
-        <div style="display: flex; align-items: center; gap: 15px;">
+        <div class="header-right">
             <div class="user-badge" id="lbl_driver_top">Driver: -</div>
             <button class="logout-btn" onclick="logout()">Log Out</button>
         </div>
@@ -136,38 +206,31 @@
 
     <div class="main-card">
         <h2>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                Active Delivery Requests
-                <div class="pulse-dot"></div>
-            </div>
+            <div class="pulse-dot"></div>
+            Active Delivery Tasks
         </h2>
         
-        <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>LINE (Куда)</th>
-                        <th>STORE / LOCATION (Где взять)</th>
-                        <th>Description / Fruit</th>
-                        <th>Grower</th>
-                        <th>Consignment (Cons)</th>
-                        <th>Origin</th>
-                        <th>Size</th>
-                        <th>Count</th>
-                        <th>QTY (Сколько)</th>
-                        <th>Status</th>
-                        <th style="width: 160px; text-align: center;">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="driver_table_body">
-                    <tr>
-                        <td colspan="12" style="text-align: center; color: var(--text-muted); padding: 30px;">
-                            Loading live orders from Supabase...
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="orders-list" id="driver_orders_container">
+            <div class="desktop-header" id="table_header">
+                <div style="display: table-row;">
+                    <th style="padding-left:15px;">ID</th>
+                    <th>Line</th>
+                    <th>Store / Location</th>
+                    <th>Fruit Description</th>
+                    <th>Grower</th>
+                    <th>Consignment</th>
+                    <th>Specs (O/S/C)</th>
+                    <th style="text-align: center;">Qty</th>
+                    <th>Status</th>
+                    <th style="text-align: center; width: 150px;">Action</th>
+                </div>
+            </div>
+            
+            <div id="cards_body" style="display: contents;">
+                <div style="text-align: center; color: var(--text-muted); padding: 30px; display: block; width: 100%;">
+                    Loading active warehouse tasks...
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -190,14 +253,12 @@
 
             if (error) throw error;
 
-            const tbody = document.getElementById('driver_table_body');
+            const cardsBody = document.getElementById('cards_body');
             if (!orders || orders.length === 0) {
-                tbody.innerHTML = `
-                <tr>
-                    <td colspan="12" style="text-align: center; color: #10b981; font-weight: bold; padding: 40px; font-size: 16px;">
-                        🎉 All orders delivered! No active tasks at the moment.
-                    </td>
-                </tr>`;
+                cardsBody.innerHTML = `
+                <div style="text-align: center; color: var(--done); font-weight: bold; padding: 40px; font-size: 15px; display: block; width: 100%;">
+                    🎉 All tasks completed! No active orders right now.
+                </div>`;
                 return;
             }
 
@@ -205,11 +266,11 @@
                 const isUrgent = o.urgent === true || o.urgent === 'true';
                 const statusClean = (o.status || 'new').toLowerCase();
                 
-                let rowClass = '';
+                let stateClass = 'new-card';
                 if (isUrgent) {
-                    rowClass = 'class="urgent-row"';
+                    stateClass = 'urgent-card';
                 } else if (statusClean === 'process') {
-                    rowClass = 'class="process-row"';
+                    stateClass = 'process-card';
                 }
 
                 let actionButtonHtml = '';
@@ -219,40 +280,69 @@
                     if (!o.driver_name || o.driver_name === displayName) {
                         actionButtonHtml = `<button class="action-btn btn-complete" onclick="changeOrderStatus(${o.id}, 'delivered')">✅ Complete</button>`;
                     } else {
-                        actionButtonHtml = `<span style="font-size:12px; color:var(--text-muted);">Taken by ${o.driver_name}</span>`;
+                        actionButtonHtml = `<span style="font-size:12px; color:var(--text-muted); font-weight:bold;">Taken by ${o.driver_name}</span>`;
                     }
                 }
 
-                // Читаем консигнацию строго из поля 'cons' (куда её пишет новая форма линии)
-                const consignmentVal = o.cons || o.consignment || '-';
+                const consignmentVal = o.cons || o.consignment || '—';
+                const originVal = o.origin || '—';
+                const sizeVal = o.size || '—';
+                const countVal = o.count || '—';
 
+                // Генерируем универсальную структуру. На смартфонах она сожмется в карточку, на планшетах развернется в ряд таблицы.
                 return `
-                <tr ${rowClass}>
-                    <td><span style="color: var(--text-muted); font-size: 13px;">#${o.id}</span></td>
-                    <td><span class="line-highlight">${o.line || 'Unknown'}</span></td>
-                    <td><span class="store-highlight">${o.store || '—'}</span></td>
-                    <td><strong>${isUrgent ? '⚠️ URGENT: ' : ''}${o.description || '-'}</strong></td>
-                    <td>${o.grower || '-'}</td>
-                    <td><code>${consignmentVal}</code></td>
-                    <td>${o.origin || '-'}</td>
-                    <td>${o.size || '-'}</td>
-                    <td>${o.count || '-'}</td>
-                    <td style="font-size: 18px; color: #fff; font-weight: bold; text-align: center; background: rgba(255,255,255,0.05);">${o.qty || '-'}</td>
-                    <td><span class="status-tag ${statusClean}">${statusClean}</span></td>
-                    <td style="text-align: center; padding: 8px;">${actionButtonHtml}</td>
-                </tr>`;
+                <div class="order-item-card ${stateClass}">
+                    <div class="card-row" style="padding-left: 10px;">
+                        <span class="card-label">ID</span>
+                        <span class="card-value" style="color:var(--text-muted);">#${o.id}</span>
+                    </div>
+                    <div class="card-row">
+                        <span class="card-label">Line</span>
+                        <span class="card-value class="line-highlight"">${o.line || '—'}</span>
+                    </div>
+                    <div class="card-row">
+                        <span class="card-label">Store / Location</span>
+                        <span class="card-value"><span class="store-highlight">${o.store || '—'}</span></span>
+                    </div>
+                    <div class="card-row">
+                        <span class="card-label">Fruit</span>
+                        <span class="card-value"><strong>${isUrgent ? '⚠️ URGENT: ' : ''}${o.description || '—'}</strong></span>
+                    </div>
+                    <div class="card-row">
+                        <span class="card-label">Grower</span>
+                        <span class="card-value">${o.grower || '—'}</span>
+                    </div>
+                    <div class="card-row">
+                        <span class="card-label">Consignment</span>
+                        <span class="card-value"><code>${consignmentVal}</code></span>
+                    </div>
+                    <div class="card-row">
+                        <span class="card-label">Specs (O/S/C)</span>
+                        <span class="card-value">${originVal} / ${sizeVal} / ${countVal}</span>
+                    </div>
+                    <div class="card-row" style="text-align: center;">
+                        <span class="card-label">Qty</span>
+                        <span class="card-value"><span class="qty-highlight">${o.qty || '0'}</span></span>
+                    </div>
+                    <div class="card-row">
+                        <span class="card-label">Status</span>
+                        <span class="card-value"><span class="status-tag ${statusClean}">${statusClean}</span></span>
+                    </div>
+                    <div class="card-row" style="text-align: center; border-bottom: none;">
+                        <span class="card-label">Manage</span>
+                        <span class="card-value" style="display: block; width: 100%;">${actionButtonHtml}</span>
+                    </div>
+                </div>`;
             }).join('');
 
-            tbody.innerHTML = html;
+            cardsBody.innerHTML = html;
 
         } catch (e) {
-            console.error("Error loading active orders:", e);
-            document.getElementById('driver_table_body').innerHTML = `
-            <tr>
-                <td colspan="12" style="text-align: center; color: var(--urgent); padding: 30px;">
-                    Error pulling data from database.
-                </td>
-            </tr>`;
+            console.error(e);
+            document.getElementById('cards_body').innerHTML = `
+            <div style="text-align: center; color: var(--urgent); padding: 20px; display: block;">
+                Error pulling data from database.
+            </div>`;
         }
     }
 
@@ -271,7 +361,7 @@
             if (error) throw error;
             fetchActiveOrders();
         } catch (e) {
-            alert("Error updating order status: " + e.message);
+            alert("Error: " + e.message);
         }
     }
 
@@ -281,7 +371,7 @@
     }
 
     fetchActiveOrders();
-    setInterval(fetchActiveOrders, 5000);
+    setInterval(fetchActiveOrders, 5000); // Автообновление каждые 5 секунд
 </script>
 </body>
 </html>
