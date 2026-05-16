@@ -65,7 +65,6 @@
         .btn-primary { background: var(--accent); }
         .btn-primary:hover { background: var(--accent-hover); }
         
-        /* Зеленая кнопка для Excel Экспорта */
         .btn-excel { 
             background: var(--excel-green); 
             display: flex;
@@ -196,7 +195,6 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Массив для хранения сырых данных для экспорта
     let rawOrdersLog = [];
 
     function formatTime(isoString) {
@@ -205,7 +203,70 @@
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    // Загрузка живой ленты заказов
+    // 1. ЗАГРУЗКА И ПАРСИНГ EXCEL В БАЗУ ДАННЫХ SUPABASE
+    async function handleStockUpload() {
+        const fileInput = document.getElementById('excel_file');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert("Please select an Excel file first!");
+            return;
+        }
+
+        try {
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            // Превращаем Excel строки в объекты JavaScript
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            if (jsonData.length === 0) {
+                alert("The Excel file is empty or formatted incorrectly!");
+                return;
+            }
+
+            // ШАГ А: Полностью очищаем старую таблицу stock в Supabase перед заливкой новой
+            const { error: deleteError } = await _db
+                .from('stock')
+                .delete()
+                .neq('description', 'FOR_SAFETY_CLEAR_ALL_STOCKS');
+
+            if (deleteError) throw deleteError;
+
+            // ШАГ Б: Маппинг колонок Экселя под структуру вашей базы данных
+            const formattedStock = jsonData.map(row => ({
+                consignment: String(row['CONSIGNMENT (A)'] || row['consignment'] || row['Cons'] || '').trim(),
+                growerpro_ref: String(row['GROWERPRO REF (B)'] || row['growerpro_ref'] || '—').trim(),
+                description: String(row['VARIETY (J)'] || row['description'] || '—').trim(),
+                grower: String(row['GROWER / SUPPLIER (C)'] || row['grower'] || '—').trim(),
+                origin: String(row['COUNTRY OF ORIGIN (D)'] || row['origin'] || '—').trim(),
+                size: String(row['SIZE (E)'] || row['size'] || '—').trim(),
+                count: String(row['COUNT (F)'] || row['count'] || '—').trim(),
+                store: String(row['STORE (H)'] || row['store'] || '—').trim(),
+                available_stock: String(row['AVAILABLE STOCK (O)'] || row['available_stock'] || '0').trim()
+            })).filter(item => item.consignment !== ''); // Исключаем пустые строки
+
+            // ШАГ В: Пакетная вставка новых строк в Supabase
+            const { error: insertError } = await _db
+                .from('stock')
+                .insert(formattedStock);
+
+            if (insertError) throw insertError;
+
+            alert("✅ Morning Stock base successfully parsed and uploaded to Supabase!");
+            
+            // Сразу обновляем таблицу на экране
+            fetchOfficeStockBase();
+
+        } catch (error) {
+            console.error("Upload process error:", error);
+            alert("❌ Database Upload Error: " + error.message);
+        }
+    }
+
+    // 2. ЗАГРУЗКА ЖИВОЙ ЛЕНТЫ ЗАКАЗОВ В ТАБЛИЦУ ОФИСА
     async function fetchOfficePipeline() {
         try {
             const { data: orders, error } = await _db
@@ -215,7 +276,7 @@
 
             if (error) throw error;
             
-            rawOrdersLog = orders || []; // Сохраняем глобально для экспорта
+            rawOrdersLog = orders || [];
             const tbody = document.getElementById('office_orders_body');
             
             if (!orders || orders.length === 0) {
@@ -254,7 +315,7 @@
         }
     }
 
-    // Загрузка таблицы утреннего остатка
+    // 3. ЗАГРУЗКА НИЖНЕЙ ТАБЛИЦЫ ТЕКУЩЕГО СТОКА ИЗ SUPABASE
     async function fetchOfficeStockBase() {
         try {
             const { data: stock, error } = await _db.from('stock').select('*');
@@ -284,14 +345,13 @@
         }
     }
 
-    // ФУНКЦИЯ ЭКСПОРТА В EXCEL
+    // 4. ЭКСПОРТ ИСТОРИИ ЗАКАЗОВ В EXCEL С ВРЕМЕНЕМ И ВОДИТЕЛЯМИ
     function exportLogsToExcel() {
         if (rawOrdersLog.length === 0) {
             alert("No data available to export yet!");
             return;
         }
 
-        // Формируем красивую структуру колонок для выгрузки
         const preparedData = rawOrdersLog.map(o => ({
             "Order ID": o.id,
             "Ordered Time": formatTime(o.created_at),
@@ -309,32 +369,25 @@
             "Urgent Mark": o.urgent ? "YES" : "NO"
         }));
 
-        // Генерация файла Excel средствами библиотеки SheetJS (xlsx)
         const worksheet = XLSX.utils.json_to_sheet(preparedData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Production Logs");
 
-        // Подгоняем авто-ширину колонок
-        const maxProps = [{wch:10},{wch:15},{wch:18},{wch:22},{wch:20},{wch:15},{wch:12},{wch:10},{wch:15},{wch:12},{wch:18},{wch:15},{wch:15},{wch:12}];
-        worksheet['!cols'] = maxProps;
+        // Установка автоматической ширины колонок в файле Excel
+        worksheet['!cols'] = [{wch:10},{wch:15},{wch:18},{wch:22},{wch:20},{wch:15},{wch:12},{wch:10},{wch:15},{wch:12},{wch:18},{wch:15},{wch:15},{wch:12}];
 
-        // Скачивание файла на ПК
         const todayStr = new Date().toISOString().slice(0, 10);
         XLSX.writeFile(workbook, `Peake_Fruit_Orders_Report_${todayStr}.xlsx`);
-    }
-
-    async function handleStockUpload() {
-        alert("Excel parser logic will update standard database storage slots here.");
     }
 
     function logout() {
         window.location.href = 'login.html';
     }
 
-    // Инициализация интерфейса
+    // Старт работы страницы
     fetchOfficePipeline();
     fetchOfficeStockBase();
-    setInterval(fetchOfficePipeline, 5000); // Автообновление каждые 5 секунд
+    setInterval(fetchOfficePipeline, 5000); // Автообновление пайплайна каждые 5 секунд
 </script>
 </body>
 </html>
