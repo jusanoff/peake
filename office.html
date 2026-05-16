@@ -14,10 +14,7 @@
             --text-muted: #6c757d;
             --accent: #0288d1;
             --border: #e2e8f0;
-            --urgent-bg: #fff5f5;
-            --urgent-text: #c53030;
             --status-new: #ef6c00;
-            --status-process: #1565c0;
             --status-done: #2e7d32;
         }
 
@@ -84,28 +81,13 @@
 
         .table-responsive {
             overflow-x: auto;
-            overflow-y: auto;
             max-height: 480px; 
             border: 1px solid var(--border);
             border-radius: 4px;
         }
 
         table { width: 100%; border-collapse: collapse; min-width: 1200px; }
-        
-        th { 
-            position: sticky;
-            top: 0;
-            background: #f8f9fa; 
-            z-index: 10; 
-            color: var(--text-muted); 
-            padding: 12px 10px; 
-            text-align: left; 
-            font-size: 12px; 
-            text-transform: uppercase; 
-            border-bottom: 2px solid var(--border); 
-            box-shadow: inset 0 -1px 0 var(--border); 
-        }
-        
+        th { position: sticky; top: 0; background: #f8f9fa; z-index: 10; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 12px; text-transform: uppercase; border-bottom: 2px solid var(--border); }
         td { padding: 14px 10px; font-size: 14px; border-bottom: 1px solid #edf2f7; }
         
         #upload_status { font-size: 13px; font-weight: 600; margin-left: 10px; }
@@ -195,103 +177,114 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
-    function uploadMorningExcel() {
+    async function uploadMorningExcel() {
         const fileInput = document.getElementById('excel_file');
         const statusDiv = document.getElementById('upload_status');
         
-        if (!fileInput.files[0]) {
-            alert("Please select a file first!");
+        if (!fileInput.files || !fileInput.files[0]) {
+            alert("Please select an Excel file first!");
             return;
         }
 
+        // Моментально меняем статус, чтобы пользователь видел реакцию на клик
         statusDiv.style.color = "#ef6c00"; 
-        statusDiv.innerHTML = "⏳ Reading file structure...";
+        statusDiv.innerHTML = "⏳ Initializing file upload...";
 
         const file = fileInput.files[0];
         const reader = new FileReader();
         
-        reader.readAsBinaryString(file);
+        // Читаем как массив байтов вместо бинарной строки — это стабильнее для XLSX
+        reader.readAsArrayBuffer(file);
 
         reader.onload = async function(e) {
             try {
-                const bstr = e.target.result;
-                const workbook = XLSX.read(bstr, { type: 'binary' });
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
                 
+                // Ищем лист со стоком
                 const sheetName = workbook.SheetNames.find(n => 
                     n.toLowerCase().includes("stock") || n.toLowerCase().includes("daily")
                 ) || workbook.SheetNames[0];
                 
                 const worksheet = workbook.Sheets[sheetName];
-                const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
                 
-                if (rawRows.length === 0) throw new Error("File sheet is empty.");
+                // Генерируем массив массивов вместо объектов, чтобы полностью исключить путаницу с буквами
+                const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                
+                if (!rawRows || rawRows.length === 0) {
+                    throw new Error("The selected Excel sheet seems to be empty.");
+                }
 
                 const stockRows = [];
 
+                // Индексы колонок: A=0, B=1, C=2, D=3, E=4, F=5, H=7, J=9, O=14
                 for (let i = 0; i < rawRows.length; i++) {
                     const row = rawRows[i];
-                    if (!row) continue;
+                    if (!row || row.length === 0) continue;
 
-                    let rawCons = String(row["A"] || "").trim();
+                    // Извлекаем Колонку A (Consignment)
+                    let rawCons = String(row[0] || "").trim();
                     let consignmentNum = parseInt(rawCons, 10);
 
-                    // Проверка А: Берем только строки с числовыми номерами лотов
+                    // Фильтр А: Если в первой колонке не число лота — пропускаем шапку и текст
                     if (isNaN(consignmentNum) || consignmentNum < 1000 || consignmentNum > 99999) {
                         continue; 
                     }
 
-                    // Проверка E: Если размер пустой — строку пропускаем
-                    const size = String(row["E"] || "").trim();
-                    if (!size) {
+                    // Фильтр E: Если колонка размера (индекс 4) пустая — пропускаем строку стока
+                    const sizeVal = String(row[4] || "").trim();
+                    if (!sizeVal) {
                         continue; 
                     }
 
-                    // Сопоставляем напрямую с вашими колонками в Supabase
-                    const growerRef = String(row["B"] || "").trim(); // Столбец B
-                    const supplier  = String(row["C"] || "").trim(); // Столбец C
-                    const origin    = String(row["D"] || "").trim(); // Столбец D
-                    const count     = String(row["F"] || "").trim(); // Столбец F
-                    const store     = String(row["H"] || "").trim(); // Столбец H
-                    const variety   = String(row["J"] || "").trim(); // Столбец J
-                    const available = String(row["O"] || "").trim(); // Столбец O
+                    // Чистый сбор данных по индексам ячеек
+                    const growerRef = String(row[1] || "").trim(); // B (индекс 1)
+                    const supplier  = String(row[2] || "").trim(); // C (индекс 2)
+                    const origin    = String(row[3] || "").trim(); // D (индекс 3)
+                    const countVal  = String(row[5] || "").trim(); // F (индекс 5)
+                    const storeVal  = String(row[7] || "").trim(); // H (индекс 7)
+                    const variety   = String(row[9] || "").trim(); // J (индекс 9)
+                    const available = String(row[14] || "").trim(); // O (индекс 14)
 
+                    // Формируем чистый объект для вставки в базу без переименований
                     stockRows.push({
                         consignment: String(consignmentNum),
-                        growerpro: growerRef ? growerRef : null, // Записываем B напрямую в growerpro
-                        grower: supplier ? supplier : null,
-                        origin: origin ? origin : null,
-                        size: size,
-                        count: count ? count : null,             // Записываем F напрямую в count
-                        store: store ? store : null,
+                        growerpro: growerRef ? growerRef : null, // Колонка B -> growerpro
+                        grower: supplier ? supplier : null,      // Колонка C -> grower
+                        origin: origin ? origin : null,          // ...
+                        size: sizeVal,
+                        count: countVal ? countVal : null,       // Колонка F -> count
+                        store: storeVal ? storeVal : null,
                         description: variety ? variety : null,
                         available: available !== "" ? available : "0"
                     });
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("No rows matched criteria (A number & E size).");
+                    throw new Error("No rows found matching the required criteria (Valid Consignment number & Size).");
                 }
 
-                statusDiv.innerHTML = `⚙️ Verified ${stockRows.length} rows. Syncing database...`;
+                statusDiv.innerHTML = `⚙️ Processing ${stockRows.length} rows. Updating database...`;
                 
-                // Удаляем старый сток
+                // Очистка старой базы данных
                 const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                 if (deleteError) throw deleteError;
 
-                // Загружаем новый точный сток по колонкам
+                // Запись новых чистых строк
                 const { error: insertError } = await clientDb.from('stock').insert(stockRows);
                 if (insertError) throw insertError;
 
                 statusDiv.style.color = "#2e7d32";
-                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} stock rows!`;
+                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} rows into Supabase!`;
                 fileInput.value = '';
                 
                 loadStockTable();
-                setTimeout(() => statusDiv.innerText = '', 5000);
+                setTimeout(() => { statusDiv.innerText = ''; }, 6000);
 
             } catch (err) {
                 statusDiv.style.color = "#c53030";
                 statusDiv.innerHTML = "❌ Error: " + err.message;
+                console.error("Upload error details:", err);
             }
         };
     }
@@ -309,10 +302,12 @@
             const html = stock.map(s => `
                 <tr>
                     <td><span class="consignment-code">${s.consignment || '-'}</span></td>
-                    <td><span class="ref-code">${s.growerpro || '-'}</span></td>  <td><strong style="color:#2b6cb0;">${s.grower || '-'}</strong></td>
+                    <td><span class="ref-code">${s.growerpro || '-'}</span></td>
+                    <td><strong style="color:#2b6cb0;">${s.grower || '-'}</strong></td>
                     <td>${s.origin || '-'}</td>
                     <td><span class="ref-code">${s.size || '-'}</span></td>
-                    <td>${s.count || '-'}</td>                                   <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td>
+                    <td>${s.count || '-'}</td>
+                    <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td>
                     <td><strong>${s.description || '-'}</strong></td>
                     <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td>
                 </tr>
@@ -323,7 +318,7 @@
 
     async function loadOfficeDashboard() {
         try {
-            const { data: orders, error } = await clientDb.from('orders').select('*').order('id', { ascending: false }).limit(10);
+            const { data: orders, error } = await clientDb.from('orders').select('*').order('id', { ascending: false }).limit(5);
             if (error) throw error;
             const html = orders.map(o => `
                 <tr>
