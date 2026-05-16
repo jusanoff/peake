@@ -244,7 +244,7 @@
                     const idxVariety = headerRow.findIndex(h => h.includes('variety') || h.includes('commodity'));
                     const idxAvailable = headerRow.indexOf('available stock');
 
-                    // ... внутри функции reader.onload в uploadMorningExcel ...
+                  // ... этот кусок находится внутри функции reader.onload в uploadMorningExcel ...
 
 const stockRows = [];
 
@@ -261,6 +261,7 @@ for (let i = headerRowIndex + 1; i < rawRows.length; i++) {
 
     const finalCons = valConRef ? String(valConRef).trim() : (valCons ? String(valCons).trim() : null);
 
+    // СОБИРАЕМ ОБЪЕКТ С ИМЕНАМИ КОЛОНОК ТОЧНО КАК В SUPABASE
     stockRows.push({
         consignment: finalCons,
         grower: idxSupplier !== -1 && row[idxSupplier] ? String(row[idxSupplier]).trim() : null,
@@ -270,11 +271,12 @@ for (let i = headerRowIndex + 1; i < rawRows.length; i++) {
         store: idxStore !== -1 && row[idxStore] ? String(row[idxStore]).trim() : null,
         description: valVariety ? String(valVariety).trim() : null,
         
-        // ВНИМАНИЕ: Слово слева должно ОДИН В ОДИН совпадать с именем колонки в таблице stock в Supabase!
-        // Если в Supabase колонка называется available_stock, замените левое слово на available_stock
-        available: idxAvailable !== -1 && row[idxAvailable] ? String(row[idxAvailable]).trim() : null
+        // ЕСЛИ В БАЗЕ КОЛОНКА НАЗЫВАЕТСЯ available_stock, МЫ ПИШЕМ ЕЕ СЮДА:
+        available_stock: idxAvailable !== -1 && row[idxAvailable] ? String(row[idxAvailable]).trim() : null
     });
 }
+
+// ... дальше идет очистка базы и clientDb.from('stock').insert(stockRows) ...
 
                     if (stockRows.length === 0) {
                         throw new Error("No items matching requirements found in the selected sheet.");
