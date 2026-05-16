@@ -88,8 +88,33 @@
         }
         .dashboard-card h2 { margin-top: 0; font-size: 20px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 12px; color: var(--text); font-weight: 600; }
 
+        /* Контейнер таблицы с ограничением высоты и прокруткой */
+        .table-responsive {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 450px; /* Высота зоны прокрутки */
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
         table { width: 100%; border-collapse: collapse; min-width: 1200px; }
-        th { background: #f8f9fa; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border); }
+        
+        /* ЭФФЕКТ ФИКСИРОВАННОЙ ШАПКИ (STICKY TH) */
+        th { 
+            position: sticky;
+            top: 0;
+            background: #f8f9fa; /* Плотный фон, чтобы строки под ним не просвечивали */
+            z-index: 10; /* Шапка всегда поверх данных */
+            color: var(--text-muted); 
+            padding: 12px 10px; 
+            text-align: left; 
+            font-size: 12px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            border-bottom: 2px solid var(--border); 
+            box-shadow: inset 0 -1px 0 var(--border); /* Чтобы линия под шапкой не исчезала */
+        }
+        
         td { padding: 14px 10px; font-size: 14px; border-bottom: 1px solid #edf2f7; color: var(--text); }
         
         tr.urgent-row { background: var(--urgent-bg); }
@@ -151,7 +176,7 @@
 
     <div class="dashboard-card">
         <h2>Live Production Orders Pipeline</h2>
-        <div style="overflow-x: auto;">
+        <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -179,7 +204,7 @@
 
     <div class="dashboard-card">
         <h2>Current Morning Stock Base (Live Table)</h2>
-        <div style="overflow-x: auto; max-height: 450px;">
+        <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
@@ -209,7 +234,7 @@
     let lastKnownMaxId = 0; 
     const driversList = ["Driver 1", "Driver 2", "Driver 3", "Forklift 1", "Forklift 2"];
 
-    // Сверхнадежная функция разбора Excel с исправленной логикой двухуровневой шапки
+    // Функция разбора Excel с исправленной логикой двухуровневой шапки
     function uploadMorningExcel() {
         const fileInput = document.getElementById('excel_file');
         const statusDiv = document.getElementById('upload_status');
@@ -235,11 +260,9 @@
                 const sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes("sheet") || n.toLowerCase().includes("stock")) || workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
                 
-                // defval: "" жестко фиксирует структуру колонок, предотвращая сдвиги ячеек
                 const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
                 if (rawRows.length === 0) throw new Error("Excel sheet is empty.");
 
-                // Шаг 1. Находим индекс основной строки шапки
                 let headerRowIndex = -1;
                 for (let i = 0; i < rawRows.length; i++) {
                     const rowStr = JSON.stringify(rawRows[i]).toLowerCase();
@@ -253,11 +276,9 @@
                     throw new Error("Could not find table header row containing 'Consignment'.");
                 }
 
-                // Читаем первую и вторую строки шапки для сбора всех названий колонок
                 const row1 = rawRows[headerRowIndex].map(h => h ? String(h).trim().toLowerCase() : '');
                 const row2 = rawRows[headerRowIndex + 1] ? rawRows[headerRowIndex + 1].map(h => h ? String(h).trim().toLowerCase() : '') : [];
 
-                // Создаем единую карту индексов (ищет имя либо в 1-й строке шапки, либо во 2-й)
                 const getColIdx = (name) => {
                     let idx = row1.indexOf(name);
                     if (idx === -1) idx = row2.indexOf(name);
@@ -276,7 +297,6 @@
 
                 const stockRows = [];
 
-                // Шаг 2. Парсим строки с данными (начинаем строго ниже двухстрочной шапки)
                 for (let i = headerRowIndex + 2; i < rawRows.length; i++) {
                     const row = rawRows[i];
                     if (!row || row.length === 0) continue;
@@ -285,11 +305,9 @@
                     const valConRef = idxConRef !== -1 && row[idxConRef] !== undefined ? String(row[idxConRef]).trim() : "";
                     const valVariety = idxVariety !== -1 && row[idxVariety] !== undefined ? String(row[idxVariety]).trim() : "";
                     
-                    // ЖЕСТКИЙ ФИЛЬТР: Пропускаем пустые строки и декоративные текстовые разделители категорий фруктов
                     if (!valCons && !valConRef) continue;
                     if (valCons.toLowerCase().includes("consignment") || valVariety.toLowerCase().includes("variety")) continue;
 
-                    // Устанавливаем правильный номер консигнации
                     let finalCons = valConRef ? valConRef : valCons;
 
                     stockRows.push({
@@ -308,7 +326,6 @@
                     throw new Error("No valid items parsed after strict filtering.");
                 }
 
-                // Шаг 3. Загрузка очищенного массива в Supabase
                 statusDiv.innerText = "Clearing old database items...";
                 const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                 if (deleteError) throw deleteError;
@@ -321,9 +338,7 @@
                 statusDiv.innerText = `✅ Successfully imported ${stockRows.length} clean lots from Excel!`;
                 fileInput.value = '';
                 
-                // Перерисовываем нижнюю таблицу
                 loadStockTable();
-                
                 setTimeout(() => statusDiv.innerText = '', 5000);
 
             } catch (dbErr) {
@@ -339,7 +354,7 @@
         };
     }
 
-    // Загрузка живого конвейера ЗАКАЗОВ (из таблицы orders)
+    // Загрузка живого конвейера ЗАКАЗОВ
     async function loadOfficeDashboard() {
         try {
             const { data: orders, error } = await clientDb
@@ -393,6 +408,7 @@
                     <td>${o.grower || '-'}</td>
                     <td><span class="consignment-code">${o.cons || o.consignment || '-'}</span></td>
                     <td>${o.origin || '-'}</td>
+                    <td>${s => s.size || '-'}</td>
                     <td>${o.size || '-'}</td>
                     <td>${o.count || '-'}</td>
                     <td>${o.available || '-'}</td>
@@ -412,7 +428,7 @@
         } catch (e) { console.error(e); }
     }
 
-    // Загрузка и отрисовка ОСТАТКОВ (из таблицы stock)
+    // Загрузка и отрисовка ОСТАТКОВ
     async function loadStockTable() {
         try {
             const { data: stock, error } = await clientDb
@@ -466,7 +482,7 @@
     loadOfficeDashboard();
     loadStockTable();
 
-    // Автоматическое живое обновление заказов каждые 4 секунды
+    // Автоматическое обновление заказов каждые 4 секунды
     setInterval(loadOfficeDashboard, 4000);
 </script>
 </body>
