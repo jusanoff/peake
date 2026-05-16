@@ -256,7 +256,7 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    let mockStockData = []; // Сюда загрузится полный массив из Supabase
+    let mockStockData = []; 
 
     document.getElementById('lbl_line_top').innerText = "Line: " + currentUser;
 
@@ -266,11 +266,10 @@
             const select = document.getElementById('stock_select');
             select.innerHTML = '<option value="">-- Loading live stock from database... --</option>';
 
-            // Делаем запрос к таблице стока. Сортируем по возрастанию консигнации.
+            // Читаем из таблицы 'stock'
             const { data: realStock, error } = await _db
-                .from('stock_sheet') // ⚠️ Измени имя таблицы здесь, если в Supabase она называется по-другому
-                .select('*')
-                .order('cons', { ascending: true });
+                .from('stock') 
+                .select('*');
 
             if (error) throw error;
 
@@ -282,10 +281,10 @@
                 const opt = document.createElement('option');
                 opt.value = index;
                 
-                // Защита от пустых значений в базе
-                const consVal = item.cons || item.consignment || '—';
-                const descVal = item.description || item.desc || '—';
-                const storeVal = item.store || '—';
+                // Гибкая проверка названий колонок
+                const consVal = item.cons || item.consignment || item.Cons || '—';
+                const descVal = item.description || item.desc || item.Description || '—';
+                const storeVal = item.store || item.Store || '—';
 
                 opt.innerText = `Cons: ${consVal} — ${descVal} (Store: ${storeVal})`;
                 select.appendChild(opt);
@@ -305,18 +304,17 @@
         if (idx !== "") {
             const item = mockStockData[idx];
             
-            // Напрямую заполняем инпуты значениями, учитывая возможные разные названия колонок в CSV
-            document.getElementById('m_description').value = item.description || item.desc || '';
-            document.getElementById('m_cons').value = item.cons || item.consignment || '';
-            document.getElementById('m_store').value = item.store || '';
-            document.getElementById('m_grower').value = item.grower || '';
-            document.getElementById('m_origin').value = item.origin || '';
-            document.getElementById('m_size').value = item.size || '';
-            document.getElementById('m_count').value = item.count || '';
+            // Напрямую заполняем инпуты значениями
+            document.getElementById('m_description').value = item.description || item.desc || item.Description || '';
+            document.getElementById('m_cons').value = item.cons || item.consignment || item.Cons || '';
+            document.getElementById('m_store').value = item.store || item.Store || '';
+            document.getElementById('m_grower').value = item.grower || item.Grower || '';
+            document.getElementById('m_origin').value = item.origin || item.Origin || '';
+            document.getElementById('m_size').value = item.size || item.Size || '';
+            document.getElementById('m_count').value = item.count || item.Count || '';
             
             document.querySelectorAll('.form-grid input').forEach(i => i.classList.add('auto-filled'));
         } else {
-            // Если сбросили выбор — очищаем поля для ручного ввода
             document.getElementById('order_form').reset();
             document.getElementById('inp_qty').value = 1;
             document.querySelectorAll('.form-grid input').forEach(i => i.classList.remove('auto-filled'));
@@ -434,10 +432,9 @@
         window.location.href = 'login.html';
     }
 
-    // Инициализация интерфейса при старте
     loadStockDropdown();
     fetchMyLineRequests();
-    setInterval(fetchMyLineRequests, 5000); // Автообновление лога каждые 5 секунд
+    setInterval(fetchMyLineRequests, 5000);
 </script>
 </body>
 </html>
