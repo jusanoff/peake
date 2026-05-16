@@ -1,51 +1,127 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8"><title>Office - Stock Upload</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <meta charset="UTF-8"><title>Панель Офиса - Peake Fruit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>body{text-align:center;padding:50px;font-family:sans-serif;background:#f4f4f9}button{padding:20px;width:320px;margin:10px;cursor:pointer;border-radius:10px;border:none;font-weight:bold}</style>
+    <style>
+        :root { --p:#1a1a2e; --s:#f0f2f5; --ok:#2e7d32; }
+        body{font-family:sans-serif; background:var(--s); margin:0; padding:15px;}
+        .card{background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); max-width:1100px; margin:auto}
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px;}
+        h2{margin:0; color:var(--p);}
+        table{width:100%; border-collapse:collapse; margin-top:15px;}
+        th, td{padding:12px; border-bottom:1px solid #eee; text-align:left}
+        th{background:#f4f4f4; font-size:12px; color:#666; text-transform:uppercase}
+        select {padding:6px; border-radius:4px; border:1px solid #ccc; font-weight: bold;}
+        .status { padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold; text-transform:uppercase;}
+        .status.new { background:#fff3e0; color:#ef6c00; }
+        .status.process { background:#e3f2fd; color:#1565c0; }
+        .status.done { background:#e8f5e9; color:#2e7d32; }
+        .btn-out { background:#666; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; }
+    </style>
 </head>
 <body>
-    <h1>OFFICE PANEL</h1>
-    <input type="file" id="csv" style="display:none" accept=".csv">
-    <button style="background:#2e7d32;color:white" onclick="document.getElementById('csv').click()">UPLOAD STOCK (CSV: Sort, Qty, ST, Grower)</button><br>
-    <button style="background:#d32f2f;color:white" onclick="resetOrders()">RESET ALL ORDERS</button><br>
-    <button onclick="location.href='login.html'">Logout</button>
+
+    <div class="card">
+        <div class="header">
+            <h2>Панель управления заказами (Офис)</h2>
+            <div>
+                Привет, <b id="office_user">Администратор</b>
+                <button class="btn-out" onclick="logout()" style="margin-left:15px;">Выйти</button>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Откуда (Линия)</th>
+                    <th>Описание заказа</th>
+                    <th>Назначить водителя</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody id="orders_list"></tbody>
+        </table>
+    </div>
 
 <script>
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    document.getElementById('csv').onchange = e => {
-        Papa.parse(e.target.files[0], {
-            header: false,
-            complete: async (results) => {
-                // Очищаем старые остатки
-                await _db.from('stock').delete().neq('id', 0);
-                
-                // Формируем новые данные из CSV (Sort, Qty, ST, Grower)
-                const newData = results.data.filter(r => r.length >= 4).map(r => ({
-                    item_name: r[0],
-                    quantity: r[1],
-                    store: r[2],
-                    grower: r[3]
-                }));
+    // Проверка прав доступа при входе на экран
+    const currentUser = localStorage.getItem('user');
+    const currentRole = localStorage.getItem('role');
+    const displayName = localStorage.getItem('name');
 
-                const { error } = await _db.from('stock').insert(newData);
-                if(error) alert("Error: " + error.message);
-                else alert("Stock Updated Successfully!");
-            }
-        });
-    };
-
-    async function resetOrders() {
-        if(confirm("Delete all active orders?")) {
-            await _db.from('orders').delete().neq('id', 0);
-            alert("Orders cleared.");
-        }
+    if (!currentUser || currentRole !== 'office') {
+        window.location.href = 'login.html';
+    } else {
+        document.getElementById('office_user').innerText = displayName;
     }
+
+    let driversList = []; // Массив для хранения имен водителей
+
+    // Шаг 1: Загружаем реальные имена водителей прямо из общей таблицы users_table
+    async function loadDriversData() {
+        const { data, error } = await _db.from('users_table').select('name').eq('t', 'driver').order('name');
+        if (!error && data) {
+            driversList = data.map(d => d.name).filter(Boolean);
+        }
+        loadOrders(); // После водителей загружаем сами заказы
+    }
+
+    // Шаг 2: Загружаем заказы из таблицы заказов
+    async function loadOrders() {
+        try {
+            const { data: orders, error } = await _db.from('orders').select('*').order('id', { ascending: false });
+            if (error) throw error;
+
+            document.getElementById('orders_list').innerHTML = orders.map((o) => {
+                // Динамически строим выпадающий список водителей
+                let selectOptions = `<option value="">-- Назначить --</option>`;
+                selectOptions += driversList.map(name => `
+                    <option value="${name}" ${o.driver_name === name ? 'selected' : ''}>${name}</option>
+                `).join('');
+
+                return `
+                <tr>
+                    <td>#${o.id}</td>
+                    <td><b>${o.line || 'Не указана'}</b></td>
+                    <td>${o.description || 'Порожний поддон / Запрос'}</td>
+                    <td>
+                        <select onchange="assignDriver(${o.id}, this.value)">
+                            ${selectOptions}
+                        </select>
+                    </td>
+                    <td><span class="status ${o.status || 'new'}">${o.status || 'new'}</span></td>
+                </tr>`;
+            }).join('');
+        } catch(e) { console.error(e); }
+    }
+
+    // Шаг 3: Связываем заказ с выбранным водителем
+    async function assignDriver(orderId, driverName) {
+        // Если имя выбрано — ставим статус 'process' (в процессе), если сбросили — возвращаем 'new'
+        const status = driverName ? 'process' : 'new';
+        
+        const { error } = await _db.from('orders')
+            .update({ driver_name: driverName, status: status })
+            .eq('id', orderId);
+            
+        if (error) alert("Ошибка назначения: " + error.message);
+        loadOrders();
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+
+    // Инициализация панели при загрузке страницы
+    loadDriversData();
 </script>
 </body>
 </html>
