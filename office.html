@@ -108,19 +108,6 @@
         
         td { padding: 14px 10px; font-size: 14px; border-bottom: 1px solid #edf2f7; }
         
-        tr.urgent-row { background: var(--urgent-bg); }
-        tr.urgent-row td { color: var(--urgent-text); }
-
-        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
-        .status-badge.new { background: #fff3e0; color: var(--status-new); }
-        .status-badge.process { background: #e3f2fd; color: var(--status-process); }
-        .status-badge.delivered { background: #e8f5e9; color: var(--status-done); }
-
-        select.driver-select { padding: 6px; border-radius: 4px; border: 1px solid var(--border); }
-        .action-btn { border: none; padding: 7px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .action-btn.btn-process { background: var(--status-process); color: white; }
-        .action-btn.btn-done { background: var(--status-done); color: white; }
-        
         #upload_status { font-size: 13px; font-weight: 600; margin-left: 10px; }
         .consignment-code { font-family: monospace; background: #f1f3f5; color: #495057; padding: 2px 6px; border-radius: 3px; font-size: 13px; font-weight: 600; }
         .ref-code { font-family: monospace; color: #2d3748; background: #edf2f7; padding: 2px 5px; border-radius: 3px; font-size: 12px; }
@@ -138,8 +125,6 @@
         window.location.href = 'login.html';
     }
 </script>
-
-<audio id="alert_sound" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" preload="auto"></audio>
 
 <div class="container">
     <div class="header">
@@ -164,7 +149,6 @@
                     <tr>
                         <th>ID</th>
                         <th>Line Name</th>
-                        <th>Time</th>
                         <th>Item Description</th>
                         <th>Grower / Supplier</th>
                         <th>Consignment</th>
@@ -173,9 +157,7 @@
                         <th>Available</th>
                         <th>Store</th>
                         <th>Qty</th>
-                        <th>Assigned Driver</th>
                         <th>Status</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="office_orders_body"></tbody>
@@ -190,16 +172,18 @@
                 <thead>
                     <tr>
                         <th>Consignment (A)</th>
-                        <th>Grower / Supplier (C) [Ref B]</th>
+                        <th>GrowerPro Ref (B)</th>
+                        <th>Grower / Supplier (C)</th>
                         <th>Country of Origin (D)</th>
-                        <th>Size (E) [Count F]</th>
+                        <th>Size (E)</th>
+                        <th>Count (F)</th>
                         <th>Store (H)</th>
                         <th>Variety (J)</th>
                         <th>Available Stock (O)</th>
                     </tr>
                 </thead>
                 <tbody id="stock_base_body">
-                    <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Loading stock data...</td></tr>
+                    <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Loading stock data...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -208,4 +192,160 @@
 
 <script>
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLA... [truncated]
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+    const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
+
+    function uploadMorningExcel() {
+        const fileInput = document.getElementById('excel_file');
+        const statusDiv = document.getElementById('upload_status');
+        
+        if (!fileInput.files[0]) {
+            alert("Please select a file first!");
+            return;
+        }
+
+        statusDiv.style.color = "#ef6c00"; 
+        statusDiv.innerHTML = "⏳ Reading file structure...";
+
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        
+        reader.readAsBinaryString(file);
+
+        reader.onload = async function(e) {
+            try {
+                const bstr = e.target.result;
+                const workbook = XLSX.read(bstr, { type: 'binary' });
+                
+                const sheetName = workbook.SheetNames.find(n => 
+                    n.toLowerCase().includes("stock") || n.toLowerCase().includes("daily")
+                ) || workbook.SheetNames[0];
+                
+                const worksheet = workbook.Sheets[sheetName];
+                const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
+                
+                if (rawRows.length === 0) throw new Error("File sheet is empty.");
+
+                const stockRows = [];
+
+                for (let i = 0; i < rawRows.length; i++) {
+                    const row = rawRows[i];
+                    if (!row) continue;
+
+                    let rawCons = String(row["A"] || "").trim();
+                    let consignmentNum = parseInt(rawCons, 10);
+
+                    // Проверка А: Берем только строки с числовыми номерами лотов
+                    if (isNaN(consignmentNum) || consignmentNum < 1000 || consignmentNum > 99999) {
+                        continue; 
+                    }
+
+                    // Проверка E: Если размер пустой — строку пропускаем
+                    const size = String(row["E"] || "").trim();
+                    if (!size) {
+                        continue; 
+                    }
+
+                    // Сопоставляем напрямую с вашими колонками в Supabase
+                    const growerRef = String(row["B"] || "").trim(); // Столбец B
+                    const supplier  = String(row["C"] || "").trim(); // Столбец C
+                    const origin    = String(row["D"] || "").trim(); // Столбец D
+                    const count     = String(row["F"] || "").trim(); // Столбец F
+                    const store     = String(row["H"] || "").trim(); // Столбец H
+                    const variety   = String(row["J"] || "").trim(); // Столбец J
+                    const available = String(row["O"] || "").trim(); // Столбец O
+
+                    stockRows.push({
+                        consignment: String(consignmentNum),
+                        growerpro: growerRef ? growerRef : null, // Записываем B напрямую в growerpro
+                        grower: supplier ? supplier : null,
+                        origin: origin ? origin : null,
+                        size: size,
+                        count: count ? count : null,             // Записываем F напрямую в count
+                        store: store ? store : null,
+                        description: variety ? variety : null,
+                        available: available !== "" ? available : "0"
+                    });
+                }
+
+                if (stockRows.length === 0) {
+                    throw new Error("No rows matched criteria (A number & E size).");
+                }
+
+                statusDiv.innerHTML = `⚙️ Verified ${stockRows.length} rows. Syncing database...`;
+                
+                // Удаляем старый сток
+                const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
+                if (deleteError) throw deleteError;
+
+                // Загружаем новый точный сток по колонкам
+                const { error: insertError } = await clientDb.from('stock').insert(stockRows);
+                if (insertError) throw insertError;
+
+                statusDiv.style.color = "#2e7d32";
+                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} stock rows!`;
+                fileInput.value = '';
+                
+                loadStockTable();
+                setTimeout(() => statusDiv.innerText = '', 5000);
+
+            } catch (err) {
+                statusDiv.style.color = "#c53030";
+                statusDiv.innerHTML = "❌ Error: " + err.message;
+            }
+        };
+    }
+
+    async function loadStockTable() {
+        try {
+            const { data: stock, error } = await clientDb.from('stock').select('*').order('id', { ascending: true });
+            if (error) throw error;
+
+            if (!stock || stock.length === 0) {
+                document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Stock database is empty.</td></tr>`;
+                return;
+            }
+
+            const html = stock.map(s => `
+                <tr>
+                    <td><span class="consignment-code">${s.consignment || '-'}</span></td>
+                    <td><span class="ref-code">${s.growerpro || '-'}</span></td>  <td><strong style="color:#2b6cb0;">${s.grower || '-'}</strong></td>
+                    <td>${s.origin || '-'}</td>
+                    <td><span class="ref-code">${s.size || '-'}</span></td>
+                    <td>${s.count || '-'}</td>                                   <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td>
+                    <td><strong>${s.description || '-'}</strong></td>
+                    <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td>
+                </tr>
+            `).join('');
+            document.getElementById('stock_base_body').innerHTML = html;
+        } catch (e) { console.error(e); }
+    }
+
+    async function loadOfficeDashboard() {
+        try {
+            const { data: orders, error } = await clientDb.from('orders').select('*').order('id', { ascending: false }).limit(10);
+            if (error) throw error;
+            const html = orders.map(o => `
+                <tr>
+                    <td>#${o.id}</td>
+                    <td><strong>${o.line || '-'}</strong></td>
+                    <td>${o.description || '-'}</td>
+                    <td>${o.grower || '-'}</td>
+                    <td><span class="consignment-code">${o.consignment || '-'}</span></td>
+                    <td>${o.origin || '-'}</td>
+                    <td>${o.size || '-'}</td>
+                    <td>${o.available || '-'}</td>
+                    <td>${o.store || '-'}</td>
+                    <td><strong>${o.qty || '-'}</strong></td>
+                    <td><span class="status-badge new">${o.status || 'new'}</span></td>
+                </tr>
+            `).join('');
+            document.getElementById('office_orders_body').innerHTML = html;
+        } catch (e) { console.error(e); }
+    }
+
+    loadOfficeDashboard();
+    loadStockTable();
+</script>
+</body>
+</html>
