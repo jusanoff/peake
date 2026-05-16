@@ -384,7 +384,7 @@
 
             const html = stock.map(s => `
                 <tr>
-                    <td><span class="consignment-code">${s.consignment || '-'}</span></td> <td><span class="ref-code">${s.grower_ref || '-'}</span></td> <td><strong style="color:#2b6cb0;">${s.grower || '-'}</strong></td> <td>${s.origin || '-'}</td> <td><span class="ref-code">${s.size || '-'}</span></td> <td>${s.count_field || '-'}</td> <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td> <td><strong>${s.description || '-'}</strong></td> <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td> </tr>
+                    <td><span class="consignment-code">${s.consignment || '-'}</span></td> <td><span class="ref-code">${s.grower_ref || '-'}</span></td> <td><strong style="color:#2b6cb0;">${s.grower || '-'}</strong></td> <td>${s.origin || '-'}</td> <td><span class="ref-code">${s.size || '-'}</span></td> <td>${s.count || '-'}</td> <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td> <td><strong>${s.description || '-'}</strong></td> <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td> </tr>
             `).join('');
             document.getElementById('stock_base_body').innerHTML = html;
         } catch (e) { console.error(e); }
