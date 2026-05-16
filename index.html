@@ -200,7 +200,7 @@
             <p>Request Pallets from Warehouse</p>
         </div>
         <div class="header-right">
-            <div class="line-badge" id="line_name_display">Loading...</div>
+            <div class="line-badge" id="line_name_display">Line: Loading...</div>
             <button class="btn-logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
         </div>
     </div>
@@ -294,6 +294,9 @@
         window.location.href = 'login.html';
     }
 
+    // Сразу же при старте жестко прописываем логин в шапку, чтобы не висело "Loading..."
+    document.getElementById('line_name_display').innerText = 'Line: ' + currentUser;
+
     const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
     const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
     const k3 = 'LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
@@ -303,7 +306,7 @@
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
     let stockItemsGlobal = [];
-    let cachedLineFullName = currentUser; // Глобальная переменная для хранения полного имени
+    let cachedLineFullName = currentUser; // По умолчанию равен логину, если имя вдруг не найдется
 
     function formatTime(isoString) {
         if (!isoString) return '-';
@@ -323,16 +326,14 @@
             if (error) throw error;
 
             if (data && data.name) {
-                cachedLineFullName = data.name; // Запоминаем полное имя
+                cachedLineFullName = data.name; 
+                // ИСПРАВЛЕНО: Меняем текст в синем значке на полное имя (например, Hand Line1)
                 document.getElementById('line_name_display').innerText = 'Line: ' + data.name;
-            } else {
-                document.getElementById('line_name_display').innerText = 'Line: ' + currentUser;
             }
         } catch (err) {
             console.error("Error fetching full name:", err);
-            document.getElementById('line_name_display').innerText = 'Line: ' + currentUser;
         }
-        // Загружаем список только после определения имени, чтобы фильтрация истории работала корректно
+        // Загружаем заказы линии (и по логину, и по полному имени для надежности)
         loadActiveRequests();
     }
 
@@ -384,7 +385,7 @@
         const isUrgent = document.getElementById('inp_urgent').checked;
 
         try {
-            // ИСПРАВЛЕНО: Теперь в таблицу orders отправляется полное имя cachedLineFullName вместо логина currentUser
+            // Отправляем в базу полное красивое имя линии
             const { error } = await clientDb.from('orders').insert([{
                 line: cachedLineFullName, 
                 description: isUrgent ? '⚠️ ' + desc : desc,
@@ -422,11 +423,12 @@
 
     async function loadActiveRequests() {
         try {
-            // ИСПРАВЛЕНО: Фильтруем историю заказов по полному имени cachedLineFullName, чтобы видеть свои отправленные заказы
+            // ИСПРАВЛЕНО: Ищем заказы И по логину (currentUser), И по полному имени (cachedLineFullName), 
+            // чтобы в таблице снизу не пропадали старые запросы линии!
             const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
-                .eq('line', cachedLineFullName)
+                .or(`line.eq.${currentUser},line.eq.${cachedLineFullName}`)
                 .order('id', { ascending: false });
 
             if (error) throw error;
