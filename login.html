@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Login - Peake Fruit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .login-card { background: #fff; padding: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
@@ -19,32 +20,64 @@
         <select id="lang" class="lang-select" onchange="updateLang()">
             <option value="en">English</option>
             <option value="ru">Русский</option>
+            <option value="lt">Lietuvių</option>
         </select>
-        <input type="text" id="username" placeholder="Line Name / Driver Name">
+        <input type="text" id="username" placeholder="Username">
         <input type="password" id="password" placeholder="Password">
         <button onclick="login()" id="btn">LOGIN</button>
     </div>
     <script>
+        const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+        const _db = supabase.createClient(supabaseUrl, supabaseKey);
+
         function updateLang() {
             const lang = document.getElementById('lang').value;
             const t = document.getElementById('title'), u = document.getElementById('username'), p = document.getElementById('password'), b = document.getElementById('btn');
             if(lang === 'ru') {
-                t.innerText = "Вход в систему"; u.placeholder = "Имя (Линия или Водитель)"; p.placeholder = "Пароль"; b.innerText = "ВОЙТИ";
+                t.innerText = "Вход в систему"; u.placeholder = "Имя пользователя"; p.placeholder = "Пароль"; b.innerText = "ВОЙТИ";
+            } else if(lang === 'lt') {
+                t.innerText = "Prisijungimas"; u.placeholder = "Vartotojo vardas"; p.placeholder = "Slaptažodis"; b.innerText = "PRISIJUNGTI";
             } else {
-                t.innerText = "System Login"; u.placeholder = "Name (Line or Driver)"; p.placeholder = "Password"; b.innerText = "LOGIN";
+                t.innerText = "System Login"; u.placeholder = "Username"; p.placeholder = "Password"; b.innerText = "LOGIN";
             }
         }
-        function login() {
-            const user = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
+
+        async function login() {
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value.trim();
             const lang = document.getElementById('lang').value;
-            if(!user || !pass) return alert(lang === 'ru' ? "Заполните всё!" : "Fill all fields!");
-            if(pass === "1234") {
-                localStorage.setItem('user', user);
-                localStorage.setItem('lang', lang);
-                window.location.href = user.toLowerCase().includes('driver') ? 'driver.html' : 'index.html';
-            } else {
-                alert(lang === 'ru' ? "Неверный пароль!" : "Wrong password!");
+            
+            if(!user || !pass) return alert(lang === 'ru' ? "Заполните всё!" : (lang === 'lt' ? "Užpildykite visus laukus!" : "Fill all fields!"));
+            
+            try {
+                // Ищем пользователя в таблице
+                const { data, error } = await _db.from('users_table').select('*').eq('u', user).single();
+                
+                if (error || !data) {
+                    return alert(lang === 'ru' ? "Пользователь не найден!" : (lang === 'lt' ? "Vartotojas nerastas!" : "User not found!"));
+                }
+                
+                // Проверяем пароль
+                if (data.p === pass) {
+                    localStorage.setItem('user', data.u);
+                    localStorage.setItem('lang', lang);
+                    localStorage.setItem('role', data.t); // Сохраняем роль для проверки безопасности
+                    
+                    // Редирект на основе типа аккаунта (t)
+                    if (data.t === 'admin') {
+                        window.location.href = 'superadmin.html';
+                    } else if (data.t === 'driver') {
+                        window.location.href = 'driver.html';
+                    } else {
+                        window.location.href = 'index.html'; // Для line и office
+                    }
+                } else {
+                    alert(lang === 'ru' ? "Неверный пароль!" : (lang === 'lt' ? "Neteisingas slaptažodis!" : "Wrong password!"));
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Database error");
             }
         }
         updateLang();
