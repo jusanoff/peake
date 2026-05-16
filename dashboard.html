@@ -250,6 +250,10 @@
                 const rowClass = isUrgent ? 'class="urgent-row"' : '';
                 const urgentPrefix = isUrgent ? '<span class="urgent-label">⚠️ URGENT:</span> ' : '';
 
+                // ЗАЩИТА ОТ РЕГИСТРА КОЛОНОК (Проверяем и маленькую, и большую букву из базы данных)
+                const consignmentVal = o.consignment || o.Consignment || '-';
+                const quantityVal = o.quantity || o.Quantity || o.qty || o.Qty || '-';
+
                 return `
                 <tr ${rowClass}>
                     <td><span style="color: var(--text-muted);">#${o.id}</span></td>
@@ -257,9 +261,9 @@
                     <td><span class="time-text">${timeStr}</span></td>
                     <td><span class="desc-text">${urgentPrefix}${o.description || '-'}</span></td>
                     <td><span class="grower-text">${o.grower || '-'}</span></td>
-                    <td><code>${o.consignment || '-'}</code></td>
+                    <td><code>${consignmentVal}</code></td>
                     <td><span class="store-text">${o.store || '-'}</span></td>
-                    <td><span class="qty-text">${o.quantity || '-'}</span></td>
+                    <td><span class="qty-text">${quantityVal}</span></td>
                     <td>${driverDisplay}</td>
                     <td style="text-align: center;">
                         <span class="status-badge ${statusClass}">${o.status || 'new'}</span>
