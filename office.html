@@ -2,30 +2,174 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit — Office Upload Panel</title>
+    <title>Peake Fruit — Office Management Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f6f9; padding: 40px; color: #1a1a2e; }
-        .card { background: white; padding: 30px; border-radius: 8px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h1 { color: #0288d1; font-size: 24px; margin-top: 0; }
-        .csv-box { border: 2px dashed #cbd5e0; padding: 30px; text-align: center; background: #f7fafc; border-radius: 6px; margin: 20px 0; }
-        .btn { background: #0288d1; color: white; border: none; padding: 12px 20px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; }
-        .btn:hover { background: #0277bd; }
-        #status { margin-top: 15px; font-weight: bold; text-align: center; }
+        :root {
+            --bg: #1e1e2f;
+            --card-bg: #27293d;
+            --text: #ffffff;
+            --text-muted: #a9afd3;
+            --accent: #e14eca;
+            --accent-hover: #e12eca;
+            --border: #2b3553;
+            --urgent: #fd5d93;
+            --new: #ff8d72;
+            --process: #1d8cf8;
+            --done: #00f2c4;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 15px 25px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--accent); }
+        .user-badge { font-weight: bold; color: #fff; background: rgba(225, 78, 202, 0.2); padding: 6px 12px; border-radius: 4px; border: 1px solid var(--accent); }
+
+        /* НАШ НОВЫЙ БЛОК ДЛЯ ЗАГРУЗКИ CSV (Встроен в верхнюю панель) */
+        .office-ctrl-panel {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 15px 25px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        .csv-upload-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.05);
+            padding: 8px 15px;
+            border-radius: 6px;
+            border: 1px dashed var(--text-muted);
+        }
+        .csv-upload-box input[type="file"] { color: var(--text-muted); font-size: 13px; }
+        .btn-csv {
+            background: var(--process);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: opacity 0.2s;
+        }
+        .btn-csv:hover { opacity: 0.9; }
+
+        /* Оригинальные стили таблицы и карточек офиса */
+        .dashboard-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .dashboard-card h2 { margin-top: 0; font-size: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text-muted); }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { background: rgba(0,0,0,0.2); color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 12px; text-transform: uppercase; border-bottom: 2px solid var(--border); }
+        td { padding: 14px 10px; font-size: 14px; border-bottom: 1px solid var(--border); }
+        
+        tr.urgent-row { background: rgba(253, 93, 147, 0.15); }
+        tr.urgent-row td { border-bottom: 1px solid rgba(253, 93, 147, 0.3); }
+
+        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; display: inline-block; }
+        .status-badge.new { background: rgba(255, 141, 114, 0.2); color: var(--new); }
+        .status-badge.process { background: rgba(29, 140, 248, 0.2); color: var(--process); }
+        .status-badge.delivered, .status-badge.done { background: rgba(0, 242, 196, 0.2); color: var(--done); }
+
+        select.driver-select { background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 6px; border-radius: 4px; font-size: 13px; }
+        
+        .action-btn { border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; margin-right: 5px; transition: opacity 0.2s; }
+        .action-btn.btn-process { background: var(--process); color: white; }
+        .action-btn.btn-done { background: var(--done); color: #1e1e2f; }
+        .action-btn:hover { opacity: 0.9; }
+
+        .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .btn-logout:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        
+        #csv_status { font-size: 13px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h1>Morning Stock Upload (Office)</h1>
-    <p>Upload the morning CSV file to update available fruits, consignments, and locations for production lines.</p>
-    
-    <div class="csv-box">
-        <input type="file" id="csv_file" accept=".csv">
+<script>
+    // --- ЗАЩИТА: ТОЛЬКО ОФИС ---
+    const currentUser = localStorage.getItem('user');
+    const currentRole = localStorage.getItem('role');
+
+    if (!currentUser || currentRole !== 'office') {
+        alert("Access denied! Office credentials required.");
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+</script>
+
+<audio id="alert_sound" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" preload="auto"></audio>
+
+<div class="container">
+    <div class="header">
+        <h1>Peake Fruit — Office Control Tower</h1>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div class="user-badge">Role: Coordinator</div>
+            <button class="btn-logout" onclick="logout()">Log Out</button>
+        </div>
     </div>
-    
-    <button class="btn" onclick="uploadMorningStock()">Clear Old & Upload New Stock</button>
-    <div id="status"></div>
+
+    <div class="office-ctrl-panel">
+        <h3 style="margin: 0; font-size: 16px; color: var(--accent);">Morning Stock Update:</h3>
+        <div class="csv-upload-box">
+            <input type="file" id="csv_file" accept=".csv">
+        </div>
+        <button class="btn-csv" onclick="uploadMorningStock()">Clear & Upload New Stock</button>
+        <div id="csv_status"></div>
+    </div>
+
+    <div class="dashboard-card">
+        <h2>Live Production Orders Pipeline</h2>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Line Name</th>
+                        <th>Time</th>
+                        <th>Item Description</th>
+                        <th>Grower</th>
+                        <th>Consignment</th>
+                        <th>Origin</th>
+                        <th>Size</th>
+                        <th>Count</th>
+                        <th>Available</th>
+                        <th>Store</th>
+                        <th>Qty</th>
+                        <th>Assigned Driver</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="office_orders_body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -33,24 +177,27 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
+    let lastKnownMaxId = 0; 
+    const driversList = ["Driver 1", "Driver 2", "Driver 3", "Forklift 1", "Forklift 2"];
+
+    // Функция загрузки утренней базы остатков из CSV (Новая функция)
     async function uploadMorningStock() {
         const fileInput = document.getElementById('csv_file');
-        const statusDiv = document.getElementById('status');
+        const statusDiv = document.getElementById('csv_status');
         
         if (!fileInput.files[0]) {
             alert("Please select a CSV file first!");
             return;
         }
 
-        statusDiv.style.color = "orange";
-        statusDiv.innerText = "Processing... Clearing old database...";
+        statusDiv.style.color = "#ff8d72";
+        statusDiv.innerText = "Clearing old database & loading...";
 
         try {
-            // 1. Очищаем старую таблицу stock перед заливкой новой
+            // Очищаем вчерашнюю таблицу stock
             const { error: deleteError } = await _db.from('stock').delete().neq('id', 0);
             if (deleteError) throw deleteError;
 
-            // 2. Читаем CSV
             const file = fileInput.files[0];
             const reader = new FileReader();
             
@@ -58,7 +205,6 @@
                 const text = e.target.result;
                 const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                 
-                // Пропускаем шапку, собираем массив строк
                 const stockRows = [];
                 for (let i = 1; i < lines.length; i++) {
                     const columns = lines[i].split(',');
@@ -74,22 +220,124 @@
                     });
                 }
 
-                // 3. Загружаем пачкой в Supabase
                 const { error: insertError } = await _db.from('stock').insert(stockRows);
                 if (insertError) throw insertError;
 
-                statusDiv.style.color = "green";
-                statusDiv.innerText = `✅ Success! Loaded ${stockRows.length} items to Stock table.`;
+                statusDiv.style.color = "#00f2c4";
+                statusDiv.innerText = `✅ Successfully loaded ${stockRows.length} items to Stock database!`;
                 fileInput.value = '';
             };
-            
             reader.readAsText(file);
 
         } catch (err) {
-            statusDiv.style.color = "red";
+            statusDiv.style.color = "#fd5d93";
             statusDiv.innerText = "Error: " + err.message;
         }
     }
+
+    // ТВОЯ ОРИГИНАЛЬНАЯ ФУНКЦИЯ ДЛЯ ЗАГРУЗКИ ТАБЛИЦЫ ЗАКАЗОВ С ЛИНИЙ
+    async function loadOfficeDashboard() {
+        try {
+            const { data: orders, error } = await _db
+                .from('orders')
+                .select('*')
+                .order('id', { ascending: false })
+                .limit(40);
+
+            if (error) throw error;
+
+            if (orders.length > 0) {
+                const currentMaxId = Math.max(...orders.map(o => o.id));
+                if (lastKnownMaxId !== 0 && currentMaxId > lastKnownMaxId) {
+                    // Пищим, если прилетел новый заказ
+                    document.getElementById('alert_sound').play().catch(e => console.log("Sound play blocked"));
+                }
+                lastKnownMaxId = currentMaxId;
+            }
+
+            const html = orders.map(o => {
+                let timeStr = "-";
+                if (o.created_at) {
+                    const d = new Date(o.created_at);
+                    timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                }
+
+                const isUrgent = o.urgent === true || o.urgent === 'true';
+                const rowClass = isUrgent ? 'class="urgent-row"' : '';
+                const currentStatus = (o.status || 'new').toLowerCase();
+
+                // Генерация выпадающего списка водителей
+                let driverOptions = `<option value="">-- Assign Driver --</option>`;
+                driversList.forEach(d => {
+                    const selected = o.driver_name === d ? 'selected' : '';
+                    driverOptions += `<option value="${d}" ${selected}>${d}</option>`;
+                });
+
+                // Кнопки управления статусом
+                let actionButtons = '';
+                if (currentStatus === 'new') {
+                    actionButtons = `<button class="action-btn btn-process" onclick="updateStatus(${o.id}, 'In Process')">Accept</button>`;
+                } else if (currentStatus === 'in process' || currentStatus === 'process') {
+                    actionButtons = `<button class="action-btn btn-done" onclick="updateStatus(${o.id}, 'Delivered')">Delivered</button>`;
+                } else {
+                    actionButtons = `<span style="color:var(--done); font-weight:bold;">Closed</span>`;
+                }
+
+                return `
+                <tr ${rowClass}>
+                    <td><span style="color: var(--text-muted);">#${o.id}</span></td>
+                    <td><span style="color: var(--accent); font-weight:bold;">${o.line || 'Unknown'}</span></td>
+                    <td><span class="time-text">${timeStr}</span></td>
+                    <td><strong>${isUrgent ? '⚠️ ' : ''}${o.description || '-'}</strong></td>
+                    <td>${o.grower || '-'}</td>
+                    <td><code>${o.cons || o.consignment || '-'}</code></td>
+                    <td>${o.origin || '-'}</td>
+                    <td>${o.size || '-'}</td>
+                    <td>${o.count || '-'}</td>
+                    <td>${o.available || '-'}</td>
+                    <td><span style="color: #b388ff; font-weight:600;">${o.store || '-'}</span></td>
+                    <td><strong style="font-size:15px;">${o.qty || o.quantity || '-'}</strong></td>
+                    <td>
+                        <select class="driver-select" onchange="assignDriver(${o.id}, this.value)">
+                            ${driverOptions}
+                        </select>
+                    </td>
+                    <td><span class="status-badge ${currentStatus}">${o.status || 'new'}</span></td>
+                    <td>${actionButtons}</td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('office_orders_body').innerHTML = html;
+        } catch (e) {
+            console.error("Dashboard reload error:", e);
+        }
+    }
+
+    // ТВОИ ОРИГИНАЛЬНЫЕ ФУНКЦИИ ИЗМЕНЕНИЯ СТАТУСОВ И ВОДИТЕЛЕЙ
+    async function updateStatus(orderId, newStatus) {
+        try {
+            const { error } = await _db.from('orders').update({ status: newStatus }).eq('id', orderId);
+            if (error) throw error;
+            loadOfficeDashboard();
+        } catch (e) { alert("Error changing status: " + e.message); }
+    }
+
+    async function assignDriver(orderId, driverName) {
+        try {
+            const { error } = await _db.from('orders').update({ driver_name: driverName || null }).eq('id', orderId);
+            if (error) throw error;
+            loadOfficeDashboard();
+        } catch (e) { alert("Error assigning driver: " + e.message); }
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+
+    // Запуск цикла обновления
+    loadOfficeDashboard();
+    setInterval(loadOfficeDashboard, 4000);
 </script>
 </body>
 </html>
