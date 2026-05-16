@@ -79,7 +79,6 @@
         td:first-child { border-left: 1px solid #e2e8f0; border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
         td:last-child { border-right: 1px solid #e2e8f0; border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
         
-        /* Urgent Styles & Pulse Animation */
         tr.urgent-row td {
             background: var(--urgent-bg);
             border-top: 1px solid var(--urgent-border);
@@ -173,6 +172,31 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
+    // Объект для связи системного логина (driver2) и реального имени (John Doe)
+    let driverNamesMap = {};
+
+    // Функция предварительной загрузки реальных имен водителей
+    async function loadDriversMap() {
+        try {
+            const { data: users, error } = await _db
+                .from('users_table')
+                .select('user, name')
+                .eq('t', 'driver');
+            
+            if (error) throw error;
+
+            if (users) {
+                users.forEach(u => {
+                    if (u.user && u.name) {
+                        driverNamesMap[u.user.toLowerCase().trim()] = u.name;
+                    }
+                });
+            }
+        } catch (e) {
+            console.error("Error loading drivers names map:", e);
+        }
+    }
+
     async function loadTVDashboard() {
         try {
             const { data: orders, error } = await _db
@@ -184,7 +208,7 @@
 
             const now = new Date();
 
-            // Auto-hide delivered/done orders after 1 minute (60,000 ms)
+            // Auto-hide delivered/done orders after 1 minute
             const activeOrders = orders.filter(o => {
                 const status = (o.status || 'new').toLowerCase();
                 if (status === 'delivered' || status === 'done') {
@@ -196,7 +220,7 @@
                 return true;
             });
 
-            // Sorting: Urgent orders pinned to the top. Then sorted by status: process -> new -> delivered
+            // Sorting: Urgent orders pinned to the top -> process -> new -> delivered
             const sortedOrders = activeOrders.sort((a, b) => {
                 if (a.urgent && !b.urgent) return -1;
                 if (!a.urgent && b.urgent) return 1;
@@ -212,8 +236,12 @@
                     timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
                 }
 
-                const driverDisplay = o.driver_name 
-                    ? `<span class="driver-text">🚚 ${o.driver_name}</span>` 
+                // Ищем реальное имя по системному логину водителя
+                let rawDriver = (o.driver_name || '').toLowerCase().trim();
+                let realDriverName = driverNamesMap[rawDriver] || o.driver_name;
+
+                const driverDisplay = realDriverName 
+                    ? `<span class="driver-text">🚚 ${realDriverName}</span>` 
                     : `<span class="no-driver">—</span>`;
 
                 const statusClass = (o.status || 'new').toLowerCase();
@@ -246,8 +274,15 @@
         }
     }
 
-    loadTVDashboard();
-    setInterval(loadTVDashboard, 5000);
+    // Инициализация
+    async function start() {
+        await loadDriversMap(); // Сначала загружаем карту имен
+        await loadTVDashboard(); // Потом рендерим таблицу
+        
+        // Каждые 5 секунд обновляем экран, раз в 30 секунд обновляем карту имен (на случай добавления новых водителей)
+        setInterval(loadTVDashboard, 5000);
+        setInterval(loadDriversMap, 30000);
+    }
+
+    start();
 </script>
-</body>
-</html>
