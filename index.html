@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit - Line Panel (Horizontal View)</title>
+    <title>Peake Fruit - Line Order Panel</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -14,8 +14,9 @@
             --accent: #0288d1;
             --accent-hover: #0277bd;
             --urgent: #d32f2f;
-            --new: #ef6c00; 
-            --process: #1565c0; 
+            --urgent-bg: #fff5f5;
+            --process: #f59e0b; 
+            --process-bg: #fff3e0;
             --done: #2e7d32; 
         }
         body {
@@ -23,152 +24,136 @@
             background: var(--bg); 
             color: var(--text); 
             margin: 0; 
-            padding: 20px;
+            padding: 10px;
         }
         .container {
             max-width: 100%; 
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 12px;
         }
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: var(--card-bg);
-            padding: 12px 25px;
+            padding: 12px 16px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            flex-wrap: wrap;
+            gap: 10px;
         }
-        .header h1 { margin: 0; font-size: 22px; color: var(--accent); }
-        .user-badge { font-weight: bold; color: #4a5568; background: #e3f2fd; padding: 6px 12px; border-radius: 4px; }
+        .header h1 { margin: 0; font-size: 18px; color: var(--accent); }
+        .user-badge { font-weight: bold; color: #01579b; background: #e3f2fd; padding: 6px 12px; border-radius: 6px; font-size: 13px; }
         
-        .main-content {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+        .logout-btn {
+            background: transparent; color: var(--text-muted); border: 1px solid #cbd5e0;
+            padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
         }
+        .logout-btn:hover { background: #edf2f7; }
 
-        .order-card {
+        .main-card {
             background: var(--card-bg);
-            padding: 20px 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-        }
-        .order-card h2 { margin-top: 0; font-size: 18px; margin-bottom: 15px; border-bottom: 2px solid #edf2f7; padding-bottom: 8px; }
-        
-        /* Зона выбора фруктов из базы данных */
-        .stock-select-zone {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-bottom: 20px;
-            background: #e3f2fd;
             padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #b3e5fc;
-        }
-        .stock-select-zone label {
-            color: #01579b;
-            font-size: 14px;
-        }
-        select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #0288d1;
-            border-radius: 6px;
-            font-size: 15px;
-            background-color: #fff;
-            color: var(--text);
-            font-weight: 600;
-            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
 
+        /* Табы переключения режимов ввода */
+        .tabs { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid #edf2f7; padding-bottom: 8px; }
+        .tab-btn {
+            background: #edf2f7; border: none; padding: 10px 16px; border-radius: 6px;
+            cursor: pointer; font-weight: bold; font-size: 13px; color: var(--text-muted);
+        }
+        .tab-btn.active { background: var(--accent); color: white; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Стили формы */
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
         }
-        .form-group { margin-bottom: 0; }
-        label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 13px; color: #4a5568; }
-        input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            font-size: 14px;
-            box-sizing: border-box;
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group.full-width { grid-column: 1 / -1; }
+        label { font-size: 11px; text-transform: uppercase; font-weight: bold; color: var(--text-muted); }
+        input, select {
+            padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px;
+            background: #fff; color: var(--text); box-sizing: border-box; width: 100%;
         }
-        input.autofilled { background-color: #f0fff4; border-color: #38a169; font-weight: 600; }
+        input:focus, select:focus { border-color: var(--accent); outline: none; }
 
-        .form-actions {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #edf2f7;
-            flex-wrap: wrap;
-            gap: 15px;
+        /* Чекбокс Urgent */
+        .urgent-lock {
+            display: flex; align-items: center; gap: 8px; background: #fff5f5;
+            border: 1px solid #fed7d7; padding: 10px; border-radius: 6px; margin-bottom: 15px;
         }
-        .urgent-zone {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #fff5f5;
-            border: 1px solid #fed7d7;
-            padding: 8px 15px;
-            border-radius: 6px;
-        }
-        .urgent-zone input { width: auto; cursor: pointer; }
-        .urgent-zone label { margin-bottom: 0; color: var(--urgent); cursor: pointer; }
+        .urgent-lock input { width: auto; cursor: pointer; }
+        .urgent-lock label { color: var(--urgent); cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 13px; }
 
-        .btn-group { display: flex; gap: 10px; width: 350px; }
-        .btn-submit { background: var(--accent); color: white; border: none; flex: 2; padding: 10px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; }
-        .btn-submit:hover { background: var(--accent-hover); }
-        .btn-logout { background: transparent; color: #718096; border: 1px solid #cbd5e0; flex: 1; padding: 10px; font-size: 13px; border-radius: 6px; cursor: pointer; }
-        .btn-logout:hover { background: #edf2f7; }
-
-        .history-card {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        .submit-btn {
+            display: block; width: 100%; padding: 14px; background: var(--accent);
+            color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 15px;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 0.03em;
         }
-        .history-card h2 { margin-top: 0; font-size: 18px; margin-bottom: 15px; border-bottom: 2px solid #edf2f7; padding-bottom: 8px; }
-        
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #f7fafc; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 12px; text-transform: uppercase; border-bottom: 2px solid #edf2f7; }
-        td { padding: 12px 10px; font-size: 14px; border-bottom: 1px solid #edf2f7; }
-        tr.urgent-row { background: #fff5f5; }
+        .submit-btn:hover { background: var(--accent-hover); }
+
+        /* Списки и таблицы заказов снизу */
+        .orders-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .order-row-card {
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .order-row-card.urgent-card { border-left: 5px solid var(--urgent); background: var(--urgent-bg); }
+        .order-row-card.process-card { border-left: 5px solid var(--process); background: var(--process-bg); }
+
+        .card-field { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #edf2f7; padding-bottom: 4px; }
+        .card-field:last-of-type { border-bottom: none; padding-bottom: 0; }
+        .field-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: bold; }
+        .field-value { font-size: 13px; font-weight: 500; }
+
+        .store-tag { color: #6b46c1; font-weight: bold; background: #f3e8ff; padding: 1px 6px; border-radius: 4px; }
+        .qty-tag { font-weight: bold; background: #e6fffa; border: 1px solid #b2f5ea; padding: 1px 6px; border-radius: 4px; }
+        code { background: #edf2f7; padding: 2px 4px; border-radius: 4px; color: #b83280; font-family: monospace; }
         
         .status-badge {
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-            display: inline-block;
+            padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase;
         }
-        .status-badge.new { background: #fff3e0; color: #e65100; }
-        .status-badge.process { background: #e3f2fd; color: #0d47a1; }
-        .status-badge.delivered, .status-badge.done { background: #e8f5e9; color: #1b5e20; }
-        
-        .time-text { font-size: 13px; font-weight: 500; color: #4a5568; }
-        .delivered-time-text { font-size: 13px; font-weight: bold; color: var(--done); }
+        .status-badge.new { background: #e3f2fd; color: #0288d1; }
+        .status-badge.process { background: #fff3e0; color: #f59e0b; }
+        .status-badge.delivered { background: #e8f5e9; color: var(--done); }
+
+        /* Адаптация под планшеты и ПК */
+        @media (min-width: 768px) {
+            body { padding: 20px; }
+            .container { gap: 15px; }
+            .main-card { padding: 20px; }
+            .orders-list { display: table; width: 100%; border-collapse: collapse; }
+            .order-row-card { display: table-row; background: transparent !important; }
+            .card-field { display: table-cell; vertical-align: middle; padding: 10px 8px; border-bottom: 1px solid #edf2f7; }
+            .field-label { display: none; }
+            .desktop-headers { display: table-header-group !important; background: #f7fafc; }
+            .desktop-headers th { color: var(--text-muted); padding: 10px 8px; text-align: left; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #edf2f7; }
+            
+            .order-row-card.urgent-card { background-color: var(--urgent-bg) !important; }
+            .order-row-card.process-card { background-color: var(--process-bg) !important; }
+            .order-row-card:hover { background-color: #f8fafc !important; }
+        }
+        .desktop-headers { display: none; }
     </style>
 </head>
 <body>
 
 <script>
-    // --- СТРОГАЯ ЗАЩИТА: ТОЛЬКО ЛИНИИ ---
+    // Проверка авторизации
     const currentUser = localStorage.getItem('user');
     const currentRole = localStorage.getItem('role');
-    const displayName = localStorage.getItem('name') || currentUser;
-
     if (!currentUser || currentRole !== 'line') {
-        alert("Access denied! Only production lines are allowed to place orders.");
+        alert("Access denied! Please login as Line Operator.");
         localStorage.clear();
         window.location.href = 'login.html';
     }
@@ -176,98 +161,100 @@
 
 <div class="container">
     <div class="header">
-        <h1>Peake Fruit — Production Panel</h1>
-        <div class="user-badge" id="lbl_line_top">Line: -</div>
+        <div>
+            <h1>Peake Fruit — Production Line Control</h1>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Request Pallets from Warehouse</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="user-badge" id="lbl_line_top">Line: -</div>
+            <button class="logout-btn" onclick="logout()">Log Out</button>
+        </div>
     </div>
 
-    <div class="main-content">
-        <div class="order-card">
-            <h2>Place New Order</h2>
+    <div class="main-card">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('stock')">📦 Select from Stock</button>
+            <button class="tab-btn" onclick="switchTab('manual')">✍️ Enter Manually</button>
+        </div>
+
+        <form id="order_form" onsubmit="handleFormSubmit(event)">
             
-            <div class="stock-select-zone">
-                <label for="stock_selector"><strong>⚡ Select Available Fruit from Live Stock Base:</strong></label>
-                <select id="stock_selector" onchange="selectFruitItem(this)">
-                    <option value="">-- Loading stock items... --</option>
-                </select>
+            <div id="tab_stock" class="tab-content active">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label for="stock_select">Available Pallets (Stock Sheet)</label>
+                    <select id="stock_select" onchange="handleStockChange()">
+                        <option value="">-- Choose fruit pallet from stock --</option>
+                    </select>
+                </div>
             </div>
 
-            <form id="order_form" onsubmit="submitOrder(event)">
+            <div id="tab_manual" class="tab-content">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Description / Item *</label>
-                        <input type="text" id="inp_desc" placeholder="Select item above..." required readonly>
+                        <label>Description / Fruit</label>
+                        <input type="text" id="m_description" placeholder="e.g. Royal Gala">
                     </div>
                     <div class="form-group">
-                        <label>Grower</label>
-                        <input type="text" id="inp_grower" placeholder="Select item above..." readonly>
-                    </div>
-                    <div class="form-group">
-                        <label>Consignment Number</label>
-                        <input type="text" id="inp_cons" placeholder="Select item above..." readonly>
-                    </div>
-                    <div class="form-group">
-                        <label>Origin</label>
-                        <input type="text" id="inp_origin" placeholder="Select item above..." readonly>
-                    </div>
-                    <div class="form-group">
-                        <label>Size</label>
-                        <input type="text" id="inp_size" placeholder="Select item above..." readonly>
-                    </div>
-                    <div class="form-group">
-                        <label>Count</label>
-                        <input type="text" id="inp_count" placeholder="Select item above..." readonly>
-                    </div>
-                    <div class="form-group">
-                        <label>Available</label>
-                        <input type="text" id="inp_available" placeholder="Select item above..." readonly>
+                        <label>Consignment (Cons)</label>
+                        <input type="text" id="m_cons" placeholder="e.g. 8885">
                     </div>
                     <div class="form-group">
                         <label>Store / Location</label>
-                        <input type="text" id="inp_store" placeholder="Select item above..." readonly>
+                        <input type="text" id="m_store" placeholder="e.g. 41">
                     </div>
                     <div class="form-group">
-                        <label>Quantity to Order *</label>
-                        <input type="number" id="inp_qty" placeholder="e.g., 5" min="1" required>
+                        <label>Grower</label>
+                        <input type="text" id="m_grower" placeholder="e.g. Clemente">
+                    </div>
+                    <div class="form-group">
+                        <label>Origin</label>
+                        <input type="text" id="m_origin" placeholder="Chile">
+                    </div>
+                    <div class="form-group">
+                        <label>Size</label>
+                        <input type="text" id="m_size" placeholder="73-78">
+                    </div>
+                    <div class="form-group">
+                        <label>Count</label>
+                        <input type="text" id="m_count" placeholder="100">
                     </div>
                 </div>
+            </div>
 
-                <div class="form-actions">
-                    <div class="urgent-zone">
-                        <input type="checkbox" id="chk_urgent">
-                        <label for="chk_urgent">⚠️ MARK AS URGENT (HIGH PRIORITY)</label>
-                    </div>
-                    <div class="btn-group">
-                        <button type="submit" class="btn-submit">Send Order</button>
-                        <button type="button" class="btn-logout" onclick="logout()">Log Out</button>
-                    </div>
+            <div class="form-grid" style="grid-template-columns: 1fr;">
+                <div class="form-group">
+                    <label for="inp_qty" style="color:var(--accent);">Quantity Needed (QTY)</label>
+                    <input type="number" id="inp_qty" min="1" value="1" required style="font-size:18px; font-weight:bold; text-align:center; border: 2px solid var(--accent);">
                 </div>
-            </form>
-        </div>
+            </div>
 
-        <div class="history-card">
-            <h2>Your Recent Orders (Live History)</h2>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Ordered Time</th>
-                            <th>Description</th>
-                            <th>Grower</th>
-                            <th>Consignment</th>
-                            <th>Origin</th>
-                            <th>Size</th>
-                            <th>Count</th>
-                            <th>Available</th>
-                            <th>Store</th>
-                            <th>Qty</th>
-                            <th>Driver</th>
-                            <th>Status</th>
-                            <th>Delivered Time</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history_body"></tbody>
-                </table>
+            <div class="urgent-lock">
+                <input type="checkbox" id="chk_urgent">
+                <label for="chk_urgent">⚠️ MARK AS URGENT (Приоритет для водителя)</label>
+            </div>
+
+            <button type="submit" class="submit-btn">🚀 Send Request to Driver</button>
+        </form>
+    </div>
+
+    <div class="main-card">
+        <h3 style="margin-top:0; font-size:15px; color: var(--text-muted);">Your Active Line Requests (Live)</h3>
+        <div class="orders-list">
+            <div class="desktop-headers">
+                <div style="display: table-row;">
+                    <th style="padding-left:10px;">ID</th>
+                    <th>Store</th>
+                    <th>Fruit Description</th>
+                    <th>Grower</th>
+                    <th>Consignment</th>
+                    <th>Specs (O/S/C)</th>
+                    <th>Qty</th>
+                    <th>Driver</th>
+                    <th>Status</th>
+                </div>
+            </div>
+            <div id="line_orders_body" style="display: contents;">
+                <div style="text-align:center; padding:20px; color:var(--text-muted);">Loading requests...</div>
             </div>
         </div>
     </div>
@@ -278,164 +265,167 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    let cachedStock = []; // Хранилище загруженных из базы остатков
+    let currentMode = 'stock'; // Переключатель режимов: 'stock' или 'manual'
+    let selectedStockItem = null;
 
-    document.getElementById('lbl_line_top').innerText = "Line: " + displayName;
+    document.getElementById('lbl_line_top').innerText = "Line: " + currentUser;
 
-    // Автоматическая загрузка базы остатков (stock) для селектора
-    async function loadStockOptions() {
-        try {
-            const { data: stock, error } = await _db
-                .from('stock')
-                .select('*')
-                .order('description', { ascending: true });
+    // Вкладки переключения ввода
+    function switchTab(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        if(mode === 'stock') {
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            document.getElementById('tab_stock').classList.add('active');
+        } else {
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            document.getElementById('tab_manual').classList.add('active');
+        }
+    }
 
-            if (error) throw error;
-            cachedStock = stock || [];
+    // Имитация базы данных стока (твои данные из CSV)
+    const mockStockData = [
+        { cons: '8885', store: '41', desc: 'Royal Gala', grower: 'Clemente Chile', origin: 'Chile', size: '73-78', count: '100' },
+        { cons: '8902', store: '41', desc: 'Royal Gala', grower: 'Clemente Chile', origin: 'Chile', size: '73-78', count: '100' },
+        { cons: '8930', store: '20a', desc: 'Organic Gala', grower: 'Biofruit', origin: 'Italy', size: '65-70', count: '90' },
+        { cons: '9065', store: '14', desc: 'Vermont Beauty', grower: 'Trucape', origin: 'South Africa', size: '80', count: '90' }
+    ];
 
-            const selector = document.getElementById('stock_selector');
-            if (cachedStock.length === 0) {
-                selector.innerHTML = '<option value="">-- No available stock found in database --</option>';
+    // Заполнение выпадающего списка из стока
+    function loadStockDropdown() {
+        const select = document.getElementById('stock_select');
+        mockStockData.forEach((item, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.innerText = `Cons: ${item.cons} — ${item.desc} (Store: ${item.store}, Qty Avail)`;
+            select.appendChild(opt);
+        });
+    }
+
+    function handleStockChange() {
+        const idx = document.getElementById('stock_select').value;
+        selectedStockItem = idx !== "" ? mockStockData[idx] : null;
+    }
+
+    // Отправка запроса в Supabase
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        
+        let finalOrderData = {
+            line: currentUser,
+            qty: parseInt(document.getElementById('inp_qty').value) || 1,
+            urgent: document.getElementById('chk_urgent').checked,
+            status: 'new'
+        };
+
+        if (currentMode === 'stock') {
+            if (!selectedStockItem) {
+                alert("Please select an item from stock!");
                 return;
             }
-
-            let optionsHtml = '<option value="">-- Choose Fruit (Select from list) --</option>';
-            cachedStock.forEach((item, index) => {
-                // Красивое отображение строки выбора: Сорт - Консигнация - Локация - Остаток
-                const desc = item.description || 'Unknown';
-                const cons = item.consignment || 'No Cons';
-                const store = item.store || 'No Store';
-                const avail = item.available || '0';
-                optionsHtml += `<option value="${index}">${desc} [Cons: ${cons}] [Store: ${store}] (Avail: ${avail})</option>`;
-            });
-
-            selector.innerHTML = optionsHtml;
-        } catch (e) {
-            console.error("Error loading stock options:", e);
-            document.getElementById('stock_selector').innerHTML = '<option value="">Error loading stock data</option>';
+            finalOrderData.description = selectedStockItem.desc;
+            finalOrderData.cons = selectedStockItem.cons;
+            finalOrderData.store = selectedStockItem.store;
+            finalOrderData.grower = selectedStockItem.grower;
+            finalOrderData.origin = selectedStockItem.origin;
+            finalOrderData.size = selectedStockItem.size;
+            finalOrderData.count = selectedStockItem.count;
+        } else {
+            // Ручной ввод
+            finalOrderData.description = document.getElementById('m_description').value || 'Manual Pallet';
+            finalOrderData.cons = document.getElementById('m_cons').value || '—';
+            finalOrderData.store = document.getElementById('m_store').value || '—';
+            finalOrderData.grower = document.getElementById('m_grower').value || '—';
+            finalOrderData.origin = document.getElementById('m_origin').value || '—';
+            finalOrderData.size = document.getElementById('m_size').value || '—';
+            finalOrderData.count = document.getElementById('m_count').value || '—';
         }
-    }
 
-    // Обработчик выбора фрукта из списка — автозаполнение полей
-    function selectFruitItem(selector) {
-        const selectedIndex = selector.value;
-        
-        if (!selectedIndex) {
-            // Если ничего не выбрано, очищаем форму
+        try {
+            const { error } = await _db.from('orders').insert([finalOrderData]);
+            if (error) throw error;
+            
+            alert("🚀 Order submitted successfully!");
             document.getElementById('order_form').reset();
-            document.querySelectorAll('#order_form input').forEach(inp => inp.classList.remove('autofilled'));
-            return;
+            switchTab('stock');
+            selectedStockItem = null;
+            fetchMyLineRequests();
+        } catch (err) {
+            alert("Error sending order: " + err.message);
         }
-
-        const item = cachedStock[selectedIndex];
-
-        // Заполняем поля значениями из выбранной строки stock
-        document.getElementById('inp_desc').value = item.description || '';
-        document.getElementById('inp_grower').value = item.grower || '';
-        document.getElementById('inp_cons').value = item.consignment || '';
-        document.getElementById('inp_origin').value = item.origin || '';
-        document.getElementById('inp_size').value = item.size || '';
-        document.getElementById('inp_count').value = item.count || '';
-        document.getElementById('inp_available').value = item.available || '';
-        document.getElementById('inp_store').value = item.store || '';
-
-        // Подсвечиваем автозаполненные поля зеленым цветом
-        document.querySelectorAll('#order_form input').forEach(inp => {
-            if(inp.id !== 'inp_qty' && inp.id !== 'chk_urgent') {
-                inp.classList.add('autofilled');
-            }
-        });
-        
-        // Фокусируемся на вводе количества
-        document.getElementById('inp_qty').focus();
     }
 
-    async function loadMyHistory() {
+    // Получение live-заказов только для текущей линии
+    async function fetchMyLineRequests() {
         try {
             const { data: orders, error } = await _db
                 .from('orders')
                 .select('*')
-                .eq('line', displayName)
+                .eq('line', currentUser)
                 .order('id', { ascending: false })
                 .limit(15);
 
             if (error) throw error;
 
-            const html = orders.map(o => {
-                let orderedTimeStr = "-";
-                if (o.created_at) {
-                    const d = new Date(o.created_at);
-                    orderedTimeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                }
+            const tbody = document.getElementById('line_orders_body');
+            if (!orders || orders.length === 0) {
+                tbody.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); display:block; width:100%;">No requests sent yet today.</div>`;
+                return;
+            }
 
-                let deliveredTimeStr = "—";
-                const currentStatus = (o.status || 'new').toLowerCase();
-                if ((currentStatus === 'delivered' || currentStatus === 'done') && o.created_at) {
-                    const d = new Date(); 
-                    deliveredTimeStr = `<span class="delivered-time-text">✅ ${d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>`;
-                }
-
+            tbody.innerHTML = orders.map(o => {
                 const isUrgent = o.urgent === true || o.urgent === 'true';
-                const rowClass = isUrgent ? 'class="urgent-row"' : '';
-                const consignmentVal = o.consignment || '-';
-                const quantityVal = o.qty || '-';
+                const statusClean = (o.status || 'new').toLowerCase();
+                
+                let rClass = '';
+                if (isUrgent && statusClean !== 'delivered') rClass = 'urgent-card';
+                else if (statusClean === 'process') rClass = 'process-card';
 
                 return `
-                <tr ${rowClass}>
-                    <td><span style="color: var(--text-muted);">#${o.id}</span></td>
-                    <td class="time-text">${orderedTimeStr}</td>
-                    <td><strong>${isUrgent ? '⚠️ ' : ''}${o.description || '-'}</strong></td>
-                    <td>${o.grower || '-'}</td>
-                    <td><code>${consignmentVal}</code></td>
-                    <td>${o.origin || '-'}</td>
-                    <td>${o.size || '-'}</td>
-                    <td>${o.count || '-'}</td>
-                    <td>${o.available || '-'}</td>
-                    <td><span style="color: #6b46c1; font-weight: 600;">${o.store || '-'}</span></td>
-                    <td><strong>${quantityVal}</strong></td>
-                    <td>${o.driver_name ? '🚚 ' + o.driver_name : '—'}</td>
-                    <td><span class="status-badge ${currentStatus}">${o.status || 'new'}</span></td>
-                    <td>${deliveredTimeStr}</td>
-                </tr>`;
+                <div class="order-row-card ${rClass}">
+                    <div class="card-field" style="padding-left:10px;">
+                        <span class="field-label">ID</span>
+                        <span class="field-value" style="color:var(--text-muted);">#${o.id}</span>
+                    </div>
+                    <div class="card-field">
+                        <span class="field-label">Store</span>
+                        <span class="field-value"><span class="store-tag">${o.store || '—'}</span></span>
+                    </div>
+                    <div class="card-field">
+                        <span class="field-label">Fruit</span>
+                        <span class="field-value"><strong>${isUrgent ? '⚠️ ' : ''}${o.description || '—'}</strong></span>
+                    </div>
+                    <div class="card-field">
+                        <span class="field-label">Grower</span>
+                        <span class="field-value">${o.grower || '—'}</span>
+                    </div>
+                    <div class="card-field">
+                        <span class="field-label">Consignment</span>
+                        <span class="field-value"><code>${o.cons || '—'}</code></span>
+                    </div>
+                    <div class="card-field">
+                        <span class="field-label">Specs</span>
+                        <span class="field-value">${o.origin || '—'} / ${o.size || '—'} / ${o.count || '—'}</span>
+                    </div>
+                    <div class="card-field">
+                        <span class="field-label">Qty</span>
+                        <span class="field-value"><span class="qty-tag">${o.qty || '0'}</span></span>
+                    </div>
+                    <div class="card-field">
+                        <span class="field-label">Driver</span>
+                        <span class="field-value">${o.driver_name ? '🚚 ' + o.driver_name : 'Waiting...'}</span>
+                    </div>
+                    <div class="card-field" style="border-bottom:none;">
+                        <span class="field-label">Status</span>
+                        <span class="field-value"><span class="status-badge ${statusClean}">${statusClean}</span></span>
+                    </div>
+                </div>`;
             }).join('');
 
-            document.getElementById('history_body').innerHTML = html;
         } catch (e) {
             console.error(e);
-        }
-    }
-
-    async function submitOrder(e) {
-        e.preventDefault();
-
-        const orderData = {
-            line: displayName,
-            description: document.getElementById('inp_desc').value,
-            grower: document.getElementById('inp_grower').value || null,
-            store: document.getElementById('inp_store').value || null,
-            consignment: document.getElementById('inp_cons').value || null,
-            qty: document.getElementById('inp_qty').value ? parseInt(document.getElementById('inp_qty').value) : null,
-            origin: document.getElementById('inp_origin').value || null,
-            size: document.getElementById('inp_size').value || null,
-            count: document.getElementById('inp_count').value || null,
-            available: document.getElementById('inp_available').value || null,
-            urgent: document.getElementById('chk_urgent').checked,
-            status: 'new'
-        };
-
-        try {
-            const { error } = await _db.from('orders').insert([orderData]);
-            if (error) throw error;
-
-            alert("Order created successfully!");
-            document.getElementById('order_form').reset();
-            document.getElementById('stock_selector').value = ""; // Сбрасываем селектор
-            document.querySelectorAll('#order_form input').forEach(inp => inp.classList.remove('autofilled'));
-            document.getElementById('lbl_line_top').innerText = "Line: " + displayName; 
-            loadMyHistory(); 
-            loadStockOptions(); // Обновляем селектор актуальными остатками из базы
-        } catch (error) {
-            alert("Error: " + error.message);
         }
     }
 
@@ -444,15 +434,11 @@
         window.location.href = 'login.html';
     }
 
-    // Инициализация при загрузке
-    loadStockOptions();
-    loadMyHistory();
-
-    // Автообновление истории заказов и выпадающего списка каждые 10 секунд
-    setInterval(() => {
-        loadMyHistory();
-        loadStockOptions();
-    }, 10000);
+    // Старт
+    loadStockDropdown();
+    switchTab('stock');
+    fetchMyLineRequests();
+    setInterval(fetchMyLineRequests, 6000);
 </script>
 </body>
 </html>
