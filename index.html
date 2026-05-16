@@ -175,7 +175,7 @@
             <div class="form-group">
                 <label for="stock_select" style="color: var(--accent); margin-bottom: 4px;">⚡ Quick Select from Stock Sheet</label>
                 <select id="stock_select" onchange="handleStockSelection()">
-                    <option value="">-- Choose fruit pallet (Auto-fills fields below) --</option>
+                    <option value="">-- Loading stock from Supabase... --</option>
                 </select>
             </div>
         </div>
@@ -256,52 +256,74 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
+    let mockStockData = []; // Сюда загрузится полный массив из Supabase
+
     document.getElementById('lbl_line_top').innerText = "Line: " + currentUser;
 
-    // База данных стока (CSV)
-    const mockStockData = [
-        { cons: '8885', store: '41', desc: 'Royal Gala', grower: 'Clemente Chile', origin: 'Chile', size: '73-78', count: '100' },
-        { cons: '8902', store: '41', desc: 'Royal Gala', grower: 'Clemente Chile', origin: 'Chile', size: '73-78', count: '100' },
-        { cons: '8930', store: '20a', desc: 'Organic Gala', grower: 'Biofruit', origin: 'Italy', size: '65-70', count: '90' },
-        { cons: '9065', store: '14', desc: 'Vermont Beauty', grower: 'Trucape', origin: 'South Africa', size: '80', count: '90' }
-    ];
+    // ЗАГРУЗКА ВСЕЙ БАЗЫ СТОКА ИЗ SUPABASE В ВЫПАДАЮЩИЙ СПИСОК
+    async function loadStockDropdown() {
+        try {
+            const select = document.getElementById('stock_select');
+            select.innerHTML = '<option value="">-- Loading live stock from database... --</option>';
 
-    function loadStockDropdown() {
-        const select = document.getElementById('stock_select');
-        mockStockData.forEach((item, index) => {
-            const opt = document.createElement('option');
-            opt.value = index;
-            opt.innerText = `Cons: ${item.cons} — ${item.desc} (Store: ${item.store})`;
-            select.appendChild(opt);
-        });
+            // Делаем запрос к таблице стока. Сортируем по возрастанию консигнации.
+            const { data: realStock, error } = await _db
+                .from('stock_sheet') // ⚠️ Измени имя таблицы здесь, если в Supabase она называется по-другому
+                .select('*')
+                .order('cons', { ascending: true });
+
+            if (error) throw error;
+
+            mockStockData = realStock || [];
+
+            select.innerHTML = '<option value="">-- Choose fruit pallet (Auto-fills fields below) --</option>';
+            
+            mockStockData.forEach((item, index) => {
+                const opt = document.createElement('option');
+                opt.value = index;
+                
+                // Защита от пустых значений в базе
+                const consVal = item.cons || item.consignment || '—';
+                const descVal = item.description || item.desc || '—';
+                const storeVal = item.store || '—';
+
+                opt.innerText = `Cons: ${consVal} — ${descVal} (Store: ${storeVal})`;
+                select.appendChild(opt);
+            });
+
+        } catch (e) {
+            console.error("Error pulling full stock dropdown:", e);
+            document.getElementById('stock_select').innerHTML = 
+                '<option value="">❌ Error loading stock list from Supabase</option>';
+        }
     }
 
-    // АВТОМАТИЧЕСКОЕ ЗАПОЛНЕНИЕ ПОЛЕЙ ПРИ ВЫБОРЕ ИЗ СТОКА
+    // АВТОМАТИЧЕСКОЕ ЗАПОЛНЕНИЕ ПОЛЕЙ ФОРМЫ ПРИ ВЫБОРЕ ИЗ СПИСКА
     function handleStockSelection() {
         const idx = document.getElementById('stock_select').value;
         
         if (idx !== "") {
             const item = mockStockData[idx];
-            // Заполняем поля формы значениями из базы данных
-            document.getElementById('m_description').value = item.desc;
-            document.getElementById('m_cons').value = item.cons;
-            document.getElementById('m_store').value = item.store;
-            document.getElementById('m_grower').value = item.grower;
-            document.getElementById('m_origin').value = item.origin;
-            document.getElementById('m_size').value = item.size;
-            document.getElementById('m_count').value = item.count;
             
-            // Добавляем класс для визуального подтверждения автозаполнения
+            // Напрямую заполняем инпуты значениями, учитывая возможные разные названия колонок в CSV
+            document.getElementById('m_description').value = item.description || item.desc || '';
+            document.getElementById('m_cons').value = item.cons || item.consignment || '';
+            document.getElementById('m_store').value = item.store || '';
+            document.getElementById('m_grower').value = item.grower || '';
+            document.getElementById('m_origin').value = item.origin || '';
+            document.getElementById('m_size').value = item.size || '';
+            document.getElementById('m_count').value = item.count || '';
+            
             document.querySelectorAll('.form-grid input').forEach(i => i.classList.add('auto-filled'));
         } else {
-            // Если выбрали пустую строку, очищаем форму под ручной ввод
+            // Если сбросили выбор — очищаем поля для ручного ввода
             document.getElementById('order_form').reset();
             document.getElementById('inp_qty').value = 1;
             document.querySelectorAll('.form-grid input').forEach(i => i.classList.remove('auto-filled'));
         }
     }
 
-    // Отправка данных в Supabase
+    // ОТПРАВКА ДАННЫХ В ТАБЛИЦУ ОРДЕРОВ SUPABASE
     async function handleFormSubmit(e) {
         e.preventDefault();
         
@@ -335,6 +357,7 @@
         }
     }
 
+    // ТАБЛИЦА МОНИТОРИНГА ТЕКУЩИХ ЗАКАЗОВ ЛИНИИ
     async function fetchMyLineRequests() {
         try {
             const { data: orders, error } = await _db
@@ -411,9 +434,10 @@
         window.location.href = 'login.html';
     }
 
+    // Инициализация интерфейса при старте
     loadStockDropdown();
     fetchMyLineRequests();
-    setInterval(fetchMyLineRequests, 5000);
+    setInterval(fetchMyLineRequests, 5000); // Автообновление лога каждые 5 секунд
 </script>
 </body>
 </html>
