@@ -190,18 +190,16 @@
                 <thead>
                     <tr>
                         <th>Consignment (A)</th>
-                        <th>GrowerPro Ref (B)</th>
-                        <th>Grower / Supplier (C)</th>
+                        <th>Grower / Supplier (C) [Ref B]</th>
                         <th>Country of Origin (D)</th>
-                        <th>Size (E)</th>
-                        <th>Count (F)</th>
+                        <th>Size (E) [Count F]</th>
                         <th>Store (H)</th>
                         <th>Variety (J)</th>
                         <th>Available Stock (O)</th>
                     </tr>
                 </thead>
                 <tbody id="stock_base_body">
-                    <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Loading stock data...</td></tr>
+                    <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Loading stock data...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -243,9 +241,8 @@
                 ) || workbook.SheetNames[0];
                 
                 const worksheet = workbook.Sheets[sheetName];
-                
-                // Читаем в режиме матрицы, чтобы пустые ячейки не ломали буквы столбцов
                 const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
+                
                 if (rawRows.length === 0) throw new Error("File sheet is empty.");
 
                 const stockRows = [];
@@ -257,19 +254,18 @@
                     let rawCons = String(row["A"] || "").trim();
                     let consignmentNum = parseInt(rawCons, 10);
 
-                    // СТРОЖАЙШИЙ ФИЛЬТР: Проверяем, что в А действительно 4-5 значный реальный номер лота
-                    // Это полностью отсечет "Braeburn", "Cox" и любой левый текст из заголовков!
+                    // СТРОГИЙ ФИЛЬТР: Только числовые номера лотов в колонке A. Текст отсекаем.
                     if (isNaN(consignmentNum) || consignmentNum < 1000 || consignmentNum > 99999) {
                         continue; 
                     }
 
-                    // Фильтр по колонке E (Size): если пусто — полностью скипаем строку
+                    // Если колонка E (Size) пустая — строку скипаем
                     const size = String(row["E"] || "").trim();
                     if (!size) {
                         continue; 
                     }
 
-                    // Считываем данные СТРОГО по твоей карте столбцов:
+                    // Считываем по твоей точной карте колонок
                     const growerRef = String(row["B"] || "").trim(); // B - GrowerPro Ref
                     const supplier  = String(row["C"] || "").trim(); // C - Grower/Supplier
                     const origin    = String(row["D"] || "").trim(); // D - Country of Origin
@@ -278,30 +274,40 @@
                     const variety   = String(row["J"] || "").trim(); // J - Variety
                     const available = String(row["O"] || "").trim(); // O - Available stock
 
+                    // Чтобы не добавлять новые колонки в базу данных, мы упакуем Ref в поле grower,
+                    // а Count прицепим к размеру, если он есть. Это сохранит структуру базы чистой.
+                    let finalGrower = supplier;
+                    if (growerRef) {
+                        finalGrower += ` (${growerRef})`; // Будет выглядеть как: Clemente Chile (114947)
+                    }
+
+                    let finalSize = size;
+                    if (count) {
+                        finalSize += ` / ct:${count}`; // Будет выглядеть как: 73-78 / ct:100
+                    }
+
                     stockRows.push({
-                        consignment: String(consignmentNum),
-                        grower: supplier ? supplier : null,          // Сюда пишем имя поставщика из С
-                        description: variety ? variety : null,       // Название сорта из J
-                        origin: origin ? origin : null,              // Страна из D
-                        size: size,                                  // Точный размер из E
-                        store: store ? store : null,                 // Камера из H
-                        available: available !== "" ? available : "0", // Сток из O
-                        count: count ? count : null,           // Количество из F
-                        grower_ref: growerRef ? growerRef : null     // Код из B
+                        consignment: String(consignmentNum), // Поле 'consignment'
+                        grower: finalGrower,                  // Поле 'grower' (Имя + Реф)
+                        description: variety ? variety : null, // Поле 'description' (Variety из J)
+                        origin: origin ? origin : null,        // Поле 'origin' (Origin из D)
+                        size: finalSize,                       // Поле 'size' (Размер + Каунт)
+                        store: store ? store : null,           // Поле 'store' (Камера из H)
+                        available: available !== "" ? available : "0" // Поле 'available' (Сток из O)
                     });
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("No rows matched the strict criteria (Column A number + Column E size).");
+                    throw new Error("No rows matched your strict criteria (Column A number & Column E size).");
                 }
 
                 statusDiv.innerHTML = `⚙️ Verified ${stockRows.length} rows. Syncing database...`;
                 
-                // Стираем старые данные
+                // Очищаем старый сток (используем только существующие в схеме стандартные поля!)
                 const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                 if (deleteError) throw deleteError;
 
-                // Загружаем точный, чистый массив данных
+                // Загружаем чистые данные
                 const { error: insertError } = await clientDb.from('stock').insert(stockRows);
                 if (insertError) throw insertError;
 
@@ -378,13 +384,13 @@
             if (error) throw error;
 
             if (!stock || stock.length === 0) {
-                document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Stock database is empty.</td></tr>`;
+                document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Stock database is empty.</td></tr>`;
                 return;
             }
 
             const html = stock.map(s => `
                 <tr>
-                    <td><span class="consignment-code">${s.consignment || '-'}</span></td> <td><span class="ref-code">${s.grower_ref || '-'}</span></td> <td><strong style="color:#2b6cb0;">${s.grower || '-'}</strong></td> <td>${s.origin || '-'}</td> <td><span class="ref-code">${s.size || '-'}</span></td> <td>${s.count || '-'}</td> <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td> <td><strong>${s.description || '-'}</strong></td> <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td> </tr>
+                    <td><span class="consignment-code">${s.consignment || '-'}</span></td> <td><strong style="color:#2b6cb0;">${s.grower || '-'}</strong></td> <td>${s.origin || '-'}</td> <td><span class="ref-code">${s.size || '-'}</span></td> <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td> <td><strong>${s.description || '-'}</strong></td> <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td> </tr>
             `).join('');
             document.getElementById('stock_base_body').innerHTML = html;
         } catch (e) { console.error(e); }
