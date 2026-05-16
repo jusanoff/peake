@@ -2,166 +2,195 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Line Panel - Peake Fruit</title>
+    <title>Peake Fruit - Place Order</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --s:#2e7d32; --bg:#f4f7f6; --dark:#333; --p:#d32f2f; --warn:#f57c00; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
-        #main { flex: 1 1 500px; max-width: 800px; width: 100%; }
-        #sidebar { flex: 1 1 350px; max-width: 450px; width: 100%; }
-        .card { background: #fff; padding: 20px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); border-top: 6px solid var(--s); margin-bottom: 20px; }
-        h3 { margin: 0 0 15px 0; color: var(--dark); border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 18px; text-transform: uppercase; }
-        label { font-size: 13px; font-weight: bold; color: #666; margin-top: 10px; display: block; }
-        input, button, select { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
-        .btn-send { background: var(--s); color: white; font-weight: bold; cursor: pointer; border: none; font-size: 18px; margin-top: 15px; }
-        .btn-logout { background: #546e7a; color: white; border: none; border-radius: 10px; padding: 12px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
-        .manual-zone { background: #fffde7; padding: 15px; border-radius: 12px; margin: 10px 0; border: 2px dashed #fbc02d; display: flex; align-items: center; gap: 10px; }
-        .order-row { padding: 15px; background: #fff; border-radius: 12px; margin-bottom: 12px; border-left: 6px solid #ccc; border: 1px solid #eee; border-left-width: 6px; }
-        .order-row.urgent-border { border-left-color: var(--p); background: #fff8f8; }
-        .order-header { display: flex; justify-content: space-between; align-items: center; }
-        .order-time { background: #333; color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; }
-        .st-badge { display: inline-block; margin-top: 8px; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; background: #eee; }
-        .st-badge.in_progress { background: var(--warn); color: white; }
-        .st-badge.delivered { background: var(--s); color: white; }
+        :root { 
+            --bg: #f4f6f9; 
+            --card-bg: #ffffff; 
+            --text: #1a1a2e; 
+            --accent: #0288d1;
+            --accent-hover: #0277bd;
+            --urgent: #d32f2f;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .order-card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 500px;
+        }
+        h2 { margin-top: 0; color: var(--text); font-size: 24px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .info-box { background: #e3f2fd; padding: 10px 15px; border-radius: 6px; color: #0d47a1; font-weight: bold; margin-bottom: 20px; }
+        
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 14px; color: #4a5568; }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+        textarea { resize: vertical; min-height: 80px; }
+        
+        .urgent-zone {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .urgent-zone input[type="checkbox"] { width: auto; cursor: pointer; }
+        .urgent-zone label { margin-bottom: 0; color: var(--urgent); cursor: pointer; }
+
+        .btn-submit {
+            background: var(--accent);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-submit:hover { background: var(--accent-hover); }
+        .btn-logout {
+            background: transparent;
+            color: #718096;
+            border: 1px solid #cbd5e0;
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+            margin-top: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-logout:hover { background: #edf2f7; color: var(--text); }
     </style>
 </head>
 <body>
 
-<div id="main">
-    <div class="card">
-        <h3 id="h_new_order">New Order</h3>
-        <form id="orderForm">
-            <div class="manual-zone">
-                <input type="checkbox" id="manual_check" style="width:22px; height:22px;"> 
-                <label for="manual_check" id="l_manual">Manual Input</label>
-            </div>
-            <label id="l_sort">1. Sort:</label>
-            <select id="sort_select"><option value="">Loading...</option></select>
-            <input type="text" id="sort_manual" placeholder="Enter sort" style="display:none">
-            <label id="l_grower">2. Grower:</label>
-            <select id="grower_select" disabled><option value="">Select Sort First</option></select>
-            <input type="text" id="grower_manual" placeholder="Enter grower" style="display:none">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px">
-                <div><label id="l_store">Store:</label><input type="text" id="store_view" readonly style="background:#f0f0f0"></div>
-                <div><label>Consignment:</label><input type="text" id="consign_view" readonly style="background:#f0f0f0"></div>
-            </div>
-            <label id="l_qty">Quantity:</label><input type="number" id="qty_input" required inputmode="numeric">
-            <div style="background:#fff0f0; padding:12px; border-radius:10px; margin-top:10px; display:flex; align-items:center; gap:10px">
-                <input type="checkbox" id="urgent_check" style="width:20px; height:20px;"> 
-                <label for="urgent_check" id="l_urgent" style="color:var(--p); font-weight:bold; margin:0">🚀 URGENT</label>
-            </div>
-            <button type="submit" class="btn-send" id="btn_send">SEND ORDER</button>
-        </form>
-    </div>
-</div>
+<script>
+    // --- СТРОГАЯ ПРОВЕРКА БЕЗОПАСНОСТИ ДО РЕНДЕРИНГА СТРАНИЦЫ ---
+    const currentUser = localStorage.getItem('user');
+    const currentRole = localStorage.getItem('role');
+    const displayName = localStorage.getItem('name') || currentUser;
 
-<div id="sidebar">
-    <div class="card" style="border-top-color: #666">
-        <h3 id="h_history">History</h3>
-        <div id="my_list">Loading...</div>
-        <button onclick="logout()" class="btn-logout" id="btn_logout">LOGOUT</button>
+    // Если не авторизован или роль НЕ является 'line' — выкидываем на логин
+    if (!currentUser || currentRole !== 'line') {
+        alert("Access denied! Only production lines are allowed to place orders.");
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+</script>
+
+<div class="order-card">
+    <h2>Create New Order</h2>
+    
+    <div class="info-box">
+        Ordering from: <span id="lbl_line_name">Line Name</span>
     </div>
+
+    <form id="order_form" onsubmit="submitOrder(event)">
+        <div class="form-group">
+            <label for="inp_desc">Description / Item Name *</label>
+            <input type="text" id="inp_desc" placeholder="e.g., Apple Bins, Empty Pallets" required>
+        </div>
+
+        <div class="form-group">
+            <label for="inp_grower">Grower Name</label>
+            <input type="text" id="inp_grower" placeholder="e.g., Smith Orchard">
+        </div>
+
+        <div class="form-group">
+            <label for="inp_cons">Consignment Number</label>
+            <input type="text" id="inp_cons" placeholder="e.g., CS90210">
+        </div>
+
+        <div class="form-group">
+            <label for="inp_store">Store / Location</label>
+            <input type="text" id="inp_store" placeholder="e.g., Cold Store 3">
+        </div>
+
+        <div class="form-group">
+            <label for="inp_qty">Quantity</label>
+            <input type="number" id="inp_qty" placeholder="e.g., 5" min="1">
+        </div>
+
+        <div class="urgent-zone">
+            <input type="checkbox" id="chk_urgent">
+            <label for="chk_urgent">⚠️ MARK AS URGENT (High Priority)</label>
+        </div>
+
+        <button type="submit" class="btn-submit">Send Order</button>
+        <button type="button" class="btn-logout" onclick="logout()">Log Out</button>
+    </form>
 </div>
 
 <script>
-    if (!localStorage.getItem('user') || (localStorage.getItem('role') !== 'line' && localStorage.getItem('role') !== 'office')) { 
-    localStorage.clear(); window.location.href = 'login.html'; 
-}
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
-    const user = localStorage.getItem('user'), lang = localStorage.getItem('lang') || 'en';
 
-    const i18n = {
-        en: { new: "New Order", man: "Manual", sort: "Sort:", grow: "Grower:", store: "Store:", qty: "Qty:", urg: "URGENT", send: "SEND", hist: "History", exit: "LOGOUT", ord: "Ordered:", del: "Delivered:", take: "Taken at" },
-        ru: { new: "Новый заказ", man: "Вручную", sort: "Сорт:", grow: "Гровер:", store: "Склад:", qty: "Кол-во:", urg: "СРОЧНО", send: "ОТПРАВИТЬ", hist: "История", exit: "ВЫЙТИ", ord: "Заказано:", del: "Привезено:", take: "Взят в" }
-    };
+    // Выводим имя текущей линии на экран
+    document.getElementById('lbl_line_name').innerText = displayName;
 
-    function applyLang() {
-        const t = i18n[lang];
-        document.getElementById('h_new_order').innerText = t.new; document.getElementById('l_manual').innerText = t.man;
-        document.getElementById('l_sort').innerText = t.sort; document.getElementById('l_grower').innerText = t.grow;
-        document.getElementById('l_store').innerText = t.store; document.getElementById('l_qty').innerText = t.qty;
-        document.getElementById('l_urgent').innerText = t.urg; document.getElementById('btn_send').innerText = t.send;
-        document.getElementById('h_history').innerText = t.hist; document.getElementById('btn_logout').innerText = t.exit;
-    }
-
-    document.getElementById('manual_check').onchange = function() {
-        const isM = this.checked;
-        document.getElementById('sort_select').style.display = isM ? 'none' : 'block';
-        document.getElementById('grower_select').style.display = isM ? 'none' : 'block';
-        document.getElementById('sort_manual').style.display = isM ? 'block' : 'none';
-        document.getElementById('grower_manual').style.display = isM ? 'block' : 'none';
-        const views = [document.getElementById('store_view'), document.getElementById('consign_view')];
-        views.forEach(v => { v.readOnly = !isM; v.style.background = isM ? '#fff' : '#f0f0f0'; v.value = ""; });
-    };
-
-    let fullStock = [];
-    async function loadStock() {
-        const { data } = await _db.from('stock').select('*');
-        fullStock = data || [];
-        const uniqueSorts = [...new Set(fullStock.map(i => i.item_name))];
-        document.getElementById('sort_select').innerHTML = '<option value="">-- Select --</option>' + uniqueSorts.map(s => `<option value="${s}">${s}</option>`).join('');
-    }
-
-    document.getElementById('sort_select').onchange = function() {
-        const val = this.value; const gSel = document.getElementById('grower_select');
-        gSel.innerHTML = '<option value="">-- Select --</option>'; if(!val) { gSel.disabled = true; return; }
-        gSel.disabled = false;
-        fullStock.filter(i => i.item_name === val).forEach(g => {
-            let opt = document.createElement('option'); opt.value = g.grower; opt.textContent = g.grower;
-            opt.dataset.st = g.store; opt.dataset.con = g.consignment || ''; gSel.appendChild(opt);
-        });
-    };
-
-    document.getElementById('grower_select').onchange = function() {
-        const opt = this.options[this.selectedIndex];
-        document.getElementById('store_view').value = opt.dataset.st || "";
-        document.getElementById('consign_view').value = opt.dataset.con || "";
-    };
-
-    document.getElementById('orderForm').onsubmit = async (e) => {
+    async function submitOrder(e) {
         e.preventDefault();
-        const isM = document.getElementById('manual_check').checked;
-        const s = isM ? document.getElementById('sort_manual').value : document.getElementById('sort_select').value;
-        const g = isM ? document.getElementById('grower_manual').value : document.getElementById('grower_select').value;
-        if(!s || !g) return alert("Fill fields!");
-        const timeNow = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        const { error } = await _db.from('orders').insert([{
-            line: user, sort: s, grower: g, qty: document.getElementById('qty_input').value,
-            store: document.getElementById('store_view').value, consign: document.getElementById('consign_view').value,
-            urgent: document.getElementById('urgent_check').checked, status: 'pending', time: timeNow
-        }]);
-        if(error) alert(error.message);
-        e.target.reset(); document.getElementById('manual_check').checked = false; document.getElementById('manual_check').onchange(); loadOrders();
-    };
 
-    async function loadOrders() {
-        const { data } = await _db.from('orders').select('*').eq('line', user).order('id', {ascending:false}).limit(15);
-        const list = document.getElementById('my_list');
-        if (!data || data.length === 0) { list.innerHTML = "No orders"; return; }
-        
-        list.innerHTML = data.map(o => {
-            const stTxt = { 'pending': (lang==='ru'?'Ожидает':'Pending'), 'in_progress': (lang==='ru'?'В пути':'In Progress'), 'delivered': (lang==='ru'?'ОК':'Delivered') };
-            return `
-                <div class="order-row ${o.urgent ? 'urgent-border' : ''}">
-                    <div class="order-header"><b style="font-size:16px">${o.sort}</b><span class="order-time">${o.time}</span></div>
-                    <div style="font-size:13px; margin:5px 0">
-                        <b>QTY: ${o.qty}</b> | 📍 ${o.store} | 👤 ${o.grower}
-                        <div style="margin-top:5px; font-size:11px; color:#666; border-top:1px dotted #ccc; padding-top:4px">
-                            ${i18n[lang].ord} ${o.time}
-                            ${o.driver_name ? `<br><span style="color:#e65100">🚚 <b>${o.driver_name}</b> ${i18n[lang].take} ${o.taken_at}</span>` : ''}
-                            ${o.delivered_at ? `<br><b style="color:var(--s)">✅ ${i18n[lang].del} ${o.delivered_at}</b>` : ''}
-                        </div>
-                    </div>
-                    <span class="st-badge ${o.status}">${stTxt[o.status] || o.status}</span>
-                </div>
-            `;
-        }).join('');
+        // Формируем данные заказа
+        const orderData = {
+            line: displayName, // Заказчиком железно записывается имя авторизованной Линии
+            description: document.getElementById('inp_desc').value,
+            grower: document.getElementById('inp_grower').value || null,
+            consignment: document.getElementById('inp_cons').value || null,
+            store: document.getElementById('inp_store').value || null,
+            quantity: document.getElementById('inp_qty').value || null,
+            urgent: document.getElementById('chk_urgent').checked, // Отправляем true/false
+            status: 'new' // Всегда создается со статусом 'new'
+        };
+
+        try {
+            const { error } = await _db
+                .from('orders')
+                .insert([orderData]);
+
+            if (error) throw error;
+
+            alert("Order successfully sent to TV Board!");
+            document.getElementById('order_form').reset();
+            document.getElementById('lbl_line_name').innerText = displayName; // возвращаем текст после сброса формы
+            
+        } catch (error) {
+            alert("Error sending order: " + error.message);
+        }
     }
-    function logout() { localStorage.clear(); window.location.href='login.html'; }
-    applyLang(); loadStock(); loadOrders(); setInterval(loadOrders, 5000);
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
 </script>
 </body>
 </html>
