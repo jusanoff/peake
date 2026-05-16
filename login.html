@@ -14,7 +14,7 @@
         button { background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background: #b71c1c; }
         .lang-select { text-align: center; margin-bottom: 15px; }
-        .lang-select button { width: auto; display: inline-block; padding: 5px 10px; margin: 0 3px; background: #eee; color: #333; font-size: 12px; }
+        .lang-select button { width: auto; display: inline-block; padding: 5px 10px; margin: 0 3px; background: #eee; color: #333; font-size: 12px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -65,7 +65,6 @@
     document.getElementById('loginForm').onsubmit = async (e) => {
         e.preventDefault();
         
-        // Убираем пробелы и переводим в нижний регистр для независимости от регистра
         const usernameInput = document.getElementById('username').value.trim().toLowerCase();
         const passwordInput = document.getElementById('password').value.trim();
 
@@ -81,17 +80,15 @@
                 return;
             }
 
-            // Запись сессии в браузер
-            localStorage.setItem('user', data.u);               // Логин (строчные буквы)
-            localStorage.setItem('role', data.t);               // Роль (line, driver, office, admin)
-            localStorage.setItem('name', data.name || data.u);   // КРАСИВОЕ ИМЯ (Иван / Amazon)
-            localStorage.setItem('dash_lang', curL);            // Текущий язык
+            localStorage.setItem('user', data.u);
+            localStorage.setItem('role', data.t);
+            localStorage.setItem('name', data.name || data.u); // Сохраняем красивое имя!
+            localStorage.setItem('dash_lang', curL);
 
-            // Перенаправление по ролям
-if (data.t === 'admin') window.location.href = 'superadmin.html';
-else if (data.t === 'office') window.location.href = 'office.html'; // <-- ИСПРАВЛЕНО ТУТ
-else if (data.t === 'driver') window.location.href = 'driver.html';
-else if (data.t === 'line') window.location.href = 'index.html';
+            if (data.t === 'admin') window.location.href = 'superadmin.html';
+            else if (data.t === 'office') window.location.href = 'office.html';
+            else if (data.t === 'driver') window.location.href = 'driver.html';
+            else if (data.t === 'line') window.location.href = 'index.html';
 
         } catch (err) {
             console.error(err);
