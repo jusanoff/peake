@@ -174,12 +174,13 @@
             border-radius: 6px;
         }
 
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
         th { background: #f8f9fa; color: var(--text-muted); padding: 10px; text-align: left; font-size: 12px; border-bottom: 2px solid var(--border); }
         td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #edf2f7; }
 
         .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
         .status-badge.new { background: #e0f2fe; color: #0369a1; }
+        .status-badge.delivered { background: #e2f0d9; color: #385723; }
 
         @media (min-width: 768px) {
             body { padding: 20px; }
@@ -263,18 +264,18 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Store</th>
+                        <th>Ordered At</th> <th>Store</th>
                         <th>Fruit Description</th>
                         <th>Grower</th>
                         <th>Consignment</th>
                         <th>Specs (O/S/C)</th>
                         <th>Qty</th>
                         <th>Driver</th>
-                        <th>Status</th>
+                        <th>Delivered At</th> <th>Status</th>
                     </tr>
                 </thead>
                 <tbody id="line_requests_body">
-                    <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Loading requests...</td></tr>
+                    <tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Loading requests...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -300,6 +301,13 @@
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
     let stockItemsGlobal = [];
+
+    // Добавлена функция форматирования времени
+    function formatTime(isoString) {
+        if (!isoString) return '-';
+        const date = new Date(isoString);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
 
     async function fetchLineFullName() {
         try {
@@ -369,7 +377,6 @@
         const qty = parseInt(document.getElementById('inp_qty').value) || 1;
         const isUrgent = document.getElementById('inp_urgent').checked;
 
-        // ИСПРАВЛЕНО: Убрана жесткая проверка полей. Теперь отправка разрешена при пустых полях!
         try {
             const { error } = await clientDb.from('orders').insert([{
                 line: currentUser, 
@@ -417,13 +424,15 @@
             if (error) throw error;
 
             if (!orders || orders.length === 0) {
-                document.getElementById('line_requests_body').innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">No active requests.</td></tr>`;
+                document.getElementById('line_requests_body').innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--text-muted);">No active requests.</td></tr>`;
                 return;
             }
 
+            // ИСПРАВЛЕНО: Теперь выводятся колонки с форматированным временем создано/доставлено
             const html = orders.map(o => `
                 <tr>
                     <td>#${o.id}</td>
+                    <td><span style="color:#4a5568; font-weight:500;">⏱ ${formatTime(o.created_at)}</span></td>
                     <td><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
                     <td><strong>${o.description || '-'}</strong></td>
                     <td>${o.grower || '-'}</td>
@@ -431,7 +440,8 @@
                     <td>${o.origin || '-' } / ${o.size || '-'} / ${o.available || '-'}</td>
                     <td><strong style="font-size:14px; color:#0288d1;">${o.qty || '1'}</strong></td>
                     <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span style="color:var(--text-muted);">Waiting...</span>'}</td>
-                    <td><span class="status-badge new">${o.status || 'new'}</span></td>
+                    <td><span style="color:var(--status-done); font-weight:bold;">${o.delivered_at ? formatTime(o.delivered_at) : '-'}</span></td>
+                    <td><span class="status-badge ${o.status || 'new'}">${o.status || 'new'}</span></td>
                 </tr>
             `).join('');
 
