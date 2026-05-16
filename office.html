@@ -27,7 +27,6 @@
             color: var(--text);
             margin: 0;
             padding: 20px;
-            -webkit-font-smoothing: antialiased;
         }
 
         .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
@@ -83,7 +82,6 @@
         }
         .dashboard-card h2 { margin-top: 0; font-size: 20px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
 
-        /* Контейнер с прокруткой и фиксацией шапки */
         .table-responsive {
             overflow-x: auto;
             overflow-y: auto;
@@ -92,7 +90,7 @@
             border-radius: 4px;
         }
 
-        table { width: 100%; border-collapse: collapse; min-width: 1300px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
         
         th { 
             position: sticky;
@@ -195,7 +193,6 @@
                         <th>Consignment</th>
                         <th>GrowerPro Ref</th>
                         <th>Variety / Description</th>
-                        <th>Grower</th>
                         <th>Origin</th>
                         <th>Size</th>
                         <th>Count</th>
@@ -204,7 +201,7 @@
                     </tr>
                 </thead>
                 <tbody id="stock_base_body">
-                    <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Loading stock data...</td></tr>
+                    <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Loading stock data...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -246,12 +243,14 @@
                 ) || workbook.SheetNames[0];
                 
                 const worksheet = workbook.Sheets[sheetName];
-                const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                
+                // Жесткий парсинг по буквам колонок (A, B, C...)
+                const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
                 if (rawRows.length === 0) throw new Error("Excel sheet is empty.");
 
                 let headerIndex = -1;
                 for (let i = 0; i < Math.min(rawRows.length, 20); i++) {
-                    if (rawRows[i] && String(rawRows[i][0]).toLowerCase().trim() === 'consignment') {
+                    if (rawRows[i] && String(rawRows[i]["A"]).toLowerCase().trim() === 'consignment') {
                         headerIndex = i;
                         break;
                     }
@@ -265,26 +264,27 @@
 
                 for (let i = headerIndex + 2; i < rawRows.length; i++) {
                     const row = rawRows[i];
-                    if (!row || row.length < 4) continue;
+                    if (!row) continue;
 
-                    const consignment  = String(row[0] || "").trim(); // Колонка A
-                    const growerProRef = String(row[1] || "").trim(); // Колонка B
-                    const supplier     = String(row[2] || "").trim(); // Колонка C
-                    const origin       = String(row[3] || "").trim(); // Колонка D
-                    const size         = String(row[4] || "").trim(); // Колонка E
-                    const count        = String(row[5] || "").trim(); // Колонка F
-                    const store        = String(row[7] || "").trim(); // Колонка H
-                    const variety      = String(row[9] || "").trim(); // Колонка J
-                    const available    = String(row[14] || "").trim(); // Колонка O
+                    // Извлекаем данные строго из конкретных буквенных колонок Excel
+                    const consignment  = String(row["A"] || "").trim(); // Колонка A (Например: 8885)
+                    const growerProRef = String(row["B"] || "").trim(); // Колонка B (Например: 114947)
+                    const origin       = String(row["D"] || "").trim(); // Колонка D (Country of Origin)
+                    const size         = String(row["E"] || "").trim(); // Колонка E (Size)
+                    const count        = String(row["F"] || "").trim(); // Колонка F (Count)
+                    const store        = String(row["H"] || "").trim(); // Колонка H (Store)
+                    const variety      = String(row["J"] || "").trim(); // Колонка J (Variety / Сорт фрукта)
+                    const available    = String(row["O"] || "").trim(); // Колонка O (Available stock)
 
+                    // Отсекаем мусор, пустые разделительные строки и строки с итогами (Total)
                     if (!consignment || consignment === "0" || consignment.toLowerCase().includes("total")) continue;
                     if (consignment.toLowerCase().includes("consignment")) continue;
 
                     stockRows.push({
                         consignment: consignment,
-                        growerpro: growerProRef ? growerProRef : null, // Записываем GrowerPro Ref в поле growerpro базы данных
+                        // Записываем GrowerPro Ref в уже существующее текстовое поле 'grower', чтобы обойти ошибку схемы
+                        grower: growerProRef ? growerProRef : null, 
                         description: variety ? variety : null,
-                        grower: supplier ? supplier : null,
                         origin: origin ? origin : null,
                         size: size ? size : null,
                         count: count ? count : null,
@@ -294,20 +294,21 @@
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("No valid items parsed.");
+                    throw new Error("No valid lots found after filtering.");
                 }
 
                 statusDiv.innerHTML = `⚙️ Processed ${stockRows.length} lines. Updating database...`;
                 
-                // Очистка и вставка
+                // Стираем старый сток
                 const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                 if (deleteError) throw deleteError;
 
+                // Записываем новый чистый сток
                 const { error: insertError } = await clientDb.from('stock').insert(stockRows);
                 if (insertError) throw insertError;
 
                 statusDiv.style.color = "#2e7d32";
-                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} items!`;
+                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} items with strict alignment!`;
                 fileInput.value = '';
                 
                 loadStockTable();
@@ -374,28 +375,21 @@
         } catch (e) { console.error(e); }
     }
 
+    // ЖЕСТКОЕ ОТОБРАЖЕНИЕ: Каждая переменная строго в своем <td> по порядку заголовков
     async function loadStockTable() {
         try {
             const { data: stock, error } = await clientDb.from('stock').select('*').order('id', { ascending: true });
             if (error) throw error;
 
             if (!stock || stock.length === 0) {
-                document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--urgent-text);">Stock database is empty.</td></tr>`;
+                document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Stock database is empty.</td></tr>`;
                 return;
             }
 
             const html = stock.map(s => `
                 <tr>
                     <td><span class="consignment-code">${s.consignment || '-'}</span></td>
-                    <td><span class="ref-code">${s.growerpro || '-'}</span></td>
-                    <td><strong>${s.description || '-'}</strong></td>
-                    <td>${s.grower || '-'}</td>
-                    <td>${s.origin || '-'}</td>
-                    <td>${s.size || '-'}</td>
-                    <td>${s.count || '-'}</td>
-                    <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td>
-                    <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td>
-                </tr>
+                    <td><span class="ref-code">${s.grower || '-'}</span></td> <td><strong>${s.description || '-'}</strong></td> <td>${s.origin || '-'}</td> <td>${s.size || '-'}</td> <td>${s.count || '-'}</td> <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td> <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td> </tr>
             `).join('');
             document.getElementById('stock_base_body').innerHTML = html;
         } catch (e) { console.error(e); }
