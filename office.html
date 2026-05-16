@@ -2,412 +2,122 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit — Office Control Tower</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Excel Column Diagnostics</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        :root {
-            --bg: #f4f6f9;
-            --card-bg: #ffffff;
-            --text: #1a1a2e;
-            --text-muted: #6c757d;
-            --accent: #0288d1;
-            --border: #e2e8f0;
-            --urgent-bg: #fff5f5;
-            --urgent-text: #c53030;
-            --status-new: #ef6c00;
-            --status-process: #1565c0;
-            --status-done: #2e7d32;
+        body { font-family: sans-serif; padding: 30px; background: #f4f6f9; color: #333; }
+        .box { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        button { background: #0288d1; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        #debug_output { 
+            margin-top: 20px; padding: 15px; background: #fff3e0; 
+            border-left: 5px solid #ff9800; border-radius: 4px; 
+            font-family: monospace; white-space: pre-wrap; font-size: 14px; line-height: 1.5;
         }
-
-        body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-        
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--card-bg);
-            padding: 15px 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-        }
-        .header h1 { margin: 0; font-size: 24px; color: var(--accent); font-weight: 700; }
-        
-        .office-ctrl-panel {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            background: var(--card-bg);
-            padding: 15px 25px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            flex-wrap: wrap;
-        }
-        .excel-upload-box {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #f8f9fa;
-            padding: 8px 15px;
-            border-radius: 6px;
-            border: 1px dashed #2e7d32;
-        }
-        
-        .btn-excel {
-            background: #2e7d32;
-            color: white;
-            border: none;
-            padding: 9px 18px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-        }
-        .btn-excel:hover { background: #1b5e20; }
-
-        .dashboard-card {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-        }
-        .dashboard-card h2 { margin-top: 0; font-size: 20px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
-
-        .table-responsive {
-            overflow-x: auto;
-            overflow-y: auto;
-            max-height: 480px; 
-            border: 1px solid var(--border);
-            border-radius: 4px;
-        }
-
-        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
-        
-        th { 
-            position: sticky;
-            top: 0;
-            background: #f8f9fa; 
-            z-index: 10; 
-            color: var(--text-muted); 
-            padding: 12px 10px; 
-            text-align: left; 
-            font-size: 12px; 
-            text-transform: uppercase; 
-            border-bottom: 2px solid var(--border); 
-            box-shadow: inset 0 -1px 0 var(--border); 
-        }
-        
-        td { padding: 14px 10px; font-size: 14px; border-bottom: 1px solid #edf2f7; }
-        
-        tr.urgent-row { background: var(--urgent-bg); }
-        tr.urgent-row td { color: var(--urgent-text); }
-
-        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
-        .status-badge.new { background: #fff3e0; color: var(--status-new); }
-        .status-badge.process { background: #e3f2fd; color: var(--status-process); }
-        .status-badge.delivered { background: #e8f5e9; color: var(--status-done); }
-
-        select.driver-select { padding: 6px; border-radius: 4px; border: 1px solid var(--border); }
-        .action-btn { border: none; padding: 7px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .action-btn.btn-process { background: var(--status-process); color: white; }
-        .action-btn.btn-done { background: var(--status-done); color: white; }
-        
-        #upload_status { font-size: 13px; font-weight: 600; margin-left: 10px; }
-        .consignment-code { font-family: monospace; background: #f1f3f5; color: #495057; padding: 2px 6px; border-radius: 3px; font-size: 13px; font-weight: 600; }
-        .ref-code { font-family: monospace; color: #2d3748; background: #edf2f7; padding: 2px 5px; border-radius: 3px; font-size: 12px; }
-        .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<script>
-    const currentUser = localStorage.getItem('user');
-    const currentRole = localStorage.getItem('role');
-    if (!currentUser || currentRole !== 'office') {
-        alert("Access denied!");
-        localStorage.clear();
-        window.location.href = 'login.html';
-    }
-</script>
-
-<audio id="alert_sound" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" preload="auto"></audio>
-
-<div class="container">
-    <div class="header">
-        <h1>Peake Fruit — Office Control Tower</h1>
-        <button class="btn-logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
-    </div>
-
-    <div class="office-ctrl-panel">
-        <h3 style="margin: 0; font-size: 16px;">Morning Stock Excel Upload:</h3>
-        <div class="excel-upload-box">
-            <input type="file" id="excel_file" accept=".xlsx, .xls">
-        </div>
-        <button class="btn-excel" onclick="uploadMorningExcel()">Clear & Upload Excel (.xlsx)</button>
-        <div id="upload_status"></div>
-    </div>
-
-    <div class="dashboard-card">
-        <h2>Live Production Orders Pipeline</h2>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Line Name</th>
-                        <th>Time</th>
-                        <th>Item Description</th>
-                        <th>Grower</th>
-                        <th>Consignment</th>
-                        <th>Origin</th>
-                        <th>Size</th>
-                        <th>Count</th>
-                        <th>Available</th>
-                        <th>Store</th>
-                        <th>Qty</th>
-                        <th>Assigned Driver</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="office_orders_body"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="dashboard-card">
-        <h2>Current Morning Stock Base (Live Table)</h2>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Consignment</th>
-                        <th>GrowerPro Ref</th>
-                        <th>Variety / Description</th>
-                        <th>Origin</th>
-                        <th>Size</th>
-                        <th>Count</th>
-                        <th>Store</th>
-                        <th>Available Stock</th>
-                    </tr>
-                </thead>
-                <tbody id="stock_base_body">
-                    <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Loading stock data...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+<div class="box">
+    <h2>Peake Fruit — Шаг 1: Диагностика структуры файла</h2>
+    <p>Выберите ваш утренний Excel файл, чтобы точно определить реальные буквы колонок:</p>
+    <input type="file" id="diag_file" accept=".xlsx, .xls">
+    <button onclick="runDiagnostics()">Запустить анализ колонок</button>
+    
+    <div id="debug_output">Здесь появится структура вашего файла...</div>
 </div>
 
 <script>
-    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
-    const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
-
-    let lastKnownMaxId = 0; 
-    const driversList = ["Driver 1", "Driver 2", "Driver 3", "Forklift 1", "Forklift 2"];
-
-    function uploadMorningExcel() {
-        const fileInput = document.getElementById('excel_file');
-        const statusDiv = document.getElementById('upload_status');
-        
-        if (!fileInput.files[0]) {
-            alert("Please select an Excel file first!");
-            return;
-        }
-
-        statusDiv.style.color = "#ef6c00"; 
-        statusDiv.innerHTML = "⏳ Reading Excel file structure...";
-
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-        
-        reader.readAsBinaryString(file);
-
-        reader.onload = async function(e) {
-            try {
-                const bstr = e.target.result;
-                const workbook = XLSX.read(bstr, { type: 'binary' });
-                
-                const sheetName = workbook.SheetNames.find(n => 
-                    n.toLowerCase().includes("stock") || n.toLowerCase().includes("daily")
-                ) || workbook.SheetNames[0];
-                
-                const worksheet = workbook.Sheets[sheetName];
-                
-                // Жесткий парсинг по буквам колонок (A, B, C...)
-                const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
-                if (rawRows.length === 0) throw new Error("Excel sheet is empty.");
-
-                let headerIndex = -1;
-                for (let i = 0; i < Math.min(rawRows.length, 20); i++) {
-                    if (rawRows[i] && String(rawRows[i]["A"]).toLowerCase().trim() === 'consignment') {
-                        headerIndex = i;
-                        break;
-                    }
-                }
-
-                if (headerIndex === -1) {
-                    throw new Error("Could not find start row containing 'Consignment' in column A.");
-                }
-
-                const stockRows = [];
-
-                for (let i = headerIndex + 2; i < rawRows.length; i++) {
-                    const row = rawRows[i];
-                    if (!row) continue;
-
-                    // Извлекаем данные строго из конкретных буквенных колонок Excel
-                    const consignment  = String(row["A"] || "").trim(); // Колонка A (Например: 8885)
-                    const growerProRef = String(row["B"] || "").trim(); // Колонка B (Например: 114947)
-                    const origin       = String(row["D"] || "").trim(); // Колонка D (Country of Origin)
-                    const size         = String(row["E"] || "").trim(); // Колонка E (Size)
-                    const count        = String(row["F"] || "").trim(); // Колонка F (Count)
-                    const store        = String(row["H"] || "").trim(); // Колонка H (Store)
-                    const variety      = String(row["J"] || "").trim(); // Колонка J (Variety / Сорт фрукта)
-                    const available    = String(row["O"] || "").trim(); // Колонка O (Available stock)
-
-                    // Отсекаем мусор, пустые разделительные строки и строки с итогами (Total)
-                    if (!consignment || consignment === "0" || consignment.toLowerCase().includes("total")) continue;
-                    if (consignment.toLowerCase().includes("consignment")) continue;
-
-                    stockRows.push({
-                        consignment: consignment,
-                        // Записываем GrowerPro Ref в уже существующее текстовое поле 'grower', чтобы обойти ошибку схемы
-                        grower: growerProRef ? growerProRef : null, 
-                        description: variety ? variety : null,
-                        origin: origin ? origin : null,
-                        size: size ? size : null,
-                        count: count ? count : null,
-                        store: store ? store : null,
-                        available: available !== "" ? available : "0"
-                    });
-                }
-
-                if (stockRows.length === 0) {
-                    throw new Error("No valid lots found after filtering.");
-                }
-
-                statusDiv.innerHTML = `⚙️ Processed ${stockRows.length} lines. Updating database...`;
-                
-                // Стираем старый сток
-                const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
-                if (deleteError) throw deleteError;
-
-                // Записываем новый чистый сток
-                const { error: insertError } = await clientDb.from('stock').insert(stockRows);
-                if (insertError) throw insertError;
-
-                statusDiv.style.color = "#2e7d32";
-                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} items with strict alignment!`;
-                fileInput.value = '';
-                
-                loadStockTable();
-                setTimeout(() => statusDiv.innerText = '', 5000);
-
-            } catch (err) {
-                statusDiv.style.color = "#c53030";
-                statusDiv.innerHTML = "❌ Error: " + err.message;
-            }
-        };
+function runDiagnostics() {
+    const fileInput = document.getElementById('diag_file');
+    const output = document.getElementById('debug_output');
+    
+    if (!fileInput.files[0]) {
+        alert("Пожалуйста, сначала выберите Excel файл!");
+        return;
     }
 
-    async function loadOfficeDashboard() {
+    output.innerHTML = "⌛ Анализируем структуру листа...";
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    
+    reader.readAsBinaryString(file);
+    reader.onload = function(e) {
         try {
-            const { data: orders, error } = await clientDb.from('orders').select('*').order('id', { ascending: false }).limit(40);
-            if (error) throw error;
-
-            if (orders.length > 0) {
-                const currentMaxId = Math.max(...orders.map(o => o.id));
-                if (lastKnownMaxId !== 0 && currentMaxId > lastKnownMaxId) {
-                    document.getElementById('alert_sound').play().catch(e => {});
-                }
-                lastKnownMaxId = currentMaxId;
-            }
-
-            const html = orders.map(o => {
-                let timeStr = "-";
-                if (o.created_at) {
-                    const d = new Date(o.created_at);
-                    timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                }
-                const isUrgent = o.urgent === true || o.urgent === 'true';
-                const currentStatus = (o.status || 'new').toLowerCase();
-
-                let driverOptions = `<option value="">-- Assign Driver --</option>`;
-                driversList.forEach(d => {
-                    driverOptions += `<option value="${d}" ${o.driver_name === d ? 'selected' : ''}>${d}</option>`;
-                });
-
-                let actionButtons = currentStatus === 'new' ? 
-                    `<button class="action-btn btn-process" onclick="updateStatus(${o.id}, 'In Process')">Accept</button>` : 
-                    (currentStatus === 'in process' ? `<button class="action-btn btn-done" onclick="updateStatus(${o.id}, 'Delivered')">Delivered</button>` : `<span>Closed</span>`);
-
-                return `
-                <tr ${isUrgent ? 'class="urgent-row"' : ''}>
-                    <td>#${o.id}</td>
-                    <td><strong>${o.line || '-'}</strong></td>
-                    <td>${timeStr}</td>
-                    <td>${o.description || '-'}</td>
-                    <td>${o.grower || '-'}</td>
-                    <td><span class="consignment-code">${o.consignment || o.cons || '-'}</span></td>
-                    <td>${o.origin || '-'}</td>
-                    <td>${o.size || '-'}</td>
-                    <td>${o.count || '-'}</td>
-                    <td>${o.available || '-'}</td>
-                    <td>${o.store || '-'}</td>
-                    <td><strong style="font-size:15px;">${o.qty || o.quantity || '-'}</strong></td>
-                    <td><select class="driver-select" onchange="assignDriver(${o.id}, this.value)">${driverOptions}</select></td>
-                    <td><span class="status-badge ${currentStatus}">${o.status || 'new'}</span></td>
-                    <td>${actionButtons}</td>
-                </tr>`;
-            }).join('');
-            document.getElementById('office_orders_body').innerHTML = html;
-        } catch (e) { console.error(e); }
-    }
-
-    // ЖЕСТКОЕ ОТОБРАЖЕНИЕ: Каждая переменная строго в своем <td> по порядку заголовков
-    async function loadStockTable() {
-        try {
-            const { data: stock, error } = await clientDb.from('stock').select('*').order('id', { ascending: true });
-            if (error) throw error;
-
-            if (!stock || stock.length === 0) {
-                document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Stock database is empty.</td></tr>`;
+            const bstr = e.target.result;
+            const workbook = XLSX.read(bstr, { type: 'binary' });
+            
+            const sheetName = workbook.SheetNames.find(n => 
+                n.toLowerCase().includes("stock") || n.toLowerCase().includes("daily")
+            ) || workbook.SheetNames[0];
+            
+            const worksheet = workbook.Sheets[sheetName];
+            const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
+            
+            if (rawRows.length === 0) {
+                output.innerHTML = "Ошибка: Лист пустой.";
                 return;
             }
 
-            const html = stock.map(s => `
-                <tr>
-                    <td><span class="consignment-code">${s.consignment || '-'}</span></td>
-                    <td><span class="ref-code">${s.grower || '-'}</span></td> <td><strong>${s.description || '-'}</strong></td> <td>${s.origin || '-'}</td> <td>${s.size || '-'}</td> <td>${s.count || '-'}</td> <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td> <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td> </tr>
-            `).join('');
-            document.getElementById('stock_base_body').innerHTML = html;
-        } catch (e) { console.error(e); }
-    }
+            // Ищем строку заголовка
+            let headerIndex = -1;
+            for (let i = 0; i < Math.min(rawRows.length, 30); i++) {
+                if (rawRows[i] && JSON.stringify(rawRows[i]).toLowerCase().includes('consignment')) {
+                    headerIndex = i;
+                    break;
+                }
+            }
 
-    async function updateStatus(orderId, newStatus) {
-        await clientDb.from('orders').update({ status: newStatus }).eq('id', orderId);
-        loadOfficeDashboard();
-    }
+            if (headerIndex === -1) {
+                output.innerHTML = "❌ Ошибка: Не удалось найти строку со словом 'Consignment'.\n\nВот первые 5 строк файла для проверки:\n" + 
+                    JSON.stringify(rawRows.slice(0, 5), null, 2);
+                return;
+            }
 
-    async function assignDriver(orderId, driverName) {
-        await clientDb.from('orders').update({ driver_name: driverName || null }).eq('id', orderId);
-        loadOfficeDashboard();
-    }
+            // Берем строку заголовка и одну строку с реальными данными для примера
+            const headerRow = rawRows[headerIndex];
+            const subHeaderRow = rawRows[headerIndex + 1] || {};
+            
+            // Ищем первую попавшуюся строку с реальным товаром (где в А стоит число)
+            let dataRow = null;
+            for (let j = headerIndex + 2; j < rawRows.length; j++) {
+                if (rawRows[j] && rawRows[j]["A"] && !isNaN(rawRows[j]["A"])) {
+                    dataRow = rawRows[j];
+                    break;
+                }
+            }
+            if (!dataRow) dataRow = rawRows[headerIndex + 2] || {};
 
-    loadOfficeDashboard();
-    loadStockTable();
-    setInterval(loadOfficeDashboard, 4000);
+            let report = `📊 АНАЛИЗ КАРТЫ КОЛОНОК (Строка шапки №${headerIndex + 1}):\n`;
+            report += `==================================================\n\n`;
+            
+            // Собираем все буквы колонок, которые есть в этой строке
+            const letters = Object.keys(headerRow).sort((a,b) => a.localeCompare(b, undefined, {numeric: true}));
+            
+            letters.forEach(letter => {
+                const headVal = String(headerRow[letter] || "").trim();
+                const subHeadVal = String(subHeaderRow[letter] || "").trim();
+                const exampleVal = String(dataRow[letter] || "").trim();
+                
+                let fullHeader = headVal;
+                if (subHeadVal) fullHeader += " / " + subHeadVal;
+                
+                if (fullHeader || exampleVal) {
+                    report += `Колонка [ ${letter} ]\n`;
+                    report += `   Название в шапке: "${fullHeader || '(пусто)'}"\n`;
+                    report += `   Пример значения:  "${exampleVal || '(пусто)'}"\n`;
+                    report += `--------------------------------------------------\n`;
+                }
+            });
+
+            output.innerHTML = report;
+
+        } catch (err) {
+            output.innerHTML = "❌ Критическая ошибка при разборе: " + err.message;
+            console.error(err);
+        }
+    };
+}
 </script>
+
 </body>
 </html>
