@@ -24,14 +24,14 @@
             background: var(--bg); 
             color: var(--text); 
             margin: 0; 
-            padding: 10px;
+            padding: 15px;
         }
         .container {
             max-width: 100%; 
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 15px;
         }
         .header {
             display: flex;
@@ -41,8 +41,6 @@
             padding: 12px 16px;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            flex-wrap: wrap;
-            gap: 10px;
         }
         .header h1 { margin: 0; font-size: 18px; color: var(--accent); }
         .user-badge { font-weight: bold; color: #01579b; background: #e3f2fd; padding: 6px 12px; border-radius: 6px; font-size: 13px; }
@@ -55,12 +53,11 @@
 
         .main-card {
             background: var(--card-bg);
-            padding: 15px;
+            padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
 
-        /* Блок выбора из базы/стока */
         .stock-section {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -69,7 +66,6 @@
             margin-bottom: 15px;
         }
 
-        /* Стили формы */
         .form-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -83,10 +79,8 @@
             background: #fff; color: var(--text); box-sizing: border-box; width: 100%;
         }
         input:focus, select:focus { border-color: var(--accent); outline: none; }
-        
         input.auto-filled { background: #fafafa; border-color: #cbd5e0; }
 
-        /* Чекбокс Urgent */
         .urgent-lock {
             display: flex; align-items: center; gap: 8px; background: #fff5f5;
             border: 1px solid #fed7d7; padding: 10px; border-radius: 6px; margin-bottom: 15px;
@@ -101,64 +95,52 @@
         }
         .submit-btn:hover { background: var(--accent-hover); }
 
-        /* --- ИНФОРМАЦИОННОЕ ТАБЛО (БАЗОВЫЙ МОБИЛЬНЫЙ ВИД КОМПАКТНЫХ КАРТОЧЕК) --- */
-        .orders-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-        .order-row-card {
-            background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;
-            display: flex; flex-direction: column; gap: 6px;
+        /* --- ИСПРАВЛЕННАЯ СТРОГАЯ ТАБЛИЦА ДЛЯ ПК --- */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 15px;
         }
-        .order-row-card.urgent-card { border-left: 5px solid var(--urgent); background: var(--urgent-bg); }
-        .order-row-card.process-card { border-left: 5px solid var(--process); background: var(--process-bg); }
-
-        .card-field { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #edf2f7; padding-bottom: 4px; }
-        .card-field:last-of-type { border-bottom: none; padding-bottom: 0; }
+        .orders-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        .orders-table th {
+            background: #f8fafc;
+            color: var(--text-muted);
+            padding: 12px 10px;
+            font-size: 11px;
+            text-transform: uppercase;
+            border-bottom: 2px solid #e2e8f0;
+            font-weight: bold;
+        }
+        .orders-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #edf2f7;
+            font-size: 14px;
+            vertical-align: middle;
+        }
         
-        /* Мобильные текстовые подписи (на ПК они будут скрыты) */
-        .field-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: bold; display: inline-block; }
-        .field-value { font-size: 13px; font-weight: 500; text-align: right; }
+        /* Цвета строк */
+        .orders-table tr.urgent-row { background-color: var(--urgent-bg); }
+        .orders-table tr.process-row { background-color: var(--process-bg); }
+        .orders-table tr:hover { background-color: #f1f5f9; }
 
-        .store-tag { color: #6b46c1; font-weight: bold; background: #f3e8ff; padding: 1px 6px; border-radius: 4px; }
-        .qty-tag { font-weight: bold; background: #e6fffa; border: 1px solid #b2f5ea; padding: 1px 6px; border-radius: 4px; }
+        .store-tag { color: #6b46c1; font-weight: bold; background: #f3e8ff; padding: 2px 6px; border-radius: 4px; }
+        .qty-tag { font-weight: bold; background: #e6fffa; border: 1px solid #b2f5ea; padding: 2px 6px; border-radius: 4px; }
         code { background: #edf2f7; padding: 2px 4px; border-radius: 4px; color: #b83280; font-family: monospace; }
         
+        .time-text { font-size: 12px; color: #4a5568; font-weight: 500; }
+        .time-delivered { font-size: 12px; color: var(--done); font-weight: bold; }
+
         .status-badge {
-            padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase;
+            padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase;
             display: inline-block;
         }
         .status-badge.new { background: #e3f2fd; color: #0288d1; }
         .status-badge.process { background: #fff3e0; color: #f59e0b; }
         .status-badge.delivered { background: #e8f5e9; color: var(--done); }
-
-        /* Шапка таблицы скрыта на мобильных по умолчанию */
-        .desktop-headers { display: none; }
-
-        /* --- ПОЛНОЦЕННАЯ АДАПТАЦИЯ ДЛЯ КОМПЬЮТЕРОВ И ПЛАНШЕТОВ (ЭКРАНЫ ОТ 768px) --- */
-        @media (min-width: 768px) {
-            body { padding: 20px; }
-            .container { gap: 15px; }
-            .main-card { padding: 20px; }
-            
-            /* Превращаем список в классическую жесткую таблицу */
-            .orders-list { display: table; width: 100%; border-collapse: collapse; }
-            .order-row-card { display: table-row; background: transparent !important; }
-            .card-field { display: table-cell; vertical-align: middle; padding: 12px 8px; border-bottom: 1px solid #edf2f7; }
-            
-            /* Скрываем внутренние мобильные подписи внутри ячеек */
-            .field-label { display: none; }
-            .field-value { text-align: left; font-size: 14px; }
-            
-            /* Показываем главную верхнюю шапку таблицы ПК */
-            .desktop-headers { display: table-header-group !important; background: #f8fafc; }
-            .desktop-headers th { 
-                color: var(--text-muted); padding: 12px 8px; text-align: left; 
-                font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; 
-            }
-            
-            /* Фоновые цвета строк в режиме таблицы */
-            .order-row-card.urgent-card { background-color: var(--urgent-bg) !important; }
-            .order-row-card.process-card { background-color: var(--process-bg) !important; }
-            .order-row-card:hover { background-color: #f1f5f9 !important; }
-        }
     </style>
 </head>
 <body>
@@ -245,23 +227,29 @@
 
     <div class="main-card">
         <h3 style="margin-top:0; font-size:15px; color: var(--text-muted);">Your Active Line Requests (Live)</h3>
-        <div class="orders-list">
-            <div class="desktop-headers">
-                <tr style="display: table-row;">
-                    <th style="padding-left:10px; width: 60px;">ID</th>
-                    <th style="width: 80px;">Store</th>
-                    <th>Fruit Description</th>
-                    <th>Grower</th>
-                    <th style="width: 110px;">Consignment</th>
-                    <th>Specs (O/S/C)</th>
-                    <th style="width: 70px;">Qty</th>
-                    <th>Driver</th>
-                    <th style="width: 110px;">Status</th>
-                </tr>
-            </div>
-            <div id="line_orders_body" style="display: contents;">
-                <div style="text-align:center; padding:20px; color:var(--text-muted);">Loading requests...</div>
-            </div>
+        <div class="table-responsive">
+            <table class="orders-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">ID</th>
+                        <th style="width: 100px;">Ordered At</th>
+                        <th style="width: 70px;">Store</th>
+                        <th>Fruit Description</th>
+                        <th>Grower</th>
+                        <th style="width: 110px;">Consignment</th>
+                        <th>Specs (O/S/C)</th>
+                        <th style="width: 60px;">Qty</th>
+                        <th>Driver</th>
+                        <th style="width: 100px;">Delivered At</th>
+                        <th style="width: 100px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="line_orders_body">
+                    <tr>
+                        <td colspan="11" style="text-align:center; padding:20px; color:var(--text-muted);">Loading requests...</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -274,6 +262,13 @@
     let mockStockData = []; 
 
     document.getElementById('lbl_line_top').innerText = "Line: " + currentUser;
+
+    // Форматирование времени (Часы:Минуты)
+    function formatTime(isoString) {
+        if (!isoString) return '—';
+        const date = new Date(isoString);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
 
     async function loadStockDropdown() {
         try {
@@ -302,18 +297,15 @@
             });
 
         } catch (e) {
-            console.error("Error pulling full stock dropdown:", e);
-            document.getElementById('stock_select').innerHTML = 
-                '<option value="">❌ Error loading stock list from Supabase</option>';
+            console.error(e);
+            document.getElementById('stock_select').innerHTML = '<option value="">❌ Error loading stock list</option>';
         }
     }
 
     function handleStockSelection() {
         const idx = document.getElementById('stock_select').value;
-        
         if (idx !== "") {
             const item = mockStockData[idx];
-            
             document.getElementById('m_description').value = item.description || item.desc || item.Description || '';
             document.getElementById('m_cons').value = item.consignment || item.cons || item.Cons || '';
             document.getElementById('m_store').value = item.store || item.Store || '';
@@ -321,7 +313,6 @@
             document.getElementById('m_origin').value = item.origin || item.Origin || '';
             document.getElementById('m_size').value = item.size || item.Size || '';
             document.getElementById('m_count').value = item.count || item.Count || '';
-            
             document.querySelectorAll('.form-grid input').forEach(i => i.classList.add('auto-filled'));
         } else {
             document.getElementById('order_form').reset();
@@ -332,7 +323,6 @@
 
     async function handleFormSubmit(e) {
         e.preventDefault();
-        
         const finalOrderData = {
             line: currentUser,
             qty: parseInt(document.getElementById('inp_qty').value) || 1,
@@ -376,7 +366,7 @@
 
             const tbody = document.getElementById('line_orders_body');
             if (!orders || orders.length === 0) {
-                tbody.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); display:block; width:100%;">No requests sent yet.</div>`;
+                tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:20px; color:var(--text-muted);">No requests sent yet.</td></tr>`;
                 return;
             }
 
@@ -385,50 +375,29 @@
                 const statusClean = (o.status || 'new').toLowerCase();
                 
                 let rClass = '';
-                if (isUrgent && statusClean !== 'delivered') rClass = 'urgent-card';
-                else if (statusClean === 'process') rClass = 'process-card';
+                if (isUrgent && statusClean !== 'delivered') rClass = 'urgent-row';
+                else if (statusClean === 'process') rClass = 'process-row';
 
                 const displayCons = o.consignment || o.cons || '—';
+                
+                // Чтение времени создания и доставки (используем стандартные или кастомные поля Supabase)
+                const createdTime = formatTime(o.created_at);
+                const deliveredTime = formatTime(o.delivered_at);
 
                 return `
-                <div class="order-row-card ${rClass}">
-                    <div class="card-field" style="padding-left:10px;">
-                        <span class="field-label">ID</span>
-                        <span class="field-value" style="color:var(--text-muted);">#${o.id}</span>
-                    </div>
-                    <div class="card-field">
-                        <span class="field-label">Store</span>
-                        <span class="field-value"><span class="store-tag">${o.store || '—'}</span></span>
-                    </div>
-                    <div class="card-field">
-                        <span class="field-label">Fruit</span>
-                        <span class="field-value"><strong>${isUrgent ? '⚠️ ' : ''}${o.description || '—'}</strong></span>
-                    </div>
-                    <div class="card-field">
-                        <span class="field-label">Grower</span>
-                        <span class="field-value">${o.grower || '—'}</span>
-                    </div>
-                    <div class="card-field">
-                        <span class="field-label">Consignment</span>
-                        <span class="field-value"><code>${displayCons}</code></span>
-                    </div>
-                    <div class="card-field">
-                        <span class="field-label">Specs</span>
-                        <span class="field-value">${o.origin || '—'} / ${o.size || '—'} / ${o.count || '—'}</span>
-                    </div>
-                    <div class="card-field">
-                        <span class="field-label">Qty</span>
-                        <span class="field-value"><span class="qty-tag">${o.qty || '0'}</span></span>
-                    </div>
-                    <div class="card-field">
-                        <span class="field-label">Driver</span>
-                        <span class="field-value">${o.driver_name ? '🚚 ' + o.driver_name : 'Waiting...'}</span>
-                    </div>
-                    <div class="card-field">
-                        <span class="field-label">Status</span>
-                        <span class="field-value"><span class="status-badge ${statusClean}">${statusClean}</span></span>
-                    </div>
-                </div>`;
+                <tr class="${rClass}">
+                    <td style="color:var(--text-muted); font-weight:bold;">#${o.id}</td>
+                    <td class="time-text">⏱ ${createdTime}</td>
+                    <td><span class="store-tag">${o.store || '—'}</span></td>
+                    <td><strong>${isUrgent ? '⚠️ ' : ''}${o.description || '—'}</strong></td>
+                    <td>${o.grower || '—'}</td>
+                    <td><code>${displayCons}</code></td>
+                    <td>${o.origin || '—'} / ${o.size || '—'} / ${o.count || '—'}</td>
+                    <td><span class="qty-tag">${o.qty || '0'}</span></td>
+                    <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span style="color:var(--text-muted);">Waiting...</span>'}</td>
+                    <td class="time-delivered">${statusClean === 'delivered' ? '✅ ' + deliveredTime : '—'}</td>
+                    <td><span class="status-badge ${statusClean}">${statusClean}</span></td>
+                </tr>`;
             }).join('');
 
         } catch (e) {
