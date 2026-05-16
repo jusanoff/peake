@@ -74,18 +74,17 @@
         </div>
 
         <div id="reports-tab" class="tab-content">
-            
             <div class="stats-box">
                 <div class="stat-card">
-                    <div id="st_all">Всего заказов в базе</div>
+                    <div id="st_all">Всего заказов</div>
                     <span id="stat_total">0</span>
                 </div>
                 <div class="stat-card">
-                    <div id="st_done">Выполнено (Done)</div>
+                    <div id="st_done">Выполнено</div>
                     <span id="stat_done" style="color: var(--ok);">0</span>
                 </div>
                 <div class="stat-card">
-                    <div id="st_proc">В процессе (Process)</div>
+                    <div id="st_proc">В процессе</div>
                     <span id="stat_process" style="color: var(--accent);">0</span>
                 </div>
             </div>
@@ -131,7 +130,6 @@
                 <tbody id="report_table_body"></tbody>
             </table>
         </div>
-
     </div>
 
 <script>
@@ -139,7 +137,6 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Словари переводов
     const lang = {
         ru: {
             main_title: "Панель управления и Отчетность (Офис)", lbl_hi: "Привет", btn_logout: "Выйти",
@@ -170,7 +167,6 @@
         }
     };
 
-    // Автоматически считываем язык, выбранный при входе
     let curL = localStorage.getItem('dash_lang') || 'ru';
 
     function setLang(l) {
@@ -178,9 +174,7 @@
         localStorage.setItem('dash_lang', l);
         updateUI();
         loadOrders();
-        if(document.getElementById('reports-tab').classList.contains('active')) {
-            loadFullReport();
-        }
+        if(document.getElementById('reports-tab').classList.contains('active')) loadFullReport();
     }
 
     function updateUI() {
@@ -190,19 +184,13 @@
         document.getElementById('btn_logout').innerText = t.btn_logout;
         document.getElementById('tab_active').innerText = t.tab_active;
         document.getElementById('tab_all').innerText = t.tab_all;
-        
-        // Таблица 1
         document.getElementById('th_from1').innerText = t.th_from;
         document.getElementById('th_desc1').innerText = t.th_desc;
         document.getElementById('th_driver1').innerText = t.th_driver;
         document.getElementById('th_status1').innerText = t.th_status;
-
-        // Статистика
         document.getElementById('st_all').innerText = t.st_all;
         document.getElementById('st_done').innerText = t.st_done;
         document.getElementById('st_proc').innerText = t.st_proc;
-
-        // Фильтры
         document.getElementById('lbl_f_line').innerText = t.lbl_f_line;
         document.getElementById('lbl_f_driver').innerText = t.lbl_f_driver;
         document.getElementById('lbl_f_status').innerText = t.lbl_f_status;
@@ -210,8 +198,6 @@
         document.getElementById('opt_all_drivers').innerText = t.opt_all_drivers;
         document.getElementById('opt_all_statuses').innerText = t.opt_all_statuses;
         document.getElementById('btn_csv').innerText = t.btn_csv;
-
-        // Таблица 2
         document.getElementById('th_date2').innerText = t.th_date;
         document.getElementById('th_from2').innerText = t.th_from;
         document.getElementById('th_desc2').innerText = t.th_desc;
@@ -219,7 +205,6 @@
         document.getElementById('th_status2').innerText = t.th_status;
     }
 
-    // Проверка авторизации
     const currentUser = localStorage.getItem('user');
     const currentRole = localStorage.getItem('role');
     const displayName = localStorage.getItem('name');
@@ -246,18 +231,14 @@
         if (drData) {
             driversList = drData.map(d => d.name).filter(Boolean);
             const fDr = document.getElementById('filter_driver');
-            driversList.forEach(name => {
-                fDr.innerHTML += `<option value="${name}">${name}</option>`;
-            });
+            driversList.forEach(name => { fDr.innerHTML += `<option value="${name}">${name}</option>`; });
         }
 
         const { data: lnData } = await _db.from('users_table').select('name').eq('t', 'line').order('name');
         if (lnData) {
             allLinesList = lnData.map(l => l.name).filter(Boolean);
             const fLn = document.getElementById('filter_line');
-            allLinesList.forEach(name => {
-                fLn.innerHTML += `<option value="${name}">${name}</option>`;
-            });
+            allLinesList.forEach(name => { fLn.innerHTML += `<option value="${name}">${name}</option>`; });
         }
         
         updateUI();
@@ -395,7 +376,6 @@
         link.setAttribute("href", url);
         link.setAttribute("download", `report_${currentDate}.csv`);
         document.body.appendChild(link);
-        
         link.click();
         document.body.removeChild(link);
     }
