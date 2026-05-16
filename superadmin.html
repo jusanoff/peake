@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8"><title>SuperAdmin - Peake Fruit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,6 +17,13 @@
         .btn-add{background:var(--ok); color:white; border:none; font-weight:bold; cursor:pointer; width:150px}
         .btn-del{background:var(--p); color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px}
         .lang-btns { margin-bottom: 15px; text-align: right; }
+        
+        /* Цвета для разных типов пользователей */
+        .u-badge { padding:3px 6px; border-radius:4px; font-weight:bold; font-size:12px; text-transform:uppercase; }
+        .u-badge.admin { background: #ffebee; color: #c62828; }
+        .u-badge.line { background: #e8f5e9; color: #2e7d32; }
+        .u-badge.driver { background: #fff3e0; color: #ef6c00; }
+        .u-badge.office { background: #e3f2fd; color: #1565c0; }
     </style>
 </head>
 <body>
@@ -31,40 +38,39 @@
         <h2 id="title">УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ</h2>
         
         <div class="form-box">
-            <input type="text" id="new_u" placeholder="Login (ex. RP1)">
-            <input type="text" id="new_p" placeholder="Password">
+            <input type="text" id="new_u" placeholder="Логин (напр. RP1)">
+            <input type="text" id="new_p" placeholder="Пароль">
             <select id="new_t">
-                <option value="line">Line </option>
-                <option value="office">Office </option>
-                <option value="driver">Driver </option>
+                <option value="line">Line (Линия)</option>
+                <option value="office">Office (Офис)</option>
+                <option value="driver">Driver (Водитель)</option>
+                <option value="admin">Admin (Администратор)</option>
             </select>
-            <button class="btn-add" onclick="addUser()" id="btn_add">➕ ADD</button>
+            <button class="btn-add" onclick="addUser()" id="btn_add">➕ ДОБАВИТЬ</button>
         </div>
 
         <table>
             <thead>
                 <tr>
-                    <th id="th_u">user</th>
-                    <th id="th_p">password</th>
-                    <th id="th_t">type</th>
-                    <th id="th_a">action</th>
+                    <th id="th_u">Пользователь</th>
+                    <th id="th_p">Пароль</th>
+                    <th id="th_t">Тип</th>
+                    <th id="th_a">Действие</th>
                 </tr>
             </thead>
             <tbody id="user_list"></tbody>
         </table>
         
         <div style="margin-top:30px">
-            <button onclick="location.href='login.html'" style="background:#666; color:white; border:none" id="btn_back">⬅ Back to Login</button>
+            <button onclick="location.href='login.html'" style="background:#666; color:white; border:none" id="btn_back">⬅ Назад в Логин</button>
         </div>
     </div>
 
 <script>
-    // Подключение к твоему Supabase
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
     
-    // Переводы
     const lang = {
         ru: { title:"УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ", btn_add:"ДОБАВИТЬ", th_u:"Пользователь", th_p:"Пароль", th_t:"Тип", th_a:"Действие", conf:"Удалить этого пользователя?", back:"⬅ Назад в Логин", u_ph:"Логин", p_ph:"Пароль" },
         en: { title:"USER MANAGEMENT", btn_add:"ADD USER", th_u:"User", th_p:"Password", th_t:"Type", th_a:"Action", conf:"Delete this user?", back:"⬅ Back to Login", u_ph:"Login", p_ph:"Password" },
@@ -91,7 +97,6 @@
         document.getElementById('new_p').placeholder = t.p_ph;
     }
 
-    // Загрузка пользователей напрямую из Supabase
     async function loadUsers() {
         try {
             const { data: users, error } = await _db.from('users_table').select('*').order('u', { ascending: true });
@@ -101,7 +106,7 @@
                 <tr>
                     <td><b>${u.u}</b></td>
                     <td><input type="text" value="${u.p}" onchange="changePass(${u.id}, this.value)" style="width:100px; padding:5px; border-radius:4px; border:1px solid #ccc"></td>
-                    <td><mark style="background:#e8f5e9; padding:3px 6px; border-radius:4px; font-weight:bold; font-size:12px">${u.t.toUpperCase()}</mark></td>
+                    <td><span class="u-badge ${u.t}">${u.t}</span></td>
                     <td><button class="btn-del" onclick="delUser(${u.id})">✖</button></td>
                 </tr>`).join('');
         } catch(e) { 
@@ -109,7 +114,6 @@
         }
     }
 
-    // Добавление пользователя в Supabase
     async function addUser() {
         const u = document.getElementById('new_u').value.trim();
         const p = document.getElementById('new_p').value.trim();
@@ -126,14 +130,12 @@
         }
     }
 
-    // Быстрое изменение пароля прямо в таблице
     async function changePass(id, newP) {
         const { error } = await _db.from('users_table').update({ p: newP }).eq('id', id);
         if (error) alert(error.message);
         loadUsers();
     }
 
-    // Удаление пользователя по его ID из базы данных
     async function delUser(id) {
         if(!confirm(lang[curL].conf)) return;
         const { error } = await _db.from('users_table').delete().eq('id', id);
