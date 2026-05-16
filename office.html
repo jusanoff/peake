@@ -79,6 +79,17 @@
         }
         .dashboard-card h2 { margin-top: 0; font-size: 20px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
 
+        /* Обертка заголовка для размещения кнопки экспорта */
+        .pipeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        .pipeline-header h2 { margin: 0; border: none; padding: 0; }
+
         .table-responsive {
             overflow-x: auto;
             max-height: 480px; 
@@ -117,13 +128,16 @@
     </div>
 
     <div class="dashboard-card">
-        <h2>Live Production Orders Pipeline</h2>
+        <div class="pipeline-header">
+            <h2>Live Production Orders Pipeline</h2>
+            <button class="btn-excel" onclick="exportOrdersToExcel()">📊 Export Logs to Excel</button>
+        </div>
         <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Line Name</th>
+                        <th>Ordered At</th> <th>Line Name</th>
                         <th>Item Description</th>
                         <th>Grower / Supplier</th>
                         <th>Consignment</th>
@@ -132,11 +146,11 @@
                         <th>Available</th>
                         <th>Store</th>
                         <th>Qty</th>
-                        <th>Status</th>
+                        <th>Driver</th> <th>Delivered At</th> <th>Status</th>
                     </tr>
                 </thead>
                 <tbody id="office_orders_body">
-                    <tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Loading live orders...</td></tr>
+                    <tr><td colspan="14" style="text-align:center; color:var(--text-muted);">Loading live orders...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -183,6 +197,16 @@
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = k1 + k2 + k3; 
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Глобальный массив для хранения загруженных из базы заказов для последующего экспорта
+    let currentOrdersData = [];
+
+    // Функция форматирования времени
+    function formatTime(isoString) {
+        if (!isoString) return '-';
+        const date = new Date(isoString);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
 
     async function uploadMorningExcel() {
         const fileInput = document.getElementById('excel_file');
@@ -299,7 +323,6 @@
                 return;
             }
 
-            // Перестроили вывод ячеек в строке, чтобы Variety (s.description) шел третьим по счету
             const html = stock.map(s => `
                 <tr>
                     <td><span class="consignment-code">${s.consignment || '-'}</span></td>
@@ -320,10 +343,14 @@
         try {
             const { data: orders, error } = await clientDb.from('orders').select('*').order('id', { ascending: false }).limit(5);
             if (error) throw error;
+            
+            // Сохраняем в глобальную переменную для последующего экспорта
+            currentOrdersData = orders || [];
+
             const html = orders.map(o => `
                 <tr>
                     <td>#${o.id}</td>
-                    <td><strong>${o.line || '-'}</strong></td>
+                    <td><span style="color:#4a5568; font-weight:500;">⏱ ${formatTime(o.created_at)}</span></td> <td><strong>${o.line || '-'}</strong></td>
                     <td>${o.description || '-'}</td>
                     <td>${o.grower || '-'}</td>
                     <td><span class="consignment-code">${o.consignment || '-'}</span></td>
@@ -332,11 +359,46 @@
                     <td>${o.available || '-'}</td>
                     <td>${o.store || '-'}</td>
                     <td><strong>${o.qty || '-'}</strong></td>
-                    <td><span class="status-badge new">${o.status || 'new'}</span></td>
+                    <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span style="color:var(--text-muted);">Waiting...</span>'}</td> <td><span style="color:var(--status-done); font-weight:bold;">${o.status === 'delivered' ? '✅ ' + formatTime(o.delivered_at) : '-'}</span></td> <td><span class="status-badge new">${o.status || 'new'}</span></td>
                 </tr>
             `).join('');
             document.getElementById('office_orders_body').innerHTML = html;
         } catch (e) { console.error(e); }
+    }
+
+    // ФУНКЦИЯ ЭКСПОРТА ОТЧЕТА В EXCEL
+    function exportOrdersToExcel() {
+        if (currentOrdersData.length === 0) {
+            alert("No data available to export yet!");
+            return;
+        }
+
+        const preparedData = currentOrdersData.map(o => ({
+            "Order ID": o.id,
+            "Ordered Time": formatTime(o.created_at),
+            "Production Line": o.line || '-',
+            "Item Description": o.description || '-',
+            "Grower / Supplier": o.grower || '-',
+            "Consignment": o.consignment || '-',
+            "Origin": o.origin || '-',
+            "Size": o.size || '-',
+            "Available": o.available || '-',
+            "Store": o.store || '-',
+            "QTY Needed": o.qty || 0,
+            "Assigned Driver": o.driver_name || 'Waiting...',
+            "Delivered Time": formatTime(o.delivered_at),
+            "Status": (o.status || 'new').toUpperCase()
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(preparedData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Office Orders Logs");
+
+        // Подгон ширины колонок в файле Excel
+        worksheet['!cols'] = [{wch:10},{wch:15},{wch:18},{wch:25},{wch:22},{wch:15},{wch:12},{wch:10},{wch:12},{wch:12},{wch:12},{wch:18},{wch:15},{wch:12}];
+
+        const dateStr = new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(workbook, `Peake_Fruit_Office_Report_${dateStr}.xlsx`);
     }
 
     loadOfficeDashboard();
