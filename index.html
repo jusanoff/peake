@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit - Line Dashboard & Order</title>
+    <title>Peake Fruit - Line Panel (Manual & CSV)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -26,7 +26,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 1600px; /* Увеличили для размещения всех колонок */
+            max-width: 1600px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
@@ -46,12 +46,11 @@
         
         .main-content {
             display: grid;
-            grid-template-columns: 1fr 3.5fr; /* Оптимальный баланс для большой таблицы */
+            grid-template-columns: 1fr 3.5fr;
             gap: 20px;
         }
         @media (max-width: 1200px) { .main-content { grid-template-columns: 1fr; } }
 
-        /* Стили формы */
         .order-card {
             background: var(--card-bg);
             padding: 25px;
@@ -60,6 +59,56 @@
             height: fit-content;
         }
         .order-card h2 { margin-top: 0; font-size: 18px; margin-bottom: 15px; border-bottom: 2px solid #edf2f7; padding-bottom: 8px; }
+        
+        /* Переключатель режимов (Вручную / CSV) */
+        .mode-switcher {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #edf2f7;
+            padding: 4px;
+            border-radius: 6px;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            color: var(--text-muted);
+        }
+        .mode-btn.active {
+            background: var(--card-bg);
+            color: var(--accent);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* Зона CSV */
+        .csv-zone {
+            background: #f7fafc;
+            border: 2px dashed #cbd5e0;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .csv-zone input[type="file"] { display: none; }
+        .csv-label {
+            display: inline-block;
+            background: #edf2f7;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            border: 1px solid #cbd5e0;
+        }
+        .csv-label:hover { background: #e2e8f0; }
+
         .form-group { margin-bottom: 12px; }
         label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 13px; color: #4a5568; }
         input {
@@ -70,6 +119,13 @@
             font-size: 14px;
             box-sizing: border-box;
         }
+        
+        /* Подсветка полей, если они заполнились автоматом из CSV */
+        input.autofilled {
+            background-color: #f0fff4;
+            border-color: #38a169;
+        }
+
         .urgent-zone {
             display: flex;
             align-items: center;
@@ -93,7 +149,6 @@
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
-            transition: background 0.2s;
         }
         .btn-submit:hover { background: var(--accent-hover); }
         .btn-logout {
@@ -109,7 +164,7 @@
         }
         .btn-logout:hover { background: #edf2f7; }
 
-        /* Стили таблицы истории */
+        /* Стили таблицы */
         .history-card {
             background: var(--card-bg);
             padding: 25px;
@@ -121,7 +176,6 @@
         table { width: 100%; border-collapse: collapse; }
         th { background: #f7fafc; color: var(--text-muted); padding: 10px; text-align: left; font-size: 12px; text-transform: uppercase; border-bottom: 2px solid #edf2f7; }
         td { padding: 12px 10px; font-size: 14px; border-bottom: 1px solid #edf2f7; }
-        
         tr.urgent-row { background: #fff5f5; }
         
         .status-badge {
@@ -143,7 +197,7 @@
 <body>
 
 <script>
-    // --- ЗАЩИТА: ТОЛЬКО ЛИНИИ ---
+    // --- СТРОГАЯ ЗАЩИТА: ТОЛЬКО ЛИНИИ ---
     const currentUser = localStorage.getItem('user');
     const currentRole = localStorage.getItem('role');
     const displayName = localStorage.getItem('name') || currentUser;
@@ -164,6 +218,19 @@
     <div class="main-content">
         <div class="order-card">
             <h2>Place New Order</h2>
+            
+            <div class="mode-switcher">
+                <button type="button" class="mode-btn active" id="btn_mode_manual" onclick="switchMode('manual')">Manual</button>
+                <button type="button" class="mode-btn" id="btn_mode_csv" onclick="switchMode('csv')">From CSV</button>
+            </div>
+
+            <div class="csv-zone" id="csv_upload_zone" style="display: none;">
+                <p style="margin: 0 0 10px 0; font-size: 13px; color: var(--text-muted);">Select CSV file to autofill form</p>
+                <label class="csv-label" for="file_input">📂 Choose File</label>
+                <input type="file" id="file_input" accept=".csv" onchange="handleCSV(event)">
+                <div id="csv_status" style="margin-top: 8px; font-size: 12px; font-weight: bold; color: #2e7d32;"></div>
+            </div>
+
             <form id="order_form" onsubmit="submitOrder(event)">
                 <div class="form-group">
                     <label>Description / Item *</label>
@@ -234,8 +301,7 @@
                             <th>Delivered Time</th>
                         </tr>
                     </thead>
-                    <tbody id="history_body">
-                        </tbody>
+                    <tbody id="history_body"></tbody>
                 </table>
             </div>
         </div>
@@ -249,6 +315,72 @@
 
     document.getElementById('lbl_line_top').innerText = "Line: " + displayName;
 
+    // Переключение режимов интерфейса
+    function switchMode(mode) {
+        const btnManual = document.getElementById('btn_mode_manual');
+        const btnCSV = document.getElementById('btn_mode_csv');
+        const csvZone = document.getElementById('csv_upload_zone');
+
+        if (mode === 'csv') {
+            btnCSV.classList.add('active');
+            btnManual.classList.remove('active');
+            csvZone.style.display = 'block';
+        } else {
+            btnManual.classList.add('active');
+            btnCSV.classList.remove('active');
+            csvZone.style.display = 'none';
+            clearAutofillStyles();
+        }
+    }
+
+    // Обработка и парсинг CSV файла
+    function handleCSV(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            // Разделяем строки, берем первую строку с данными (индекс 1, если 0 - заголовок)
+            const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            
+            if (lines.length < 2) {
+                alert("CSV file seems empty or has no data rows.");
+                return;
+            }
+
+            // Парсим строку данных (разделитель запятая)
+            const dataRow = lines[1].split(',');
+
+            // Предполагаемый порядок колонок в вашем CSV:
+            // Description, Grower, Consignment, Origin, Size, Count, Available, Store, Quantity
+            // Если порядок другой, просто поменяйте индексы dataRow[номер] ниже:
+            document.getElementById('inp_desc').value = dataRow[0] || '';
+            document.getElementById('inp_grower').value = dataRow[1] || '';
+            document.getElementById('inp_cons').value = dataRow[2] || '';
+            document.getElementById('inp_origin').value = dataRow[3] || '';
+            document.getElementById('inp_size').value = dataRow[4] || '';
+            document.getElementById('inp_count').value = dataRow[5] || '';
+            document.getElementById('inp_available').value = dataRow[6] || '';
+            document.getElementById('inp_store').value = dataRow[7] || '';
+            document.getElementById('inp_qty').value = dataRow[8] || '';
+
+            // Добавляем красивую зеленую подсветку для заполненных полей
+            const inputs = document.querySelectorAll('#order_form input[type="text"], #order_form input[type="number"]');
+            inputs.forEach(inp => { if(inp.value) inp.classList.add('autofilled'); });
+
+            document.getElementById('csv_status').innerText = `✅ Successfully parsed: ${file.name}`;
+        };
+        reader.readAsText(file);
+    }
+
+    function clearAutofillStyles() {
+        document.querySelectorAll('#order_form input').forEach(inp => inp.classList.remove('autofilled'));
+        document.getElementById('csv_status').innerText = '';
+        document.getElementById('file_input').value = '';
+    }
+
+    // Загрузка истории
     async function loadMyHistory() {
         try {
             const { data: orders, error } = await _db
@@ -276,7 +408,6 @@
 
                 const isUrgent = o.urgent === true || o.urgent === 'true';
                 const rowClass = isUrgent ? 'class="urgent-row"' : '';
-
                 const consignmentVal = o.cons || o.consignment || '-';
                 const quantityVal = o.qty || o.quantity || '-';
 
@@ -301,10 +432,11 @@
 
             document.getElementById('history_body').innerHTML = html;
         } catch (e) {
-            console.error("History loading error:", e);
+            console.error(e);
         }
     }
 
+    // Отправка данных формы
     async function submitOrder(e) {
         e.preventDefault();
 
@@ -318,7 +450,6 @@
             qty: document.getElementById('inp_qty').value ? parseInt(document.getElementById('inp_qty').value) : null,
             quantity: document.getElementById('inp_qty').value ? parseInt(document.getElementById('inp_qty').value) : null,
             
-            // Новые поля
             origin: document.getElementById('inp_origin').value || null,
             size: document.getElementById('inp_size').value || null,
             count: document.getElementById('inp_count').value || null,
@@ -334,6 +465,7 @@
 
             alert("Order created successfully!");
             document.getElementById('order_form').reset();
+            clearAutofillStyles();
             document.getElementById('lbl_line_top').innerText = "Line: " + displayName; 
             loadMyHistory(); 
         } catch (error) {
