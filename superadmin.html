@@ -119,7 +119,6 @@
     }
 
     async function addUser() {
-        // Принудительно убираем чувствительность к регистру, сохраняя логин маленькими буквами
         const u = document.getElementById('new_u').value.trim().toLowerCase();
         const p = document.getElementById('new_p').value.trim();
         const name = document.getElementById('new_name').value.trim();
