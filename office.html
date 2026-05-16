@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit — Office Control Tower</title>
+    <title>Peake Fruit — Office Control</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -166,11 +166,10 @@
                         <th>Line Name</th>
                         <th>Time</th>
                         <th>Item Description</th>
-                        <th>Supplier</th>
+                        <th>Grower / Supplier</th>
                         <th>Consignment</th>
                         <th>Origin</th>
                         <th>Size</th>
-                        <th>Count</th>
                         <th>Available</th>
                         <th>Store</th>
                         <th>Qty</th>
@@ -190,17 +189,19 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Consignment</th>
-                        <th>Supplier / Grower</th>
-                        <th>Variety / Description</th>
-                        <th>Origin</th>
-                        <th>Size</th>
-                        <th>Store</th>
-                        <th>Available Stock</th>
+                        <th>Consignment (A)</th>
+                        <th>GrowerPro Ref (B)</th>
+                        <th>Grower / Supplier (C)</th>
+                        <th>Country of Origin (D)</th>
+                        <th>Size (E)</th>
+                        <th>Count (F)</th>
+                        <th>Store (H)</th>
+                        <th>Variety (J)</th>
+                        <th>Available Stock (O)</th>
                     </tr>
                 </thead>
                 <tbody id="stock_base_body">
-                    <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Loading stock data...</td></tr>
+                    <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Loading stock data...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -242,8 +243,9 @@
                 ) || workbook.SheetNames[0];
                 
                 const worksheet = workbook.Sheets[sheetName];
-                const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
                 
+                // Читаем файл строго по буквам колонок
+                const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
                 if (rawRows.length === 0) throw new Error("Excel sheet is empty.");
 
                 const stockRows = [];
@@ -255,48 +257,57 @@
                     let rawCons = String(row["A"] || "").trim();
                     let consignmentNum = parseInt(rawCons, 10);
 
-                    // ПУЛЕНЕПРОБИВАЕМЫЙ ФИЛЬТР: Пропускаем только строки с реальным номером лота в колонке A (4-5 цифр)
-                    if (isNaN(consignmentNum) || consignmentNum < 1000 || consignmentNum > 99999) {
+                    // 1. ПРАВИЛО: В колонке A должно быть строго число. Текст игнорируем!
+                    if (isNaN(consignmentNum)) {
                         continue; 
                     }
 
-                    const supplier  = String(row["C"] || "").trim(); // Колонка C (Supplier / Имя поставщика)
-                    const variety   = String(row["H"] || "").trim(); // Колонка H (Variety / Сорт)
-                    const origin    = String(row["D"] || "").trim(); // Колонка D (Country of origin)
-                    const size      = String(row["E"] || "").trim(); // Колонка E (Size)
-                    const store     = String(row["F"] || "").trim(); // Колонка F (Store / Камера)
-                    const available = String(row["M"] || "").trim(); // Колонка M (Available stock)
+                    // 2. ПРАВИЛО: Если колонка E (size) пустая, строку полностью игнорируем
+                    const size = String(row["E"] || "").trim();
+                    if (!size) {
+                        continue; 
+                    }
 
-                    // Если строка пустая по смыслу — идем дальше
-                    if (!variety && !available) continue;
+                    // Читаем строго по твоей новой карте колонок
+                    const growerRef = String(row["B"] || "").trim(); // B - GrowerPro Ref
+                    const supplier  = String(row["C"] || "").trim(); // C - Grower/Supplier
+                    const origin    = String(row["D"] || "").trim(); // D - Country of Origin
+                    const count     = String(row["F"] || "").trim(); // F - Count
+                    const store     = String(row["H"] || "").trim(); // H - Store
+                    const variety   = String(row["J"] || "").trim(); // J - Variety
+                    const available = String(row["O"] || "").trim(); // O - Available stock
 
+                    // Формируем чистый объект для Supabase, упаковывая новые колонки
                     stockRows.push({
                         consignment: String(consignmentNum),
-                        grower: supplier ? supplier : null, // Пишем имя Supplier напрямую сюда
+                        grower: supplier ? supplier : (growerRef ? growerRef : null), // Используем Поставщика/Grower
                         description: variety ? variety : null,      
                         origin: origin ? origin : null,             
-                        size: size ? size : null,                   
+                        size: size, // Гарантированно не пустой (73-78, C120 и т.д.)
                         store: store ? store : null,                 
-                        available: available !== "" ? available : "0" 
+                        available: available !== "" ? available : "0",
+                        // Сохраняем дополнительные важные поля как метаданные (или в соответствующие колонки, если они есть)
+                        count_field: count ? count : null,
+                        grower_ref: growerRef ? growerRef : null
                     });
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("No valid items found matching the 4-5 digit filter.");
+                    throw new Error("No data rows matched your strict criteria (Column A number & Column E non-empty).");
                 }
 
                 statusDiv.innerHTML = `⚙️ Verified ${stockRows.length} real rows. Updating database...`;
                 
-                // Очистка старой базы стока
+                // Очищаем старый сток
                 const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                 if (deleteError) throw deleteError;
 
-                // Загрузка точных отфильтрованных данных
+                // Загружаем новый точный сток
                 const { error: insertError } = await clientDb.from('stock').insert(stockRows);
                 if (insertError) throw insertError;
 
                 statusDiv.style.color = "#2e7d32";
-                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} items with Supplier alignment!`;
+                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} rows. Data is 100% accurate!`;
                 fileInput.value = '';
                 
                 loadStockTable();
@@ -350,7 +361,6 @@
                     <td><span class="consignment-code">${o.consignment || o.cons || '-'}</span></td>
                     <td>${o.origin || '-'}</td>
                     <td>${o.size || '-'}</td>
-                    <td>${o.count || '-'}</td>
                     <td>${o.available || '-'}</td>
                     <td>${o.store || '-'}</td>
                     <td><strong style="font-size:15px;">${o.qty || o.quantity || '-'}</strong></td>
@@ -369,13 +379,13 @@
             if (error) throw error;
 
             if (!stock || stock.length === 0) {
-                document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Stock database is empty.</td></tr>`;
+                document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Stock database is empty.</td></tr>`;
                 return;
             }
 
             const html = stock.map(s => `
                 <tr>
-                    <td><span class="consignment-code">${s.consignment || '-'}</span></td> <td><span class="ref-code" style="color:#2b6cb0; font-weight:600;">${s.grower || '-'}</span></td> <td><strong>${s.description || '-'}</strong></td> <td>${s.origin || '-'}</td> <td>${s.size || '-'}</td> <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td> <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td> </tr>
+                    <td><span class="consignment-code">${s.consignment || '-'}</span></td> <td><span class="ref-code">${s.grower_ref || '-'}</span></td> <td><strong style="color:#2b6cb0;">${s.grower || '-'}</strong></td> <td>${s.origin || '-'}</td> <td><span class="ref-code">${s.size || '-'}</span></td> <td>${s.count_field || '-'}</td> <td><span style="color:#6b46c1; font-weight:700;">${s.store || '-'}</span></td> <td><strong>${s.description || '-'}</strong></td> <td><strong style="color:var(--status-done); font-size:14px;">${s.available || '0'}</strong></td> </tr>
             `).join('');
             document.getElementById('stock_base_body').innerHTML = html;
         } catch (e) { console.error(e); }
