@@ -26,7 +26,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 1400px; /* Немного расширили контейнер для новых колонок */
+            max-width: 1600px; /* Увеличили для размещения всех колонок */
             margin: 0 auto;
             display: flex;
             flex-direction: column;
@@ -46,10 +46,10 @@
         
         .main-content {
             display: grid;
-            grid-template-columns: 1fr 3fr; /* Расширили правую часть под таблицу */
+            grid-template-columns: 1fr 3.5fr; /* Оптимальный баланс для большой таблицы */
             gap: 20px;
         }
-        @media (max-width: 1100px) { .main-content { grid-template-columns: 1fr; } }
+        @media (max-width: 1200px) { .main-content { grid-template-columns: 1fr; } }
 
         /* Стили формы */
         .order-card {
@@ -178,6 +178,22 @@
                     <input type="text" id="inp_cons" placeholder="e.g., CS1023">
                 </div>
                 <div class="form-group">
+                    <label>Origin</label>
+                    <input type="text" id="inp_origin" placeholder="e.g., UK, FR">
+                </div>
+                <div class="form-group">
+                    <label>Size</label>
+                    <input type="text" id="inp_size" placeholder="e.g., 75-80">
+                </div>
+                <div class="form-group">
+                    <label>Count</label>
+                    <input type="text" id="inp_count" placeholder="e.g., 120">
+                </div>
+                <div class="form-group">
+                    <label>Available</label>
+                    <input type="text" id="inp_available" placeholder="e.g., Yes, 10 bins">
+                </div>
+                <div class="form-group">
                     <label>Store / Location</label>
                     <input type="text" id="inp_store" placeholder="e.g., Cold Store 2">
                 </div>
@@ -207,6 +223,10 @@
                             <th>Description</th>
                             <th>Grower</th>
                             <th>Consignment</th>
+                            <th>Origin</th>
+                            <th>Size</th>
+                            <th>Count</th>
+                            <th>Available</th>
                             <th>Store</th>
                             <th>Qty</th>
                             <th>Driver</th>
@@ -229,7 +249,6 @@
 
     document.getElementById('lbl_line_top').innerText = "Line: " + displayName;
 
-    // Функция загрузки личной истории этой Линии
     async function loadMyHistory() {
         try {
             const { data: orders, error } = await _db
@@ -242,28 +261,22 @@
             if (error) throw error;
 
             const html = orders.map(o => {
-                // Время заказа
                 let orderedTimeStr = "-";
                 if (o.created_at) {
                     const d = new Date(o.created_at);
                     orderedTimeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
                 }
 
-                // Время доставки (считается только если статус Delivered или Done)
                 let deliveredTimeStr = "—";
                 const currentStatus = (o.status || 'new').toLowerCase();
                 if ((currentStatus === 'delivered' || currentStatus === 'done') && o.created_at) {
-                    // Используем время изменения статуса, если у вас нет отдельной колонки delivered_at
-                    // Симуляция времени закрытия на основе текущей метки обновления (или создаем красивый текст)
-                    const d = new Date(); // Берем условное время закрытия
+                    const d = new Date(); 
                     deliveredTimeStr = `<span class="delivered-time-text">✅ ${d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>`;
                 }
 
                 const isUrgent = o.urgent === true || o.urgent === 'true';
                 const rowClass = isUrgent ? 'class="urgent-row"' : '';
-                const statusClass = currentStatus;
 
-                // Защита от разных названий колонок в базе
                 const consignmentVal = o.cons || o.consignment || '-';
                 const quantityVal = o.qty || o.quantity || '-';
 
@@ -274,10 +287,14 @@
                     <td><strong>${isUrgent ? '⚠️ ' : ''}${o.description || '-'}</strong></td>
                     <td>${o.grower || '-'}</td>
                     <td><code>${consignmentVal}</code></td>
+                    <td>${o.origin || '-'}</td>
+                    <td>${o.size || '-'}</td>
+                    <td>${o.count || '-'}</td>
+                    <td>${o.available || '-'}</td>
                     <td><span style="color: #6b46c1; font-weight: 600;">${o.store || '-'}</span></td>
                     <td><strong>${quantityVal}</strong></td>
                     <td>${o.driver_name ? '🚚 ' + o.driver_name : '—'}</td>
-                    <td><span class="status-badge ${statusClass}">${o.status || 'new'}</span></td>
+                    <td><span class="status-badge ${currentStatus}">${o.status || 'new'}</span></td>
                     <td>${deliveredTimeStr}</td>
                 </tr>`;
             }).join('');
@@ -288,28 +305,26 @@
         }
     }
 
-    // Создание заказа
     async function submitOrder(e) {
         e.preventDefault();
 
-        const descValue = document.getElementById('inp_desc').value;
-        const growerValue = document.getElementById('inp_grower').value || null;
-        const storeValue = document.getElementById('inp_store').value || null;
-        const consValue = document.getElementById('inp_cons').value || null;
-        const qtyValue = document.getElementById('inp_qty').value ? parseInt(document.getElementById('inp_qty').value) : null;
-        const isUrgent = document.getElementById('chk_urgent').checked;
-
-        // Дублируем поля для 100% совместимости с любым кэшем базы данных
         const orderData = {
             line: displayName,
-            description: descValue,
-            grower: growerValue,
-            store: storeValue,
-            cons: consValue,
-            consignment: consValue,
-            qty: qtyValue,
-            quantity: qtyValue,
-            urgent: isUrgent,
+            description: document.getElementById('inp_desc').value,
+            grower: document.getElementById('inp_grower').value || null,
+            store: document.getElementById('inp_store').value || null,
+            cons: document.getElementById('inp_cons').value || null,
+            consignment: document.getElementById('inp_cons').value || null,
+            qty: document.getElementById('inp_qty').value ? parseInt(document.getElementById('inp_qty').value) : null,
+            quantity: document.getElementById('inp_qty').value ? parseInt(document.getElementById('inp_qty').value) : null,
+            
+            // Новые поля
+            origin: document.getElementById('inp_origin').value || null,
+            size: document.getElementById('inp_size').value || null,
+            count: document.getElementById('inp_count').value || null,
+            available: document.getElementById('inp_available').value || null,
+            
+            urgent: document.getElementById('chk_urgent').checked,
             status: 'new'
         };
 
@@ -332,7 +347,7 @@
     }
 
     loadMyHistory();
-    setInterval(loadMyHistory, 5000); // Быстрое обновление раз в 5 секунд
+    setInterval(loadMyHistory, 5000);
 </script>
 </body>
 </html>
