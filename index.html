@@ -65,7 +65,9 @@
 </div>
 
 <script>
-    if (!localStorage.getItem('user')) { window.location.href = 'login.html'; }
+    if (!localStorage.getItem('user') || (localStorage.getItem('role') !== 'line' && localStorage.getItem('role') !== 'office')) { 
+    localStorage.clear(); window.location.href = 'login.html'; 
+}
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
