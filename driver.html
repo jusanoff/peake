@@ -1,116 +1,278 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-    <meta charset="UTF-8"><title>Панель Водителя - Peake Fruit</title>
+    <meta charset="UTF-8">
+    <title>Peake Fruit - Driver / Loader Panel</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --p:#ef6c00; --s:#1a1a2e; --bg:#f0f2f5; --ok:#2e7d32; }
-        body{font-family:sans-serif; background:var(--bg); margin:0; padding:10px;}
-        .container{max-width:600px; margin:auto;}
-        .driver-header { background:white; padding:15px; border-radius:10px; margin-bottom:15px; box-shadow:0 2px 5px rgba(0,0,0,0.05); display:flex; justify-content:space-between; align-items:center; }
-        h3{margin:0; color:var(--s);}
-        .order-card { background:white; padding:15px; border-radius:10px; margin-bottom:12px; box-shadow:0 3px 8px rgba(0,0,0,0.1); border-left:5px solid var(--p); position:relative; }
-        .order-card.my-job { border-left-color: #1565c0; }
-        .order-line { font-size:18px; font-weight:bold; color:#111; margin-bottom:5px; }
-        .order-desc { font-size:14px; color:#555; margin-bottom:15px; }
-        .btn-action { width:100%; padding:12px; font-size:14px; font-weight:bold; color:white; border:none; border-radius:6px; cursor:pointer; text-transform:uppercase; }
-        .btn-take { background: var(--p); }
-        .btn-done { background: var(--ok); }
-        .btn-logout { background:#666; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:12px;}
-        .empty-text { text-align:center; color:#888; margin-top:4px; font-size:14px; }
+        :root { 
+            --bg: #111827; 
+            --card-bg: #1f2937; 
+            --text: #f9fafb; 
+            --text-muted: #9ca3af;
+            --accent: #3b82f6;
+            --urgent: #dc2626;
+            --process: #f59e0b; 
+            --done: #10b981; 
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 15px;
+        }
+        .container {
+            max-width: 100%; 
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .header h1 { margin: 0; font-size: 20px; color: #60a5fa; }
+        .user-badge { font-weight: bold; color: #fff; background: #2563eb; padding: 6px 14px; border-radius: 6px; font-size: 14px; }
+        
+        .logout-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid #4b5563;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .logout-btn:hover { background: #374151; color: #fff; }
+
+        .main-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .main-card h2 { margin-top: 0; font-size: 18px; color: #f3f4f6; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
+        
+        .pulse-dot {
+            width: 10px; height: 10px; background: #ef4444; border-radius: 50%;
+            animation: blink 1.2s infinite;
+        }
+        @keyframes blink { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #111827; color: var(--text-muted); padding: 14px 10px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #374151; }
+        td { padding: 16px 10px; font-size: 15px; border-bottom: 1px solid #374151; color: #e5e7eb; }
+        
+        tr.urgent-row { background: #450a0a !important; border-left: 5px solid var(--urgent); }
+        tr.process-row { background: #1e1b4b; }
+
+        .action-btn {
+            display: inline-block;
+            width: 100%;
+            padding: 12px 8px;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            color: white;
+            transition: background 0.2s;
+            box-sizing: border-box;
+        }
+        .btn-take { background: var(--accent); }
+        .btn-take:hover { background: #1d4ed8; }
+        .btn-complete { background: var(--done); }
+        .btn-complete:hover { background: #059669; }
+
+        .status-tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-tag.new { background: #ef6c00; color: #fff; }
+        .status-tag.process { background: var(--process); color: #000; }
+
+        code { background: #111827; padding: 4px 8px; border-radius: 4px; color: #f472b6; font-family: monospace; font-size: 15px; font-weight: bold; }
+        .store-highlight { color: #a78bfa; font-weight: bold; font-size: 17px; background: rgba(167, 139, 250, 0.1); padding: 4px 8px; border-radius: 4px; }
+        .line-highlight { color: #38bdf8; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="driver-header">
-            <div><small style="color:#666;">Водитель:</small> <br><h3 id="driver_name_display">Загрузка...</h3></div>
-            <button class="btn-logout" onclick="logout()">Выйти</button>
-        </div>
+<script>
+    const currentUser = localStorage.getItem('user');
+    const currentRole = localStorage.getItem('role');
+    const displayName = localStorage.getItem('name') || currentUser;
 
-        <h4 style="margin:10px 5px; color:#555; text-transform:uppercase; font-size:12px;" id="title_block">Текущие задания</h4>
-        <div id="driver_orders_container"></div>
+    if (!currentUser || currentRole !== 'driver') {
+        alert("Access denied! Only drivers/loaders are allowed here.");
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+</script>
+
+<div class="container">
+    <div class="header">
+        <div>
+            <h1>Peake Fruit — Driver Mission Control</h1>
+            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Live Delivery Feed</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div class="user-badge" id="lbl_driver_top">Driver: -</div>
+            <button class="logout-btn" onclick="logout()">Log Out</button>
+        </div>
     </div>
+
+    <div class="main-card">
+        <h2>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                Active Delivery Requests
+                <div class="pulse-dot"></div>
+            </div>
+        </h2>
+        
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>LINE (Куда)</th>
+                        <th>STORE / LOCATION (Где взять)</th>
+                        <th>Description / Fruit</th>
+                        <th>Grower</th>
+                        <th>Consignment (Cons)</th>
+                        <th>Origin</th>
+                        <th>Size</th>
+                        <th>Count</th>
+                        <th>QTY (Сколько)</th>
+                        <th>Status</th>
+                        <th style="width: 160px; text-align: center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="driver_table_body">
+                    <tr>
+                        <td colspan="12" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                            Loading live orders from Supabase...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 <script>
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    const currentUser = localStorage.getItem('user');
-    const currentRole = localStorage.getItem('role');
-    const displayName = localStorage.getItem('name'); // Наше красивое реальное имя
+    document.getElementById('lbl_driver_top').innerText = "Driver: " + displayName;
 
-    if (!currentUser || currentRole !== 'driver') {
-        window.location.href = 'login.html';
-    } else {
-        document.getElementById('driver_name_display').innerText = displayName;
-    }
-
-    async function loadDriverOrders() {
+    async function fetchActiveOrders() {
         try {
-            const { data: orders, error } = await _db.from('orders').select('*').order('id', { ascending: false });
+            const { data: orders, error } = await _db
+                .from('orders')
+                .select('*')
+                .in('status', ['new', 'New', 'process', 'Process'])
+                .order('urgent', { ascending: false }) 
+                .order('id', { ascending: true });
+
             if (error) throw error;
 
-            // Показываем водителю:
-            // 1. Новые свободные заказы ('new'), у которых еще нет водителя
-            // 2. Или заказы, которые уже назначены именно на это РЕАЛЬНОЕ ИМЯ ('process')
-            const relevantOrders = orders.filter(o => o.status === 'new' || (o.status === 'process' && o.driver_name === displayName));
-            const container = document.getElementById('driver_orders_container');
-
-            if (relevantOrders.length === 0) {
-                container.innerHTML = `<div class="empty-text">Нет активных заказов на данный момент</div>`;
+            const tbody = document.getElementById('driver_table_body');
+            if (!orders || orders.length === 0) {
+                tbody.innerHTML = `
+                <tr>
+                    <td colspan="12" style="text-align: center; color: #10b981; font-weight: bold; padding: 40px; font-size: 16px;">
+                        🎉 All orders delivered! No active tasks at the moment.
+                    </td>
+                </tr>`;
                 return;
             }
 
-            container.innerHTML = relevantOrders.map(o => {
-                const isMyJob = (o.status === 'process' && o.driver_name === displayName);
+            const html = orders.map(o => {
+                const isUrgent = o.urgent === true || o.urgent === 'true';
+                const statusClean = (o.status || 'new').toLowerCase();
                 
-                let buttonHtml = '';
-                if (!isMyJob) {
-                    buttonHtml = `<button class="btn-action btn-take" onclick="takeOrder(${o.id})">Принять заказ (Взять)</button>`;
-                } else {
-                    buttonHtml = `<button class="btn-action btn-done" onclick="completeOrder(${o.id})">Выполнено (Завершить)</button>`;
+                let rowClass = '';
+                if (isUrgent) {
+                    rowClass = 'class="urgent-row"';
+                } else if (statusClean === 'process') {
+                    rowClass = 'class="process-row"';
                 }
 
+                let actionButtonHtml = '';
+                if (statusClean === 'new') {
+                    actionButtonHtml = `<button class="action-btn btn-take" onclick="changeOrderStatus(${o.id}, 'process')">🚚 Take Order</button>`;
+                } else if (statusClean === 'process') {
+                    if (!o.driver_name || o.driver_name === displayName) {
+                        actionButtonHtml = `<button class="action-btn btn-complete" onclick="changeOrderStatus(${o.id}, 'delivered')">✅ Complete</button>`;
+                    } else {
+                        actionButtonHtml = `<span style="font-size:12px; color:var(--text-muted);">Taken by ${o.driver_name}</span>`;
+                    }
+                }
+
+                // Читаем консигнацию строго из поля 'cons' (куда её пишет новая форма линии)
+                const consignmentVal = o.cons || o.consignment || '-';
+
                 return `
-                <div class="order-card ${isMyJob ? 'my-job' : ''}">
-                    <div class="order-line">${o.line || 'Линия'}</div>
-                    <div class="order-desc">${o.description || 'Запрос материалов / поддонов'}</div>
-                    ${buttonHtml}
-                </div>`;
+                <tr ${rowClass}>
+                    <td><span style="color: var(--text-muted); font-size: 13px;">#${o.id}</span></td>
+                    <td><span class="line-highlight">${o.line || 'Unknown'}</span></td>
+                    <td><span class="store-highlight">${o.store || '—'}</span></td>
+                    <td><strong>${isUrgent ? '⚠️ URGENT: ' : ''}${o.description || '-'}</strong></td>
+                    <td>${o.grower || '-'}</td>
+                    <td><code>${consignmentVal}</code></td>
+                    <td>${o.origin || '-'}</td>
+                    <td>${o.size || '-'}</td>
+                    <td>${o.count || '-'}</td>
+                    <td style="font-size: 18px; color: #fff; font-weight: bold; text-align: center; background: rgba(255,255,255,0.05);">${o.qty || '-'}</td>
+                    <td><span class="status-tag ${statusClean}">${statusClean}</span></td>
+                    <td style="text-align: center; padding: 8px;">${actionButtonHtml}</td>
+                </tr>`;
             }).join('');
 
+            tbody.innerHTML = html;
+
         } catch (e) {
-            console.error(e);
+            console.error("Error loading active orders:", e);
+            document.getElementById('driver_table_body').innerHTML = `
+            <tr>
+                <td colspan="12" style="text-align: center; color: var(--urgent); padding: 30px;">
+                    Error pulling data from database.
+                </td>
+            </tr>`;
         }
     }
 
-    // Функция: Водитель берёт свободный заказ сам
-    async function takeOrder(orderId) {
-        const { error } = await _db.from('orders')
-            .update({ 
-                status: 'process', 
-                driver_name: displayName // Записываем красивое РЕАЛЬНОЕ ИМЯ
-            })
-            .eq('id', orderId);
+    async function changeOrderStatus(orderId, newStatus) {
+        try {
+            const updateData = { status: newStatus };
+            if (newStatus === 'process') {
+                updateData.driver_name = displayName;
+            }
 
-        if (error) alert("Ошибка: " + error.message);
-        loadDriverOrders();
-    }
+            const { error } = await _db
+                .from('orders')
+                .update(updateData)
+                .eq('id', orderId);
 
-    // Функция: Водитель завершает заказ
-    async function completeOrder(orderId) {
-        const { error } = await _db.from('orders')
-            .update({ 
-                status: 'done',
-                driver_name: displayName // Гарантируем сохранение реального имени в архиве
-            })
-            .eq('id', orderId);
-
-        if (error) alert("Ошибка: " + error.message);
-        loadDriverOrders();
+            if (error) throw error;
+            fetchActiveOrders();
+        } catch (e) {
+            alert("Error updating order status: " + e.message);
+        }
     }
 
     function logout() {
@@ -118,9 +280,8 @@
         window.location.href = 'login.html';
     }
 
-    // Запуск панели и автообновление данных каждые 5 секунд
-    loadDriverOrders();
-    setInterval(loadDriverOrders, 5000);
+    fetchActiveOrders();
+    setInterval(fetchActiveOrders, 5000);
 </script>
 </body>
 </html>
