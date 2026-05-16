@@ -162,26 +162,60 @@
         } catch(e) { console.error(e); }
     }
 
-    async function addUser() {
-        const u = document.getElementById('new_u').value.trim();
-        const p = document.getElementById('new_p').value.trim();
-        const t = document.getElementById('new_t').value;
-        if(!u || !p) return alert(curL === 'ru' ? "Заполните все поля!" : "Fill all fields!");
-        const { error } = await _db.from('users_table').insert([{ u, p, t }]);
-        if (error) alert(error.message); else { document.getElementById('new_u').value = ''; document.getElementById('new_p').value = ''; loadUsers(); }
+    // --- ОБНОВЛЕННОЕ ДОБАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯ ---
+async function addUser() {
+    const u = document.getElementById('new_u').value.trim();
+    const p = document.getElementById('new_p').value.trim();
+    const t = document.getElementById('new_t').value;
+    
+    if(!u || !p) return alert(curL === 'ru' ? "Заполните все поля!" : "Fill all fields!");
+
+    // 1. Добавляем в общую таблицу пользователей (для логина)
+    const { error: userError } = await _db.from('users_table').insert([{ u, p, t }]);
+    
+    if (userError) {
+        alert("Ошибка создания пользователя: " + userError.message);
+        return;
     }
 
-    async function changePass(id, newP) {
-        const { error } = await _db.from('users_table').update({ p: newP }).eq('id', id);
-        if (error) alert(error.message);
-        loadUsers();
+    // 2. АВТОМАТИКА: Если это водитель, сразу добавляем его имя в таблицу водителей drivers_table
+    if (t === 'driver') {
+        const { error: driverError } = await _db.from('drivers_table').insert([{ driver_name: u }]);
+        if (driverError) {
+            console.error("Не удалось автоматически добавить в список водителей:", driverError.message);
+        }
     }
 
-    async function delUser(id) {
-        if(!confirm(lang[curL].conf_u)) return;
-        const { error } = await _db.from('users_table').delete().eq('id', id);
-        if (error) alert(error.message); else loadUsers();
+    // Очищаем поля и обновляем таблицы на экране
+    document.getElementById('new_u').value = '';
+    document.getElementById('new_p').value = '';
+    loadUsers();
+    loadDrivers(); // Обновляем список водителей на экране
+}
+
+// --- ОБНОВЛЕННОЕ УДАЛЕНИЕ ПОЛЬЗОВАТЕЛЯ ---
+async function delUser(id) {
+    if(!confirm(lang[curL].conf_u)) return;
+
+    // Сначала узнаем имя пользователя перед удалением, чтобы почистить таблицу водителей
+    const { data: userToDelete } = await _db.from('users_table').select('u, t').eq('id', id).single();
+
+    // Удаляем из таблицы пользователей
+    const { error: deleteError } = await _db.from('users_table').delete().eq('id', id);
+    
+    if (deleteError) {
+        alert(deleteError.message);
+        return;
     }
+
+    // Если это был водитель, удаляем его и из списка водителей тоже
+    if (userToDelete && userToDelete.t === 'driver') {
+        await _db.from('drivers_table').delete().eq('driver_name', userToDelete.u);
+    }
+
+    loadUsers();
+    loadDrivers();
+}
 
     // --- ЛИНИИ ---
     async function loadLines() {
