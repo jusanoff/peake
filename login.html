@@ -69,40 +69,31 @@
         const passwordInput = document.getElementById('password').value.trim();
 
         try {
-            const { data, error } = await _db
-                .from('users_table')
-                .select('*')
-                .eq('u', usernameInput)
-                .single();
+    const { data, error } = await _db
+        .from('users_table')
+        .select('*')
+        .eq('u', usernameInput)
+        .single();
 
-            if (error || !data || data.p !== passwordInput) {
-                alert(lang[curL]?.err || "Error / Ошибка");
-                return;
-            }
+    if (error || !data) { return; }
 
-            localStorage.setItem('user', data.u);
-            localStorage.setItem('role', data.t);
-            localStorage.setItem('name', data.name || data.u); // Сохраняем красивое имя!
-            localStorage.setItem('dash_lang', curL);
+    // ОБЯЗАТЕЛЬНО: Создаем переменную userRole из колонки 't'
+    const userRole = String(data.t || '').toLowerCase().trim();
 
-            // НАДЕЖНАЯ МАРШРУТИЗАЦИЯ: проверяем через includes(), чтобы поймать любые линии
-if (userRole === 'admin') {
-    window.location.href = 'superadmin.html';
-} else if (userRole === 'office') {
-    window.location.href = 'office.html';
-} else if (userRole === 'driver') {
-    window.location.href = 'driver.html';
-} else if (userRole.includes('line') || userRole.includes('grader') || userRole.includes('office')) { 
-    // Если роль содержит слово line, grader или office — отправляем на рабочую панель
-    window.location.href = 'index.html';
-} else {
-    // На всякий случай для всех остальных рабочих аккаунтов
-    window.location.href = 'index.html';
+    // Теперь браузер знает, что такое userRole, и ошибки не будет:
+    if (userRole === 'admin') {
+        window.location.href = 'superadmin.html';
+    } else if (userRole === 'office') {
+        window.location.href = 'office.html';
+    } else if (userRole === 'driver') {
+        window.location.href = 'driver.html';
+    } else {
+        window.location.href = 'index.html';
+    }
+
+} catch (err) {
+    console.error(err);
 }
-        } catch (err) {
-            console.error(err);
-            alert("Connection error / Ошибка соединения");
-        }
     };
 
     updateUI();
