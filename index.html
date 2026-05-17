@@ -182,13 +182,16 @@
 
 <script>
     const currentUser = localStorage.getItem('user');
-    const currentRole = localStorage.getItem('role');
-    const displayName = localStorage.getItem('name') || currentUser;
+let currentRole = localStorage.getItem('role') || '';
 
-    if (!currentUser || currentRole !== 'driver') {
-        alert("Access denied! Only drivers/loaders are allowed here.");
-        localStorage.clear();
-        window.location.href = 'login.html';
+currentRole = currentRole.toLowerCase().trim();
+
+// Защита: пускаем всех, кроме водителей (у водителей свой терминал driver.html)
+if (!currentUser || currentRole === 'driver') {
+    alert("Access denied for drivers here!");
+    localStorage.clear();
+    window.location.href = 'login.html';
+
     }
 </script>
 
