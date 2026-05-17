@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit — Driver Terminal (Adaptive OCR)</title>
+    <title>Peake Fruit — Driver Terminal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         :root {
             --bg: #f8fafc;
@@ -14,7 +14,6 @@
             --text-muted: #64748b;
             --accent: #0288d1;
             --border: #cbd5e1;
-            --status-done: #16a34a;
         }
 
         body { 
@@ -23,12 +22,10 @@
             color: var(--text); 
             margin: 0; 
             padding: 8px;
-            -webkit-text-size-adjust: 100%;
         }
 
         .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
         
-        /* Адаптивная шапка */
         .header { 
             display: flex; 
             flex-direction: column;
@@ -44,28 +41,238 @@
         .driver-badge { background: #e0f2fe; color: #0369a1; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 13px; flex-grow: 1; text-align: center; }
         .btn-logout { background: #f1f5f9; color: #e11d48; border: 1px solid #ffe4e6; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
 
-        /* Карточка панели управления */
         .dashboard-card { background: var(--card-bg); padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #edf2f7; }
         .dashboard-card h3 { margin-top: 0; margin-bottom: 10px; font-size: 15px; color: #334155; }
 
-        /* Горизонтальный скролл таблицы на мелких экранах */
         .table-responsive { overflow-x: auto; margin-top: 5px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; }
         table { width: 100%; border-collapse: collapse; min-width: 850px; }
-        th { background: #f8fafc; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #e2e8f0; }
+        th { background: #f8fafc; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
         td { padding: 14px 10px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
 
-        /* Полностью адаптивное окно OCR сканера */
+        .btn-action { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; color: white; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; min-height: 34px; }
+        .btn-accept { background: #0288d1; width: 100%; }
+        .btn-scan { background: #16a34a; width: 100%; }
+        .btn-close-scanner { background: #dc2626; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; width: 100%; }
+
+        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .status-badge.new { background: #fef3c7; color: #d97706; }
+
         #scanner-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.95); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box;
         }
-        .scanner-container { width: 100%; max-width: 440px; background: #fff; border-radius: 12px; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); }
-        .scanner-container h3 { margin: 0; text-align: center; color: #1e293b; font-size: 15px; line-height: 1.4; }
-        
-        /* Контейнер видео с рамкой прицела */
-        .video-wrapper { position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: #000; aspect-ratio: 4/3; }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        
-        .status-text { font-size: 13px; font-weight: 700; text-align: center; color: #b45309; min-height: 38px; line-height: 1.4; padding: 4px; background: #fef3c7; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
-        
-        /* Круп
+        .scanner-container { width: 100%; max-width: 440px; background: #fff; border-radius: 12px; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; }
+        #reader { width: 100%; border-radius: 8px; overflow: hidden; background: #000; }
+
+        @media (min-width: 768px) {
+            body { padding: 15px; }
+            .header { flex-direction: row; justify-content: space-between; align-items: center; padding: 14px 20px; }
+            .header-title h1 { font-size: 20px; text-align: left; }
+            .header-right { width: auto; }
+            .driver-badge { flex-grow: 0; min-width: 180px; }
+            .btn-action { width: auto; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="header-title"><h1>Peake Fruit — Driver Terminal</h1></div>
+        <div class="header-right">
+            <div class="driver-badge" id="driver_name_display">Driver: Loading...</div>
+            <button class="btn-logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
+        </div>
+    </div>
+
+    <div class="dashboard-card">
+        <h3>Active Line Pallet Requests</h3>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Line Name</th>
+                        <th>Ordered At</th>
+                        <th>Store</th>
+                        <th>Variety</th>
+                        <th>Grower</th>
+                        <th>Consignment</th>
+                        <th>Size</th>
+                        <th>Qty</th>
+                        <th>Driver Assigned</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="driver_orders_body">
+                    <tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Loading requests...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="scanner-modal">
+    <div class="scanner-container">
+        <h3 id="scan-target-info" style="margin:0; text-align:center; color:#1e293b;">Scan Barcode</h3>
+        <div id="reader"></div>
+        <button class="btn-close-scanner" onclick="stopScanner()">❌ CANCEL SCANNING</button>
+    </div>
+</div>
+
+<script>
+    const currentUser = localStorage.getItem('user');
+    let currentRole = localStorage.getItem('role') || '';
+
+    currentRole = currentRole.toLowerCase().trim();
+
+    // Проверка роли driver
+    if (!currentUser || currentRole !== 'driver') {
+        alert("Access denied! Only drivers are allowed here.");
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+
+    document.getElementById('driver_name_display').innerText = 'Driver: ' + currentUser;
+
+    const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
+    const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
+    const k3 = 'LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+
+    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
+    const supabaseKey = k1 + k2 + k3;
+    const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
+
+    let cachedDriverFullName = localStorage.getItem('name') || currentUser;
+    let currentScanningOrder = null;
+    let html5QrcodeScanner = null;
+
+    document.getElementById('driver_name_display').innerText = 'Driver: ' + cachedDriverFullName;
+
+    function formatTime(isoString) {
+        if (!isoString) return '-';
+        const date = new Date(isoString);
+        return isNaN(date.getTime()) ? '-' : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function loadAllOrders() {
+        try {
+            const { data: orders, error } = await clientDb
+                .from('orders')
+                .select('*')
+                .not('status', 'eq', 'delivered')
+                .order('id', { ascending: false });
+
+            if (error) throw error;
+
+            if (!orders || orders.length === 0) {
+                document.getElementById('driver_orders_body').innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--text-muted);">No active orders.</td></tr>`;
+                return;
+            }
+
+            const html = orders.map(o => {
+                let actionBtn = '';
+                if (o.status === 'new') {
+                    actionBtn = `<button class="btn-action btn-accept" onclick="acceptOrder(${o.id})">✅ Accept</button>`;
+                } else if (o.status === 'accepted' && o.driver_name === cachedDriverFullName) {
+                    const stringified = JSON.stringify(o).replace(/"/g, '&quot;');
+                    actionBtn = `<button class="btn-action btn-scan" onclick="startScanner(${stringified})">📷 Scan & Verify</button>`;
+                } else if (o.status === 'accepted') {
+                    actionBtn = `<span style="color:var(--text-muted); font-size:11px;">Locked</span>`;
+                }
+
+                return `
+                    <tr>
+                        <td>#${o.id}</td>
+                        <td><strong>${o.line || '-'}</strong></td>
+                        <td><span style="color:#4a5568;">⏱ ${formatTime(o.created_at)}</span></td>
+                        <td><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
+                        <td><strong>${o.description || '-'}</strong></td>
+                        <td>${o.grower || '-'}</td>
+                        <td><span style="font-family:monospace; background:#f1f3f5; padding:4px 6px; border-radius:4px; font-weight:600;">${o.consignment || '-'}</span></td>
+                        <td><strong>${o.size || '-'}</strong></td>
+                        <td><strong style="color:#0288d1; font-size:14px;">${o.qty || '1'}</strong></td>
+                        <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span class="status-badge new">Free</span>'}</td>
+                        <td>${actionBtn}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('driver_orders_body').innerHTML = html;
+        } catch (e) { console.error(e); }
+    }
+
+    async function acceptOrder(orderId) {
+        try {
+            const { error } = await clientDb.from('orders').update({ status: 'accepted', driver_name: cachedDriverFullName }).eq('id', orderId);
+            if (error) throw error;
+            loadAllOrders();
+        } catch (e) { alert(e.message); }
+    }
+
+    function startScanner(orderObj) {
+        currentScanningOrder = orderObj;
+        document.getElementById('scanner-modal').style.display = 'flex';
+        document.getElementById('scan-target-info').innerHTML = `Order #${orderObj.id}<br><span style="color:#0288d1">Target Consignment: ${orderObj.consignment}</span>`;
+
+        html5QrcodeScanner = new Html5Qrcode("reader");
+        html5QrcodeScanner.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 260, height: 160 } },
+            onScanSuccess,
+            onScanFailure
+        ).catch(err => {
+            alert("Camera error: " + err);
+            stopScanner();
+        });
+    }
+
+    function stopScanner() {
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.stop().then(() => {
+                document.getElementById('scanner-modal').style.display = 'none';
+                currentScanningOrder = null;
+            }).catch(err => console.error(err));
+        } else {
+            document.getElementById('scanner-modal').style.display = 'none';
+        }
+    }
+
+    async function onScanSuccess(decodedText) {
+        const scannedConsignment = decodedText.trim();
+        const expectedConsignment = String(currentScanningOrder.consignment).trim();
+
+        if (html5QrcodeScanner) {
+            await html5QrcodeScanner.stop();
+        }
+
+        if (scannedConsignment !== expectedConsignment) {
+            alert(`🛑 WRONG PALLET!\nScanned: ${scannedConsignment}\nExpected: ${expectedConsignment}\n\nDo not pick up this pallet!`);
+            document.getElementById('scanner-modal').style.display = 'none';
+            loadAllOrders();
+            return;
+        }
+
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .update({ status: 'delivered', delivered_at: new Date().toISOString() })
+                .eq('id', currentScanningOrder.id);
+
+            if (error) throw error;
+
+            alert(`✅ VERIFIED SUCCESSFULLY!\n\nOrder #${currentScanningOrder.id}\nVariety: ${currentScanningOrder.description}\nSize: ${currentScanningOrder.size}\nDelivered to production line.`);
+        } catch (e) {
+            alert("Error updating order: " + e.message);
+        }
+
+        document.getElementById('scanner-modal').style.display = 'none';
+        loadAllOrders();
+    }
+
+    function onScanFailure(error) {}
+
+    loadAllOrders();
+</script>
+</body>
+</html>
