@@ -2,457 +2,376 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit — Production Line Control</title>
+    <title>Peake Fruit - Driver / Loader Panel</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --bg: #f4f6f9;
-            --card-bg: #ffffff;
-            --text: #1a1a2e;
+        :root { 
+            --bg: #f4f6f9; 
+            --card-bg: #ffffff; 
+            --text: #1a1a2e; 
             --text-muted: #6c757d;
             --accent: #0288d1;
-            --border: #e2e8f0;
-            --status-new: #ef6c00;
-            --status-done: #2e7d32;
+            --urgent: #d32f2f;
+            --urgent-bg: #fff5f5;
+            --process: #f59e0b; 
+            --process-bg: #fef8e7;
+            --done: #2e7d32; 
         }
-
         body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            margin: 0;
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
             padding: 10px;
         }
-
-        .container { 
+        .container {
             max-width: 100%; 
-            margin: 0 auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
-        
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: var(--card-bg);
-            padding: 12px 15px;
+            padding: 12px 16px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            flex-wrap: wrap;
             gap: 10px;
         }
-        .header-title h1 { margin: 0; font-size: 18px; color: var(--accent); font-weight: 700; }
-        .header-title p { margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted); }
+        .header h1 { margin: 0; font-size: 18px; color: var(--accent); }
+        .header-right { display: flex; align-items: center; gap: 10px; }
+        .user-badge { font-weight: bold; color: #01579b; background: #e3f2fd; padding: 6px 12px; border-radius: 6px; font-size: 13px; }
         
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .line-badge {
-            background: #e0f2fe;
-            color: #0369a1;
+        .logout-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid #cbd5e0;
             padding: 6px 12px;
             border-radius: 6px;
-            font-weight: 700;
+            cursor: pointer;
             font-size: 13px;
-            white-space: nowrap;
         }
+        .logout-btn:hover { background: #edf2f7; }
 
-        .btn-logout { 
-            background: transparent; 
-            color: var(--text-muted); 
-            border: 1px solid var(--border); 
-            padding: 6px 12px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-size: 13px; 
-            white-space: nowrap; 
-        }
-
-        .dashboard-card {
+        .main-card {
             background: var(--card-bg);
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-            border: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
-
-        .card-title-quick {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #0288d1;
-            margin-bottom: 8px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+        .main-card h2 { 
+            margin-top: 0; 
+            font-size: 16px; 
+            color: var(--text); 
+            margin-bottom: 12px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px;
         }
-
-        select, input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 14px;
-            box-sizing: border-box;
-            background: #ffffff;
+        
+        .pulse-dot {
+            width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
+            animation: blink 1.2s infinite;
         }
+        @keyframes blink { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
 
-        .grid-inputs {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .input-group {
+        /* Оболочка для адаптивности списка */
+        .orders-list {
             display: flex;
             flex-direction: column;
-            gap: 5px;
-        }
-        .input-group label {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            font-weight: 600;
+            gap: 12px;
         }
 
-        .qty-section {
-            margin-top: 15px;
-        }
-        .qty-section input {
-            text-align: center;
-            font-size: 18px;
-            font-weight: 700;
-            border: 2px solid var(--accent);
-            color: var(--accent);
-        }
-
-        .urgent-box {
-            margin-top: 15px;
-            background: #fff5f5;
-            border: 1px solid #feb2b2;
-            padding: 12px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #c53030;
-            font-size: 12px;
-            font-weight: 700;
-        }
-        .urgent-box input { width: auto; cursor: pointer; }
-
-        .btn-send {
-            width: 100%;
-            background: #0077c2;
-            color: white;
-            border: none;
+        /* Карточка заказа (включается автоматически на смартфонах) */
+        .order-item-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
             padding: 14px;
-            border-radius: 6px;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 15px;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 2px 6px rgba(0,119,194,0.2);
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
         }
-        .btn-send:hover { background: #005fa3; }
+        
+        /* Цветовые схемы состояний */
+        .order-item-card.urgent-card { border-left: 6px solid var(--urgent); background: var(--urgent-bg); }
+        .order-item-card.process-card { border-left: 6px solid var(--process); background: var(--process-bg); }
+        .order-item-card.new-card { border-left: 6px solid var(--accent); }
 
-        .table-responsive {
-            overflow-x: auto;
-            margin-top: 15px;
-            border: 1px solid var(--border);
+        /* Строки с данными внутри мобильной карточки */
+        .card-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #edf2f7; padding-bottom: 6px; }
+        .card-row:last-of-type { border-bottom: none; padding-bottom: 0; }
+        
+        .card-label { font-size: 12px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+        .card-value { font-size: 14px; font-weight: 500; }
+
+        /* Важные крупные акценты для водителя */
+        .store-highlight { color: #6b46c1; font-weight: 800; font-size: 18px; background: #f3e8ff; padding: 2px 8px; border-radius: 4px; }
+        .line-highlight { color: #0288d1; font-weight: bold; font-size: 15px; }
+        .qty-highlight { font-size: 20px; color: #000; font-weight: 900; background: #e6fffa; border: 1px solid #b2f5ea; padding: 2px 10px; border-radius: 4px; }
+        code { background: #edf2f7; padding: 2px 6px; border-radius: 4px; color: #b83280; font-family: monospace; font-size: 14px; font-weight: bold; }
+
+        /* Крупные, жирные мобильные кнопки под пальцы */
+        .action-btn {
+            display: block;
+            width: 100%;
+            padding: 14px 10px;
+            font-weight: bold;
+            font-size: 15px;
+            text-align: center;
+            border: none;
             border-radius: 6px;
+            cursor: pointer;
+            color: white;
+            box-sizing: border-box;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        .btn-take { background: var(--accent); }
+        .btn-complete { background: var(--done); }
+        
+        .status-tag {
+            padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase;
+        }
+        .status-tag.new { background: #e3f2fd; color: #0288d1; }
+        .status-tag.process { background: #fff3e0; color: #f59e0b; }
 
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
-        th { background: #f8f9fa; color: var(--text-muted); padding: 10px; text-align: left; font-size: 12px; border-bottom: 2px solid var(--border); }
-        td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #edf2f7; }
-
-        .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-        .status-badge.new { background: #e0f2fe; color: #0369a1; }
-        .status-badge.delivered { background: #e2f0d9; color: #385723; }
-
+        /* На планшетах и ПК разворачиваем карточки обратно в красивую компактную таблицу */
         @media (min-width: 768px) {
             body { padding: 20px; }
-            .container { gap: 20px; }
-            .header { padding: 15px 25px; }
-            .header-title h1 { font-size: 22px; }
-            .dashboard-card { padding: 20px; }
+            .container { gap: 15px; }
+            .header h1 { font-size: 22px; }
+            .main-card { padding: 20px; }
+            
+            .orders-list { display: table; width: 100%; border-collapse: collapse; }
+            .order-item-card { display: table-row; background: transparent !important; box-shadow: none; border: none; }
+            .order-item-card Severities { border-left: none; }
+            
+            /* Создаем псевдо-заголовок таблицы на больших экранах */
+            .orders-list::before {
+                content: "ID\a0\a0\a0\a0\a0\a0LINE (Куда)\a0\a0\a0\a0\a0\a0STORE (Где взять)\a0\a0\a0\a0\a0\a0FRUIT / DESC\a0\a0\a0\a0\a0\a0GROWER\a0\a0\a0\a0\a0\a0CONSIGNMENT\a0\a0\a0\a0\a0\a0DETAILS (O/S/C)\a0\a0\a0\a0\a0\a0QTY\a0\a0\a0\a0\a0\a0STATUS\a0\a0\a0\a0\a0\a0ACTION";
+                display: none; /* Для чистой структуры используем классический table-layout ниже */
+            }
+
+            /* Переключаем элементы карточки в ячейки таблицы */
+            .card-row { display: table-cell; vertical-align: middle; padding: 12px 10px; border-bottom: 1px solid #edf2f7; }
+            .card-label { display: none; } /* Прячем мобильные подписи */
+            .card-value { font-size: 14px; }
+            
+            /* Индивидуальные стили строк для ПК/планшетов */
+            .order-item-card.urgent-card { background-color: var(--urgent-bg) !important; }
+            .order-item-card.process-card { background-color: var(--process-bg) !important; }
+            .order-item-card:hover { background-color: #f7fafc !important; }
+
+            .action-btn { padding: 8px 10px; font-size: 13px; }
+            .desktop-header { display: table-header-group !important; }
         }
+        
+        .desktop-header { display: none; background: #f7fafc; }
+        .desktop-header th { color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #edf2f7; }
     </style>
 </head>
 <body>
 
+<script>
+    const currentUser = localStorage.getItem('user');
+    const currentRole = localStorage.getItem('role');
+    const displayName = localStorage.getItem('name') || currentUser;
+
+    if (!currentUser || currentRole !== 'driver') {
+        alert("Access denied! Only drivers/loaders are allowed here.");
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+</script>
+
 <div class="container">
     <div class="header">
-        <div class="header-title">
-            <h1>Peake Fruit — Production Line Control</h1>
-            <p>Request Pallets from Warehouse</p>
+        <div>
+            <h1>Peake Fruit — Driver Panel</h1>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Live Adaptive Delivery Feed</div>
         </div>
         <div class="header-right">
-            <div class="line-badge" id="line_name_display">Line: Loading...</div>
-            <button class="btn-logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
+            <div class="user-badge" id="lbl_driver_top">Driver: -</div>
+            <button class="logout-btn" onclick="logout()">Log Out</button>
         </div>
     </div>
 
-    <div class="dashboard-card">
-        <div class="card-title-quick">⚡ Quick Select From Stock Sheet</div>
-        <select id="stock_selector" onchange="handleStockSelect()">
-            <option value="">-- Choose fruit pallet (Auto-fills fields below) --</option>
-        </select>
-
-        <div class="grid-inputs">
-            <div class="input-group">
-                <label>Description / Fruit</label>
-                <input type="text" id="inp_description" placeholder="e.g. Royal Gala">
+    <div class="main-card">
+        <h2>
+            <div class="pulse-dot"></div>
+            Active Delivery Tasks
+        </h2>
+        
+        <div class="orders-list" id="driver_orders_container">
+            <div class="desktop-header" id="table_header">
+                <div style="display: table-row;">
+                    <th style="padding-left:15px;">ID</th>
+                    <th>Line</th>
+                    <th>Store / Location</th>
+                    <th>Fruit Description</th>
+                    <th>Grower</th>
+                    <th>Consignment</th>
+                    <th>Specs (O/S/C)</th>
+                    <th style="text-align: center;">Qty</th>
+                    <th>Status</th>
+                    <th style="text-align: center; width: 150px;">Action</th>
+                </div>
             </div>
-            <div class="input-group">
-                <label>Consignment (Cons)</label>
-                <input type="text" id="inp_consignment" placeholder="e.g. 8885">
+            
+            <div id="cards_body" style="display: contents;">
+                <div style="text-align: center; color: var(--text-muted); padding: 30px; display: block; width: 100%;">
+                    Loading active warehouse tasks...
+                </div>
             </div>
-            <div class="input-group">
-                <label>Store / Location</label>
-                <input type="text" id="inp_store" placeholder="e.g. 41">
-            </div>
-            <div class="input-group">
-                <label>Grower</label>
-                <input type="text" id="inp_grower" placeholder="e.g. Clemente">
-            </div>
-            <div class="input-group">
-                <label>Origin</label>
-                <input type="text" id="inp_origin" placeholder="Chile">
-            </div>
-            <div class="input-group">
-                <label>Size</label>
-                <input type="text" id="inp_size" placeholder="73-78">
-            </div>
-            <div class="input-group">
-                <label>Count</label>
-                <input type="text" id="inp_count" placeholder="100">
-            </div>
-        </div>
-
-        <div class="qty-section">
-            <div class="input-group">
-                <label style="color: var(--accent); font-weight:700;">Quantity Needed (QTY)</label>
-                <input type="number" id="inp_qty" value="1" min="1">
-            </div>
-        </div>
-
-        <div class="urgent-box">
-            <input type="checkbox" id="inp_urgent">
-            <label for="inp_urgent">⚠️ MARK AS URGENT (PRIORITY TO DRIVER)</label>
-        </div>
-
-        <button class="btn-send" onclick="sendRequestToDriver()">🚀 SEND REQUEST TO DRIVER</button>
-    </div>
-
-    <div class="dashboard-card">
-        <h3 style="margin-top:0; font-size:16px;">Your Active Line Requests (Live)</h3>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Ordered At</th>
-                        <th>Store</th>
-                        <th>Fruit Description</th>
-                        <th>Grower</th>
-                        <th>Consignment</th>
-                        <th>Specs (O/S/C)</th>
-                        <th>Qty</th>
-                        <th>Driver</th>
-                        <th>Delivered At</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="line_requests_body">
-                    <tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Loading requests...</td></tr>
-                </tbody>
-            </table>
         </div>
     </div>
 </div>
 
 <script>
-    const currentUser = localStorage.getItem('user');
-    const currentRole = localStorage.getItem('role');
+    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+    const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    if (!currentUser || currentRole !== 'line') {
-        alert("Access denied!");
+    document.getElementById('lbl_driver_top').innerText = "Driver: " + displayName;
+
+    async function fetchActiveOrders() {
+        try {
+            const { data: orders, error } = await _db
+                .from('orders')
+                .select('*')
+                .in('status', ['new', 'New', 'process', 'Process'])
+                .order('urgent', { ascending: false }) 
+                .order('id', { ascending: true });
+
+            if (error) throw error;
+
+            const cardsBody = document.getElementById('cards_body');
+            if (!orders || orders.length === 0) {
+                cardsBody.innerHTML = `
+                <div style="text-align: center; color: var(--done); font-weight: bold; padding: 40px; font-size: 15px; display: block; width: 100%;">
+                    🎉 All tasks completed! No active orders right now.
+                </div>`;
+                return;
+            }
+
+            const html = orders.map(o => {
+                const isUrgent = o.urgent === true || o.urgent === 'true';
+                const statusClean = (o.status || 'new').toLowerCase();
+                
+                let stateClass = 'new-card';
+                if (isUrgent) {
+                    stateClass = 'urgent-card';
+                } else if (statusClean === 'process') {
+                    stateClass = 'process-card';
+                }
+
+                let actionButtonHtml = '';
+                if (statusClean === 'new') {
+                    actionButtonHtml = `<button class="action-btn btn-take" onclick="changeOrderStatus(${o.id}, 'process')">🚚 Take Order</button>`;
+                } else if (statusClean === 'process') {
+                    if (!o.driver_name || o.driver_name === displayName) {
+                        actionButtonHtml = `<button class="action-btn btn-complete" onclick="changeOrderStatus(${o.id}, 'delivered')">✅ Complete</button>`;
+                    } else {
+                        actionButtonHtml = `<span style="font-size:12px; color:var(--text-muted); font-weight:bold;">Taken by ${o.driver_name}</span>`;
+                    }
+                }
+
+                const consignmentVal = o.cons || o.consignment || '—';
+                const originVal = o.origin || '—';
+                const sizeVal = o.size || '—';
+                const countVal = o.count || '—';
+
+                // Генерируем универсальную структуру. На смартфонах она сожмется в карточку, на планшетах развернется в ряд таблицы.
+                return `
+                <div class="order-item-card ${stateClass}">
+                    <div class="card-row" style="padding-left: 10px;">
+                        <span class="card-label">ID</span>
+                        <span class="card-value" style="color:var(--text-muted);">#${o.id}</span>
+                    </div>
+                    <div class="card-row">
+                        <span class="card-label">Line</span>
+                        <span class="card-value class="line-highlight"">${o.line || '—'}</span>
+                    </div>
+                    <div class="card-row">
+                        <span class="card-label">Store / Location</span>
+                        <span class="card-value"><span class="store-highlight">${o.store || '—'}</span></span>
+                    </div>
+                    <div class="card-row">
+                        <span class="card-label">Fruit</span>
+                        <span class="card-value"><strong>${isUrgent ? '⚠️ URGENT: ' : ''}${o.description || '—'}</strong></span>
+                    </div>
+                    <div class="card-row">
+                        <span class="card-label">Grower</span>
+                        <span class="card-value">${o.grower || '—'}</span>
+                    </div>
+                    <div class="card-row">
+                        <span class="card-label">Consignment</span>
+                        <span class="card-value"><code>${consignmentVal}</code></span>
+                    </div>
+                    <div class="card-row">
+                        <span class="card-label">Specs (O/S/C)</span>
+                        <span class="card-value">${originVal} / ${sizeVal} / ${countVal}</span>
+                    </div>
+                    <div class="card-row" style="text-align: center;">
+                        <span class="card-label">Qty</span>
+                        <span class="card-value"><span class="qty-highlight">${o.qty || '0'}</span></span>
+                    </div>
+                    <div class="card-row">
+                        <span class="card-label">Status</span>
+                        <span class="card-value"><span class="status-tag ${statusClean}">${statusClean}</span></span>
+                    </div>
+                    <div class="card-row" style="text-align: center; border-bottom: none;">
+                        <span class="card-label">Manage</span>
+                        <span class="card-value" style="display: block; width: 100%;">${actionButtonHtml}</span>
+                    </div>
+                </div>`;
+            }).join('');
+
+            cardsBody.innerHTML = html;
+
+        } catch (e) {
+            console.error(e);
+            document.getElementById('cards_body').innerHTML = `
+            <div style="text-align: center; color: var(--urgent); padding: 20px; display: block;">
+                Error pulling data from database.
+            </div>`;
+        }
+    }
+
+    async function changeOrderStatus(orderId, newStatus) {
+        try {
+            const updateData = { status: newStatus };
+            if (newStatus === 'process') {
+                updateData.driver_name = displayName;
+            }
+
+            const { error } = await _db
+                .from('orders')
+                .update(updateData)
+                .eq('id', orderId);
+
+            if (error) throw error;
+            fetchActiveOrders();
+        } catch (e) {
+            alert("Error: " + e.message);
+        }
+    }
+
+    function logout() {
         localStorage.clear();
         window.location.href = 'login.html';
     }
 
-    // Сразу же при старте жестко прописываем логин в шапку, чтобы не висело "Loading..."
-    document.getElementById('line_name_display').innerText = 'Line: ' + currentUser;
-
-    const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
-    const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
-    const k3 = 'LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
-
-    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
-    const supabaseKey = k1 + k2 + k3;
-    const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
-
-    let stockItemsGlobal = [];
-    let cachedLineFullName = currentUser; // По умолчанию равен логину, если имя вдруг не найдется
-
-    function formatTime(isoString) {
-        if (!isoString) return '-';
-        const date = new Date(isoString);
-        if (isNaN(date.getTime())) return '-';
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-
-    async function fetchLineFullName() {
-    try {
-        // ИСПРАВЛЕНО: Заменили 'user_table' на точное имя 'users_table' из Supabase
-        const { data, error } = await clientDb
-            .from('users_table')
-            .select('*')
-            .eq('u', currentUser);
-
-        if (error) {
-            console.error("Ошибка Supabase:", error.message);
-            return;
-        }
-
-        if (data && data.length > 0) {
-            const userRow = data[0];
-            // Берем красивое имя из колонки 'name'
-            const realName = userRow.name;
-
-            if (realName) {
-                cachedLineFullName = realName; 
-                
-                // Находим плашку и принудительно меняем текст hl1 -> Hand Line1 или Nob -> Nobac
-                const badge = document.getElementById('line_name_display');
-                if (badge) {
-                    badge.innerText = 'Line: ' + realName;
-                }
-            }
-        }
-    } catch (err) {
-        console.error("Критическая ошибка в функции fetchLineFullName:", err);
-    }
-    
-    // Запускаем историю активных заказов
-    loadActiveRequests();
-}
-    function handleStockSelect() {
-        const selId = document.getElementById('stock_selector').value;
-        if (!selId) return;
-
-        const match = stockItemsGlobal.find(i => String(i.id) === String(selId));
-        if (!match) return;
-
-        document.getElementById('inp_description').value = match.description || '';
-        document.getElementById('inp_consignment').value = match.consignment || '';
-        document.getElementById('inp_store').value = match.store || '';
-        document.getElementById('inp_grower').value = match.grower || '';
-        document.getElementById('inp_origin').value = match.origin || '';
-        document.getElementById('inp_size').value = match.size || '';
-        document.getElementById('inp_count').value = match.count || '';
-    }
-
-    async function sendRequestToDriver() {
-        const desc = document.getElementById('inp_description').value.trim();
-        const cons = document.getElementById('inp_consignment').value.trim();
-        const store = document.getElementById('inp_store').value.trim();
-        const grower = document.getElementById('inp_grower').value.trim();
-        const origin = document.getElementById('inp_origin').value.trim();
-        const size = document.getElementById('inp_size').value.trim();
-        const count = document.getElementById('inp_count').value.trim();
-        const qty = parseInt(document.getElementById('inp_qty').value) || 1;
-        const isUrgent = document.getElementById('inp_urgent').checked;
-
-        try {
-            // Отправляем в базу полное красивое имя линии
-            const { error } = await clientDb.from('orders').insert([{
-                line: cachedLineFullName, 
-                description: isUrgent ? '⚠️ ' + desc : desc,
-                consignment: cons,
-                store: store,
-                grower: grower,
-                origin: origin,
-                size: size,
-                available: count, 
-                qty: qty,
-                status: 'new'
-            }]);
-
-            if (error) throw error;
-
-            alert("Request sent successfully!");
-            
-            document.getElementById('stock_selector').value = '';
-            document.getElementById('inp_description').value = '';
-            document.getElementById('inp_consignment').value = '';
-            document.getElementById('inp_store').value = '';
-            document.getElementById('inp_grower').value = '';
-            document.getElementById('inp_origin').value = '';
-            document.getElementById('inp_size').value = '';
-            document.getElementById('inp_count').value = '';
-            document.getElementById('inp_qty').value = '1';
-            document.getElementById('inp_urgent').checked = false;
-
-            loadActiveRequests();
-
-        } catch (e) {
-            alert("Error sending request: " + e.message);
-        }
-    }
-
-    async function loadActiveRequests() {
-        try {
-            // ИСПРАВЛЕНО: Ищем заказы И по логину (currentUser), И по полному имени (cachedLineFullName), 
-            // чтобы в таблице снизу не пропадали старые запросы линии!
-            const { data: orders, error } = await clientDb
-                .from('orders')
-                .select('*')
-                .or(`line.eq.${currentUser},line.eq.${cachedLineFullName}`)
-                .order('id', { ascending: false });
-
-            if (error) throw error;
-
-            if (!orders || orders.length === 0) {
-                document.getElementById('line_requests_body').innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--text-muted);">No active requests.</td></tr>`;
-                return;
-            }
-
-            const html = orders.map(o => `
-                <tr>
-                    <td>#${o.id}</td>
-                    <td><span style="color:#4a5568; font-weight:500;">⏱ ${formatTime(o.created_at)}</span></td>
-                    <td><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
-                    <td><strong>${o.description || '-'}</strong></td>
-                    <td>${o.grower || '-'}</td>
-                    <td><span style="font-family:monospace; background:#f1f3f5; padding:2px 6px; border-radius:3px; font-weight:600;">${o.consignment || '-'}</span></td>
-                    <td>${o.origin || '-' } / ${o.size || '-'} / ${o.available || '-'}</td>
-                    <td><strong style="font-size:14px; color:#0288d1;">${o.qty || '1'}</strong></td>
-                    <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span style="color:var(--text-muted);">Waiting...</span>'}</td>
-                    <td><span style="color:var(--status-done); font-weight:bold;">${o.delivered_at ? formatTime(o.delivered_at) : '-'}</span></td>
-                    <td><span class="status-badge ${o.status || 'new'}">${o.status || 'new'}</span></td>
-                </tr>
-            `).join('');
-
-            document.getElementById('line_requests_body').innerHTML = html;
-        } catch (e) { console.error(e); }
-    }
-
-    fetchLineFullName();
-    loadStockDropdown();
+    fetchActiveOrders();
+    setInterval(fetchActiveOrders, 5000); // Автообновление каждые 5 секунд
 </script>
 </body>
 </html>
