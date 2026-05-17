@@ -1,200 +1,102 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit — Login</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Вход в систему - Peake Fruit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --bg: #f1f5f9;
-            --card-bg: #ffffff;
-            --text: #0f172a;
-            --accent: #0288d1;
-            --border: #cbd5e1;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
-
-        .login-container {
-            width: 100%;
-            max-width: 360px;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .login-card {
-            background: var(--card-bg);
-            padding: 25px 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e2e8f0;
-        }
-
-        h2 {
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 20px;
-            color: var(--accent);
-            text-align: center;
-            font-weight: 700;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #475569;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            box-sizing: border-box;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 14px;
-            background: #f8fafc;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--accent);
-            background: #fff;
-        }
-
-        .btn-login {
-            width: 100%;
-            padding: 12px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        .btn-login:hover {
-            background: #01579b;
-        }
-
-        .error-message {
-            color: #dc2626;
-            font-size: 13px;
-            font-weight: 600;
-            text-align: center;
-            margin-top: 12px;
-            min-height: 18px;
-            line-height: 1.4;
-        }
+        :root { --p:#d32f2f; --s:#1a1a2e; --bg:#f0f2f5; }
+        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 100%; max-width: 360px; box-sizing: border-box; }
+        h2 { margin-top: 0; color: var(--s); text-align: center; margin-bottom: 20px; }
+        input, button { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; box-sizing: border-box; }
+        button { background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #b71c1c; }
+        .lang-select { text-align: center; margin-bottom: 15px; }
+        .lang-select button { width: auto; display: inline-block; padding: 5px 10px; margin: 0 3px; background: #eee; color: #333; font-size: 12px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-<div class="login-container">
     <div class="login-card">
-        <h2>Peake Fruit Terminal</h2>
-        
-        <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" placeholder="Enter username (e.g. driver1)">
+        <div class="lang-select">
+            <button onclick="changeLang('ru')">RU</button>
+            <button onclick="changeLang('en')">EN</button>
+            <button onclick="changeLang('lt')">LT</button>
         </div>
-
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Enter password">
-        </div>
-
-        <button class="btn-login" onclick="handleLogin()">Sign In</button>
         
-        <div class="error-message" id="error_display"></div>
+        <h2 id="log_title">Авторизация</h2>
+        
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Логин" required autocomplete="username">
+            <input type="password" id="password" placeholder="Пароль" required autocomplete="current-password">
+            <button type="submit" id="btn_enter">ВОЙТИ</button>
+        </form>
     </div>
-</div>
 
 <script>
-    const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
-    const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
-    const k3 = 'LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
-
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
-    const supabaseKey = k1 + k2 + k3;
-    const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+    const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    async function handleLogin() {
-        const userField = document.getElementById('username').value.trim();
-        const passField = document.getElementById('password').value.trim();
-        const errorDisplay = document.getElementById('error_display');
+    const lang = {
+        ru: { title: "Авторизация", u_ph: "Логин", p_ph: "Пароль", btn: "ВОЙТИ", err: "Неверный логин или пароль!" },
+        en: { title: "Login", u_ph: "Username", p_ph: "Password", btn: "LOG IN", err: "Wrong username or password!" },
+        lt: { title: "Prisijungimas", u_ph: "Prisijungimo vardas", p_ph: "Slaptažodis", btn: "PRISIJUNGTI", err: "Neteisingas vardas arba slaptažodis!" }
+    };
 
-        errorDisplay.innerText = ""; 
+    let curL = localStorage.getItem('dash_lang') || 'ru';
 
-        if (!userField || !passField) {
-            errorDisplay.innerText = "Please fill in all fields.";
-            return;
-        }
-
-        try {
-            // Запрос к правильной таблице users_table
-            const { data, error } = await clientDb
-                .from('users_table')
-                .select('*')
-                .eq('u', userField)
-                .single();
-
-            if (error || !data) {
-                errorDisplay.innerText = "User not found!";
-                return;
-            }
-
-            const dbPassword = data.p || data.password;
-            if (String(dbPassword).trim() !== passField) {
-                errorDisplay.innerText = "Incorrect password!";
-                return;
-            }
-
-            // Получаем роль из базы данных (проверяем разные варианты названия колонки)
-            const rawRole = data.role || data.Role || '';
-            const cleanRole = rawRole.toLowerCase().trim();
-
-            // Сохраняем данные в память устройства
-            localStorage.setItem('user', data.u);
-            localStorage.setItem('role', cleanRole);
-            localStorage.setItem('display_name', data.name || data.u);
-
-            // УМНОЕ ПЕРЕНАПРАВЛЕНИЕ:
-            // Если роль содержит слово 'driver' или 'loader' (например, "driver/loader"), отправляем на driver.html
-            if (cleanRole.includes('driver') || cleanRole.includes('loader')) {
-                window.location.href = 'driver.html';
-            } else {
-                // Всех остальных (line, office, admin) отправляем на главную панель
-                window.location.href = 'index.html';
-            }
-
-        } catch (err) {
-            console.error("Login error:", err);
-            errorDisplay.innerText = "Connection error. Please try again.";
-        }
+    function changeLang(l) {
+        curL = l;
+        localStorage.setItem('dash_lang', l);
+        updateUI();
     }
 
-    document.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') { handleLogin(); }
-    });
+    function updateUI() {
+        const t = lang[curL];
+        document.getElementById('log_title').innerText = t.title;
+        document.getElementById('username').placeholder = t.u_ph;
+        document.getElementById('password').placeholder = t.p_ph;
+        document.getElementById('btn_enter').innerText = t.btn;
+    }
+
+    document.getElementById('loginForm').onsubmit = async (e) => {
+        e.preventDefault();
+        
+        const usernameInput = document.getElementById('username').value.trim().toLowerCase();
+        const passwordInput = document.getElementById('password').value.trim();
+
+        try {
+            const { data, error } = await _db
+                .from('users_table')
+                .select('*')
+                .eq('u', usernameInput)
+                .single();
+
+            if (error || !data || data.p !== passwordInput) {
+                alert(lang[curL]?.err || "Error / Ошибка");
+                return;
+            }
+
+            localStorage.setItem('user', data.u);
+            localStorage.setItem('role', data.t);
+            localStorage.setItem('name', data.name || data.u); // Сохраняем красивое имя!
+            localStorage.setItem('dash_lang', curL);
+
+            if (data.t === 'admin') window.location.href = 'superadmin.html';
+            else if (data.t === 'office') window.location.href = 'office.html';
+            else if (data.t === 'driver') window.location.href = 'driver.html';
+            else if (data.t === 'line') window.location.href = 'index.html';
+
+        } catch (err) {
+            console.error(err);
+            alert("Connection error / Ошибка соединения");
+        }
+    };
+
+    updateUI();
 </script>
 </body>
 </html>
