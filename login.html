@@ -37,7 +37,7 @@
             background: var(--card-bg);
             padding: 25px 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
             border: 1px solid #e2e8f0;
         }
 
@@ -70,7 +70,6 @@
             border-radius: 8px;
             font-size: 14px;
             background: #f8fafc;
-            transition: border-color 0.2s;
         }
 
         input:focus {
@@ -90,7 +89,6 @@
             font-weight: 700;
             cursor: pointer;
             margin-top: 10px;
-            box-shadow: 0 2px 4px rgba(2, 136, 209, 0.2);
         }
 
         .btn-login:hover {
@@ -104,6 +102,7 @@
             text-align: center;
             margin-top: 12px;
             min-height: 18px;
+            line-height: 1.4;
         }
     </style>
 </head>
@@ -115,12 +114,12 @@
         
         <div class="form-group">
             <label for="username">Username</label>
-            <input type="text" id="username" placeholder="Enter your username (e.g. hl1)">
+            <input type="text" id="username" placeholder="Enter username (e.g. driver1)">
         </div>
 
         <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Enter your password">
+            <input type="password" id="password" placeholder="Enter password">
         </div>
 
         <button class="btn-login" onclick="handleLogin()">Sign In</button>
@@ -130,7 +129,6 @@
 </div>
 
 <script>
-    // Точно такие же ключи Supabase, как и на остальных страницах
     const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
     const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
     const k3 = 'LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
@@ -139,13 +137,12 @@
     const supabaseKey = k1 + k2 + k3;
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Функция обработки клика войти
     async function handleLogin() {
         const userField = document.getElementById('username').value.trim();
         const passField = document.getElementById('password').value.trim();
         const errorDisplay = document.getElementById('error_display');
 
-        errorDisplay.innerText = ""; // Очищаем старые ошибки
+        errorDisplay.innerText = ""; 
 
         if (!userField || !passField) {
             errorDisplay.innerText = "Please fill in all fields.";
@@ -153,7 +150,7 @@
         }
 
         try {
-            // ИСПРАВЛЕНО: ищем в правильной таблице 'users_table' по колонке 'u'
+            // Запрос к правильной таблице users_table
             const { data, error } = await clientDb
                 .from('users_table')
                 .select('*')
@@ -165,42 +162,38 @@
                 return;
             }
 
-            // Проверяем пароль (учитываем колонку p или password, подставьте вашу)
             const dbPassword = data.p || data.password;
-
             if (String(dbPassword).trim() !== passField) {
                 errorDisplay.innerText = "Incorrect password!";
                 return;
             }
 
-            // Получаем роль и приводим к нижнему регистру (Driver -> driver, Line -> line)
+            // Получаем роль из базы данных (проверяем разные варианты названия колонки)
             const rawRole = data.role || data.Role || '';
             const cleanRole = rawRole.toLowerCase().trim();
 
-            // Сохраняем чистые данные в память устройства
+            // Сохраняем данные в память устройства
             localStorage.setItem('user', data.u);
             localStorage.setItem('role', cleanRole);
             localStorage.setItem('display_name', data.name || data.u);
 
-            // Перенаправляем в зависимости от роли
-            if (cleanRole === 'driver') {
+            // УМНОЕ ПЕРЕНАПРАВЛЕНИЕ:
+            // Если роль содержит слово 'driver' или 'loader' (например, "driver/loader"), отправляем на driver.html
+            if (cleanRole.includes('driver') || cleanRole.includes('loader')) {
                 window.location.href = 'driver.html';
             } else {
-                // Если роль line, office или любая другая — отправляем на главную
+                // Всех остальных (line, office, admin) отправляем на главную панель
                 window.location.href = 'index.html';
             }
 
         } catch (err) {
-            console.error("Login process error:", err);
+            console.error("Login error:", err);
             errorDisplay.innerText = "Connection error. Please try again.";
         }
     }
 
-    // Позволяет отправлять форму нажатием клавиши Enter
     document.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            handleLogin();
-        }
+        if (e.key === 'Enter') { handleLogin(); }
     });
 </script>
 </body>
