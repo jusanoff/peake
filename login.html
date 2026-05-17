@@ -65,37 +65,47 @@
     document.getElementById('loginForm').onsubmit = async (e) => {
         e.preventDefault();
         
-        const usernameInput = document.getElementById('username').value.trim().toLowerCase();
+        const usernameInput = document.getElementById('username').value.trim();
         const passwordInput = document.getElementById('password').value.trim();
 
         try {
-    const { data, error } = await _db
-        .from('users_table')
-        .select('*')
-        .eq('u', usernameInput)
-        .single();
+            const { data, error } = await _db
+                .from('users_table')
+                .select('*')
+                .eq('u', usernameInput)
+                .single();
 
-    if (error || !data) { return; }
+            if (error || !data || String(data.p).trim() !== passwordInput) {
+                alert(lang[curL]?.err || "Неверный логин или пароль!");
+                return;
+            }
 
-    // ОБЯЗАТЕЛЬНО: Создаем переменную userRole из колонки 't'
-    const userRole = String(data.t || '').toLowerCase().trim();
+            // 1. ВОТ ЭТА СТРОЧКА ОБЯЗАТЕЛЬНО ДОЛЖНА БЫТЬ ТУТ:
+            const userRole = String(data.t || '').toLowerCase().trim();
 
-    // Теперь браузер знает, что такое userRole, и ошибки не будет:
-    if (userRole === 'admin') {
-        window.location.href = 'superadmin.html';
-    } else if (userRole === 'office') {
-        window.location.href = 'office.html';
-    } else if (userRole === 'driver') {
-        window.location.href = 'driver.html';
-    } else {
-        window.location.href = 'index.html';
-    }
+            localStorage.setItem('user', data.u);
+            localStorage.setItem('role', userRole); 
+            localStorage.setItem('name', data.name || data.u); 
+            localStorage.setItem('dash_lang', curL);
 
-} catch (err) {
-    console.error(err);
-}
+            // 2. Все проверки ролей должны быть ВНУТРИ блока try:
+            if (userRole === 'admin') {
+                window.location.href = 'superadmin.html';
+            } else if (userRole === 'office') {
+                window.location.href = 'office.html';
+            } else if (userRole === 'driver') {
+                window.location.href = 'driver.html';
+            } else {
+                // Если это линия (line) или любой другой аккаунт — пускаем на главную панель
+                window.location.href = 'index.html';
+            }
+
+        } catch (err) {
+            // Теперь сюда код попадет только если реально упал интернет
+            console.error("Критическая ошибка:", err);
+            alert("Connection error / Ошибка соединения");
+        }
     };
-
     updateUI();
 </script>
 </body>
