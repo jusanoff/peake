@@ -2,376 +2,70 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit - Driver / Loader Panel</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peake Fruit — Driver Terminal (Adaptive OCR)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
     <style>
-        :root { 
-            --bg: #f4f6f9; 
-            --card-bg: #ffffff; 
-            --text: #1a1a2e; 
-            --text-muted: #6c757d;
+        :root {
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --text-muted: #64748b;
             --accent: #0288d1;
-            --urgent: #d32f2f;
-            --urgent-bg: #fff5f5;
-            --process: #f59e0b; 
-            --process-bg: #fef8e7;
-            --done: #2e7d32; 
+            --border: #cbd5e1;
+            --status-done: #16a34a;
         }
-        body {
-            font-family: 'Segoe UI', Roboto, sans-serif; 
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
             background: var(--bg); 
             color: var(--text); 
             margin: 0; 
-            padding: 10px;
+            padding: 8px;
+            -webkit-text-size-adjust: 100%;
         }
-        .container {
-            max-width: 100%; 
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--card-bg);
-            padding: 12px 16px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .header h1 { margin: 0; font-size: 18px; color: var(--accent); }
-        .header-right { display: flex; align-items: center; gap: 10px; }
-        .user-badge { font-weight: bold; color: #01579b; background: #e3f2fd; padding: 6px 12px; border-radius: 6px; font-size: 13px; }
-        
-        .logout-btn {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid #cbd5e0;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-        }
-        .logout-btn:hover { background: #edf2f7; }
 
-        .main-card {
-            background: var(--card-bg);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        }
-        .main-card h2 { 
-            margin-top: 0; 
-            font-size: 16px; 
-            color: var(--text); 
-            margin-bottom: 12px; 
+        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+        
+        /* Адаптивная шапка */
+        .header { 
             display: flex; 
-            align-items: center; 
-            gap: 8px;
-        }
-        
-        .pulse-dot {
-            width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
-            animation: blink 1.2s infinite;
-        }
-        @keyframes blink { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
-
-        /* Оболочка для адаптивности списка */
-        .orders-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        /* Карточка заказа (включается автоматически на смартфонах) */
-        .order-item-card {
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 14px;
-            display: flex;
             flex-direction: column;
             gap: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            background: var(--card-bg); 
+            padding: 12px; 
+            border-radius: 8px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
         }
+        .header-title h1 { margin: 0; font-size: 18px; color: var(--accent); font-weight: 700; text-align: center; }
+        .header-right { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; }
         
-        /* Цветовые схемы состояний */
-        .order-item-card.urgent-card { border-left: 6px solid var(--urgent); background: var(--urgent-bg); }
-        .order-item-card.process-card { border-left: 6px solid var(--process); background: var(--process-bg); }
-        .order-item-card.new-card { border-left: 6px solid var(--accent); }
+        .driver-badge { background: #e0f2fe; color: #0369a1; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 13px; flex-grow: 1; text-align: center; }
+        .btn-logout { background: #f1f5f9; color: #e11d48; border: 1px solid #ffe4e6; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
 
-        /* Строки с данными внутри мобильной карточки */
-        .card-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #edf2f7; padding-bottom: 6px; }
-        .card-row:last-of-type { border-bottom: none; padding-bottom: 0; }
+        /* Карточка панели управления */
+        .dashboard-card { background: var(--card-bg); padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #edf2f7; }
+        .dashboard-card h3 { margin-top: 0; margin-bottom: 10px; font-size: 15px; color: #334155; }
+
+        /* Горизонтальный скролл таблицы на мелких экранах */
+        .table-responsive { overflow-x: auto; margin-top: 5px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; }
+        table { width: 100%; border-collapse: collapse; min-width: 850px; }
+        th { background: #f8fafc; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 14px 10px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+
+        /* Полностью адаптивное окно OCR сканера */
+        #scanner-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box;
+        }
+        .scanner-container { width: 100%; max-width: 440px; background: #fff; border-radius: 12px; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); }
+        .scanner-container h3 { margin: 0; text-align: center; color: #1e293b; font-size: 15px; line-height: 1.4; }
         
-        .card-label { font-size: 12px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
-        .card-value { font-size: 14px; font-weight: 500; }
-
-        /* Важные крупные акценты для водителя */
-        .store-highlight { color: #6b46c1; font-weight: 800; font-size: 18px; background: #f3e8ff; padding: 2px 8px; border-radius: 4px; }
-        .line-highlight { color: #0288d1; font-weight: bold; font-size: 15px; }
-        .qty-highlight { font-size: 20px; color: #000; font-weight: 900; background: #e6fffa; border: 1px solid #b2f5ea; padding: 2px 10px; border-radius: 4px; }
-        code { background: #edf2f7; padding: 2px 6px; border-radius: 4px; color: #b83280; font-family: monospace; font-size: 14px; font-weight: bold; }
-
-        /* Крупные, жирные мобильные кнопки под пальцы */
-        .action-btn {
-            display: block;
-            width: 100%;
-            padding: 14px 10px;
-            font-weight: bold;
-            font-size: 15px;
-            text-align: center;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            color: white;
-            box-sizing: border-box;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .btn-take { background: var(--accent); }
-        .btn-complete { background: var(--done); }
+        /* Контейнер видео с рамкой прицела */
+        .video-wrapper { position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: #000; aspect-ratio: 4/3; }
+        video { width: 100%; height: 100%; object-fit: cover; }
         
-        .status-tag {
-            padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase;
-        }
-        .status-tag.new { background: #e3f2fd; color: #0288d1; }
-        .status-tag.process { background: #fff3e0; color: #f59e0b; }
-
-        /* На планшетах и ПК разворачиваем карточки обратно в красивую компактную таблицу */
-        @media (min-width: 768px) {
-            body { padding: 20px; }
-            .container { gap: 15px; }
-            .header h1 { font-size: 22px; }
-            .main-card { padding: 20px; }
-            
-            .orders-list { display: table; width: 100%; border-collapse: collapse; }
-            .order-item-card { display: table-row; background: transparent !important; box-shadow: none; border: none; }
-            .order-item-card Severities { border-left: none; }
-            
-            /* Создаем псевдо-заголовок таблицы на больших экранах */
-            .orders-list::before {
-                content: "ID\a0\a0\a0\a0\a0\a0LINE (Куда)\a0\a0\a0\a0\a0\a0STORE (Где взять)\a0\a0\a0\a0\a0\a0FRUIT / DESC\a0\a0\a0\a0\a0\a0GROWER\a0\a0\a0\a0\a0\a0CONSIGNMENT\a0\a0\a0\a0\a0\a0DETAILS (O/S/C)\a0\a0\a0\a0\a0\a0QTY\a0\a0\a0\a0\a0\a0STATUS\a0\a0\a0\a0\a0\a0ACTION";
-                display: none; /* Для чистой структуры используем классический table-layout ниже */
-            }
-
-            /* Переключаем элементы карточки в ячейки таблицы */
-            .card-row { display: table-cell; vertical-align: middle; padding: 12px 10px; border-bottom: 1px solid #edf2f7; }
-            .card-label { display: none; } /* Прячем мобильные подписи */
-            .card-value { font-size: 14px; }
-            
-            /* Индивидуальные стили строк для ПК/планшетов */
-            .order-item-card.urgent-card { background-color: var(--urgent-bg) !important; }
-            .order-item-card.process-card { background-color: var(--process-bg) !important; }
-            .order-item-card:hover { background-color: #f7fafc !important; }
-
-            .action-btn { padding: 8px 10px; font-size: 13px; }
-            .desktop-header { display: table-header-group !important; }
-        }
+        .status-text { font-size: 13px; font-weight: 700; text-align: center; color: #b45309; min-height: 38px; line-height: 1.4; padding: 4px; background: #fef3c7; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
         
-        .desktop-header { display: none; background: #f7fafc; }
-        .desktop-header th { color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #edf2f7; }
-    </style>
-</head>
-<body>
-
-<script>
-    const currentUser = localStorage.getItem('user');
-    const currentRole = localStorage.getItem('role');
-    const displayName = localStorage.getItem('name') || currentUser;
-
-    if (!currentUser || currentRole !== 'driver') {
-        alert("Access denied! Only drivers/loaders are allowed here.");
-        localStorage.clear();
-        window.location.href = 'login.html';
-    }
-</script>
-
-<div class="container">
-    <div class="header">
-        <div>
-            <h1>Peake Fruit — Driver Panel</h1>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Live Adaptive Delivery Feed</div>
-        </div>
-        <div class="header-right">
-            <div class="user-badge" id="lbl_driver_top">Driver: -</div>
-            <button class="logout-btn" onclick="logout()">Log Out</button>
-        </div>
-    </div>
-
-    <div class="main-card">
-        <h2>
-            <div class="pulse-dot"></div>
-            Active Delivery Tasks
-        </h2>
-        
-        <div class="orders-list" id="driver_orders_container">
-            <div class="desktop-header" id="table_header">
-                <div style="display: table-row;">
-                    <th style="padding-left:15px;">ID</th>
-                    <th>Line</th>
-                    <th>Store / Location</th>
-                    <th>Fruit Description</th>
-                    <th>Grower</th>
-                    <th>Consignment</th>
-                    <th>Specs (O/S/C)</th>
-                    <th style="text-align: center;">Qty</th>
-                    <th>Status</th>
-                    <th style="text-align: center; width: 150px;">Action</th>
-                </div>
-            </div>
-            
-            <div id="cards_body" style="display: contents;">
-                <div style="text-align: center; color: var(--text-muted); padding: 30px; display: block; width: 100%;">
-                    Loading active warehouse tasks...
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
-    const _db = supabase.createClient(supabaseUrl, supabaseKey);
-
-    document.getElementById('lbl_driver_top').innerText = "Driver: " + displayName;
-
-    async function fetchActiveOrders() {
-        try {
-            const { data: orders, error } = await _db
-                .from('orders')
-                .select('*')
-                .in('status', ['new', 'New', 'process', 'Process'])
-                .order('urgent', { ascending: false }) 
-                .order('id', { ascending: true });
-
-            if (error) throw error;
-
-            const cardsBody = document.getElementById('cards_body');
-            if (!orders || orders.length === 0) {
-                cardsBody.innerHTML = `
-                <div style="text-align: center; color: var(--done); font-weight: bold; padding: 40px; font-size: 15px; display: block; width: 100%;">
-                    🎉 All tasks completed! No active orders right now.
-                </div>`;
-                return;
-            }
-
-            const html = orders.map(o => {
-                const isUrgent = o.urgent === true || o.urgent === 'true';
-                const statusClean = (o.status || 'new').toLowerCase();
-                
-                let stateClass = 'new-card';
-                if (isUrgent) {
-                    stateClass = 'urgent-card';
-                } else if (statusClean === 'process') {
-                    stateClass = 'process-card';
-                }
-
-                let actionButtonHtml = '';
-                if (statusClean === 'new') {
-                    actionButtonHtml = `<button class="action-btn btn-take" onclick="changeOrderStatus(${o.id}, 'process')">🚚 Take Order</button>`;
-                } else if (statusClean === 'process') {
-                    if (!o.driver_name || o.driver_name === displayName) {
-                        actionButtonHtml = `<button class="action-btn btn-complete" onclick="changeOrderStatus(${o.id}, 'delivered')">✅ Complete</button>`;
-                    } else {
-                        actionButtonHtml = `<span style="font-size:12px; color:var(--text-muted); font-weight:bold;">Taken by ${o.driver_name}</span>`;
-                    }
-                }
-
-                const consignmentVal = o.cons || o.consignment || '—';
-                const originVal = o.origin || '—';
-                const sizeVal = o.size || '—';
-                const countVal = o.count || '—';
-
-                // Генерируем универсальную структуру. На смартфонах она сожмется в карточку, на планшетах развернется в ряд таблицы.
-                return `
-                <div class="order-item-card ${stateClass}">
-                    <div class="card-row" style="padding-left: 10px;">
-                        <span class="card-label">ID</span>
-                        <span class="card-value" style="color:var(--text-muted);">#${o.id}</span>
-                    </div>
-                    <div class="card-row">
-                        <span class="card-label">Line</span>
-                        <span class="card-value class="line-highlight"">${o.line || '—'}</span>
-                    </div>
-                    <div class="card-row">
-                        <span class="card-label">Store / Location</span>
-                        <span class="card-value"><span class="store-highlight">${o.store || '—'}</span></span>
-                    </div>
-                    <div class="card-row">
-                        <span class="card-label">Fruit</span>
-                        <span class="card-value"><strong>${isUrgent ? '⚠️ URGENT: ' : ''}${o.description || '—'}</strong></span>
-                    </div>
-                    <div class="card-row">
-                        <span class="card-label">Grower</span>
-                        <span class="card-value">${o.grower || '—'}</span>
-                    </div>
-                    <div class="card-row">
-                        <span class="card-label">Consignment</span>
-                        <span class="card-value"><code>${consignmentVal}</code></span>
-                    </div>
-                    <div class="card-row">
-                        <span class="card-label">Specs (O/S/C)</span>
-                        <span class="card-value">${originVal} / ${sizeVal} / ${countVal}</span>
-                    </div>
-                    <div class="card-row" style="text-align: center;">
-                        <span class="card-label">Qty</span>
-                        <span class="card-value"><span class="qty-highlight">${o.qty || '0'}</span></span>
-                    </div>
-                    <div class="card-row">
-                        <span class="card-label">Status</span>
-                        <span class="card-value"><span class="status-tag ${statusClean}">${statusClean}</span></span>
-                    </div>
-                    <div class="card-row" style="text-align: center; border-bottom: none;">
-                        <span class="card-label">Manage</span>
-                        <span class="card-value" style="display: block; width: 100%;">${actionButtonHtml}</span>
-                    </div>
-                </div>`;
-            }).join('');
-
-            cardsBody.innerHTML = html;
-
-        } catch (e) {
-            console.error(e);
-            document.getElementById('cards_body').innerHTML = `
-            <div style="text-align: center; color: var(--urgent); padding: 20px; display: block;">
-                Error pulling data from database.
-            </div>`;
-        }
-    }
-
-    async function changeOrderStatus(orderId, newStatus) {
-        try {
-            const updateData = { status: newStatus };
-            if (newStatus === 'process') {
-                updateData.driver_name = displayName;
-            }
-
-            const { error } = await _db
-                .from('orders')
-                .update(updateData)
-                .eq('id', orderId);
-
-            if (error) throw error;
-            fetchActiveOrders();
-        } catch (e) {
-            alert("Error: " + e.message);
-        }
-    }
-
-    function logout() {
-        localStorage.clear();
-        window.location.href = 'login.html';
-    }
-
-    fetchActiveOrders();
-    setInterval(fetchActiveOrders, 5000); // Автообновление каждые 5 секунд
-</script>
-</body>
-</html>
+        /* Круп
