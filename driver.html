@@ -5,7 +5,6 @@
     <title>Peake Fruit — Driver Terminal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         :root {
             --bg: #f8fafc;
@@ -51,18 +50,10 @@
 
         .btn-action { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; color: white; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; min-height: 34px; }
         .btn-accept { background: #0288d1; width: 100%; }
-        .btn-scan { background: #16a34a; width: 100%; }
-        .btn-close-scanner { background: #dc2626; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; width: 100%; }
+        .btn-complete { background: #16a34a; width: 100%; }
 
         .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
         .status-badge.new { background: #fef3c7; color: #d97706; }
-
-        #scanner-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.95); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box;
-        }
-        .scanner-container { width: 100%; max-width: 440px; background: #fff; border-radius: 12px; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; }
-        #reader { width: 100%; border-radius: 8px; overflow: hidden; background: #000; }
 
         @media (min-width: 768px) {
             body { padding: 15px; }
@@ -112,28 +103,18 @@
     </div>
 </div>
 
-<div id="scanner-modal">
-    <div class="scanner-container">
-        <h3 id="scan-target-info" style="margin:0; text-align:center; color:#1e293b;">Scan Barcode</h3>
-        <div id="reader"></div>
-        <button class="btn-close-scanner" onclick="stopScanner()">❌ CANCEL SCANNING</button>
-    </div>
-</div>
-
 <script>
     const currentUser = localStorage.getItem('user');
     let currentRole = localStorage.getItem('role') || '';
 
     currentRole = currentRole.toLowerCase().trim();
 
-    // Проверка роли driver
+    // Проверка прав доступа водителя
     if (!currentUser || currentRole !== 'driver') {
         alert("Access denied! Only drivers are allowed here.");
         localStorage.clear();
         window.location.href = 'login.html';
     }
-
-    document.getElementById('driver_name_display').innerText = 'Driver: ' + currentUser;
 
     const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
     const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
@@ -144,9 +125,6 @@
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
     let cachedDriverFullName = localStorage.getItem('name') || currentUser;
-    let currentScanningOrder = null;
-    let html5QrcodeScanner = null;
-
     document.getElementById('driver_name_display').innerText = 'Driver: ' + cachedDriverFullName;
 
     function formatTime(isoString) {
@@ -175,8 +153,8 @@
                 if (o.status === 'new') {
                     actionBtn = `<button class="btn-action btn-accept" onclick="acceptOrder(${o.id})">✅ Accept</button>`;
                 } else if (o.status === 'accepted' && o.driver_name === cachedDriverFullName) {
-                    const stringified = JSON.stringify(o).replace(/"/g, '&quot;');
-                    actionBtn = `<button class="btn-action btn-scan" onclick="startScanner(${stringified})">📷 Scan & Verify</button>`;
+                    // Теперь здесь простая кнопка завершения заказа без вызова сканера
+                    actionBtn = `<button class="btn-action btn-complete" onclick="completeOrder(${o.id})">📦 Complete Order</button>`;
                 } else if (o.status === 'accepted') {
                     actionBtn = `<span style="color:var(--text-muted); font-size:11px;">Locked</span>`;
                 }
@@ -204,74 +182,41 @@
 
     async function acceptOrder(orderId) {
         try {
-            const { error } = await clientDb.from('orders').update({ status: 'accepted', driver_name: cachedDriverFullName }).eq('id', orderId);
+            const { error } = await clientDb
+                .from('orders')
+                .update({ status: 'accepted', driver_name: cachedDriverFullName })
+                .eq('id', orderId);
+                
             if (error) throw error;
             loadAllOrders();
         } catch (e) { alert(e.message); }
     }
 
-    function startScanner(orderObj) {
-        currentScanningOrder = orderObj;
-        document.getElementById('scanner-modal').style.display = 'flex';
-        document.getElementById('scan-target-info').innerHTML = `Order #${orderObj.id}<br><span style="color:#0288d1">Target Consignment: ${orderObj.consignment}</span>`;
-
-        html5QrcodeScanner = new Html5Qrcode("reader");
-        html5QrcodeScanner.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 260, height: 160 } },
-            onScanSuccess,
-            onScanFailure
-        ).catch(err => {
-            alert("Camera error: " + err);
-            stopScanner();
-        });
-    }
-
-    function stopScanner() {
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.stop().then(() => {
-                document.getElementById('scanner-modal').style.display = 'none';
-                currentScanningOrder = null;
-            }).catch(err => console.error(err));
-        } else {
-            document.getElementById('scanner-modal').style.display = 'none';
-        }
-    }
-
-    async function onScanSuccess(decodedText) {
-        const scannedConsignment = decodedText.trim();
-        const expectedConsignment = String(currentScanningOrder.consignment).trim();
-
-        if (html5QrcodeScanner) {
-            await html5QrcodeScanner.stop();
-        }
-
-        if (scannedConsignment !== expectedConsignment) {
-            alert(`🛑 WRONG PALLET!\nScanned: ${scannedConsignment}\nExpected: ${expectedConsignment}\n\nDo not pick up this pallet!`);
-            document.getElementById('scanner-modal').style.display = 'none';
-            loadAllOrders();
+    // Новая функция мгновенного закрытия заказа без сканирования
+    async function completeOrder(orderId) {
+        if (!confirm(`Вы действительно доставили паллет по заказу #${orderId}?`)) {
             return;
         }
 
         try {
             const { error } = await clientDb
                 .from('orders')
-                .update({ status: 'delivered', delivered_at: new Date().toISOString() })
-                .eq('id', currentScanningOrder.id);
+                .update({ 
+                    status: 'delivered', 
+                    delivered_at: new Date().toISOString() 
+                })
+                .eq('id', orderId);
 
             if (error) throw error;
-
-            alert(`✅ VERIFIED SUCCESSFULLY!\n\nOrder #${currentScanningOrder.id}\nVariety: ${currentScanningOrder.description}\nSize: ${currentScanningOrder.size}\nDelivered to production line.`);
+            
+            alert(`✅ Заказ #${orderId} успешно доставлен на линию!`);
+            loadAllOrders();
         } catch (e) {
             alert("Error updating order: " + e.message);
         }
-
-        document.getElementById('scanner-modal').style.display = 'none';
-        loadAllOrders();
     }
 
-    function onScanFailure(error) {}
-
+    // Первоначальная загрузка
     loadAllOrders();
 </script>
 </body>
