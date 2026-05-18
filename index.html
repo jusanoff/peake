@@ -178,9 +178,10 @@
         th { background: #f8f9fa; color: var(--text-muted); padding: 10px; text-align: left; font-size: 12px; border-bottom: 2px solid var(--border); }
         td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #edf2f7; }
 
-        .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
         .status-badge.new { background: #e0f2fe; color: #0369a1; }
-        .status-badge.delivered { background: #e2f0d9; color: #385723; }
+        .status-badge.process, .status-badge.accepted { background: #fff3e0; color: #e65100; }
+        .status-badge.delivered, .status-badge.done { background: #e2f0d9; color: #385723; }
 
         @media (min-width: 768px) {
             body { padding: 20px; }
@@ -294,7 +295,6 @@
         window.location.href = 'login.html';
     }
 
-    // Сразу же при старте жестко прописываем логин в шапку, чтобы не висело "Loading..."
     document.getElementById('line_name_display').innerText = 'Line: ' + currentUser;
 
     const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
@@ -306,7 +306,7 @@
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
     let stockItemsGlobal = [];
-    let cachedLineFullName = currentUser; // По умолчанию равен логину, если имя вдруг не найдется
+    let cachedLineFullName = currentUser; 
 
     function formatTime(isoString) {
         if (!isoString) return '-';
@@ -316,40 +316,66 @@
     }
 
     async function fetchLineFullName() {
-    try {
-        // ИСПРАВЛЕНО: Заменили 'user_table' на точное имя 'users_table' из Supabase
-        const { data, error } = await clientDb
-            .from('users_table')
-            .select('*')
-            .eq('u', currentUser);
+        try {
+            const { data, error } = await clientDb
+                .from('users_table')
+                .select('*')
+                .eq('u', currentUser);
 
-        if (error) {
-            console.error("Ошибка Supabase:", error.message);
-            return;
-        }
+            if (error) {
+                console.error("Ошибка Supabase:", error.message);
+                return;
+            }
 
-        if (data && data.length > 0) {
-            const userRow = data[0];
-            // Берем красивое имя из колонки 'name'
-            const realName = userRow.name;
+            if (data && data.length > 0) {
+                const userRow = data[0];
+                const realName = userRow.name;
 
-            if (realName) {
-                cachedLineFullName = realName; 
-                
-                // Находим плашку и принудительно меняем текст hl1 -> Hand Line1 или Nob -> Nobac
-                const badge = document.getElementById('line_name_display');
-                if (badge) {
-                    badge.innerText = 'Line: ' + realName;
+                if (realName) {
+                    cachedLineFullName = realName; 
+                    
+                    const badge = document.getElementById('line_name_display');
+                    if (badge) {
+                        badge.innerText = 'Line: ' + realName;
+                    }
                 }
             }
+        } catch (err) {
+            console.error("Критическая ошибка в функции fetchLineFullName:", err);
         }
-    } catch (err) {
-        console.error("Критическая ошибка в функции fetchLineFullName:", err);
+        
+        loadActiveRequests();
     }
-    
-    // Запускаем историю активных заказов
-    loadActiveRequests();
-}
+
+    // ДОБАВЛЕНА НЕДОСТАЮЩАЯ ФУНКЦИЯ ДЛЯ ЗАГРУЗКИ ТОВАРОВ ИЗ ТАБЛИЦЫ ОСТАТКОВ
+    async function loadStockDropdown() {
+        try {
+            const { data: stock, error } = await clientDb
+                .from('stock') // Использует вашу таблицу остатков
+                .select('*')
+                .gt('count', 0); // Показываем только поддоны, которые физически есть на складе
+
+            if (error) throw error;
+
+            if (stock) {
+                stockItemsGlobal = stock;
+                const selector = document.getElementById('stock_selector');
+                
+                const optionsHtml = stock.map(item => {
+                    const desc = item.description || 'Unknown Fruit';
+                    const cons = item.consignment || item.Consignment || 'No Cons';
+                    const size = item.size || 'No Size';
+                    const store = item.store || '?';
+                    return `<option value="${item.id}">📦 Store ${store} | ${desc} (Cons: ${cons}, Size: ${size})</option>`;
+                }).join('');
+
+                selector.innerHTML = '<option value="">-- Choose fruit pallet (Auto-fills fields below) --</option>' + optionsHtml;
+            }
+        } catch (e) {
+            console.error("Error loading stock dropdown:", e.message);
+        }
+    }
+
     function handleStockSelect() {
         const selId = document.getElementById('stock_selector').value;
         if (!selId) return;
@@ -358,7 +384,7 @@
         if (!match) return;
 
         document.getElementById('inp_description').value = match.description || '';
-        document.getElementById('inp_consignment').value = match.consignment || '';
+        document.getElementById('inp_consignment').value = match.consignment || match.Consignment || '';
         document.getElementById('inp_store').value = match.store || '';
         document.getElementById('inp_grower').value = match.grower || '';
         document.getElementById('inp_origin').value = match.origin || '';
@@ -377,8 +403,13 @@
         const qty = parseInt(document.getElementById('inp_qty').value) || 1;
         const isUrgent = document.getElementById('inp_urgent').checked;
 
+        if (!desc || !cons) {
+            alert("Please fill in Description and Consignment fields!");
+            return;
+        }
+
         try {
-            // Отправляем в базу полное красивое имя линии
+            // ИСПРАВЛЕНО: Теперь передаем истинное булево значение в поле 'urgent', чтобы ТВ-борд запускал мигание
             const { error } = await clientDb.from('orders').insert([{
                 line: cachedLineFullName, 
                 description: isUrgent ? '⚠️ ' + desc : desc,
@@ -389,7 +420,8 @@
                 size: size,
                 available: count, 
                 qty: qty,
-                status: 'new'
+                status: 'new',
+                urgent: isUrgent // Запись признака срочности напрямую в базу данных
             }]);
 
             if (error) throw error;
@@ -416,12 +448,10 @@
 
     async function loadActiveRequests() {
         try {
-            // ИСПРАВЛЕНО: Ищем заказы И по логину (currentUser), И по полному имени (cachedLineFullName), 
-            // чтобы в таблице снизу не пропадали старые запросы линии!
             const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
-                .or(`line.eq.${currentUser},line.eq.${cachedLineFullName}`)
+                .or(`line.eq."${currentUser}",line.eq."${cachedLineFullName}"`)
                 .order('id', { ascending: false });
 
             if (error) throw error;
@@ -431,28 +461,38 @@
                 return;
             }
 
-            const html = orders.map(o => `
+            const html = orders.map(o => {
+                const specOrigin = o.origin || '-';
+                const specSize = o.size || '-';
+                const specAvail = o.available || '-';
+                const statusLwr = (o.status || 'new').toLowerCase();
+
+                return `
                 <tr>
                     <td>#${o.id}</td>
                     <td><span style="color:#4a5568; font-weight:500;">⏱ ${formatTime(o.created_at)}</span></td>
                     <td><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
                     <td><strong>${o.description || '-'}</strong></td>
                     <td>${o.grower || '-'}</td>
-                    <td><span style="font-family:monospace; background:#f1f3f5; padding:2px 6px; border-radius:3px; font-weight:600;">${o.consignment || '-'}</span></td>
-                    <td>${o.origin || '-' } / ${o.size || '-'} / ${o.available || '-'}</td>
+                    <td><span style="font-family:monospace; background:#f1f3f5; padding:2px 6px; border-radius:3px; font-weight:600;">${o.consignment || o.Consignment || '-'}</span></td>
+                    <td>${specOrigin} / ${specSize} / ${specAvail}</td>
                     <td><strong style="font-size:14px; color:#0288d1;">${o.qty || '1'}</strong></td>
                     <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span style="color:var(--text-muted);">Waiting...</span>'}</td>
                     <td><span style="color:var(--status-done); font-weight:bold;">${o.delivered_at ? formatTime(o.delivered_at) : '-'}</span></td>
-                    <td><span class="status-badge ${o.status || 'new'}">${o.status || 'new'}</span></td>
+                    <td><span class="status-badge ${statusLwr}">${o.status || 'new'}</span></td>
                 </tr>
-            `).join('');
+            `}).join('');
 
             document.getElementById('line_requests_body').innerHTML = html;
         } catch (e) { console.error(e); }
     }
 
+    // Запуск процессов
     fetchLineFullName();
     loadStockDropdown();
+
+    // Автообновление таблицы активных заказов каждые 5 секунд
+    setInterval(loadActiveRequests, 5000);
 </script>
 </body>
 </html>
