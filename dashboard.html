@@ -100,6 +100,7 @@
         .grower-text { color: #2d3748; }
         .store-text { color: #6b46c1; font-weight: bold; }
         .qty-text { color: #b7791f; font-weight: bold; }
+        .size-text { color: #2d3748; font-weight: bold; }
         
         code {
             background: #edf2f7;
@@ -134,7 +135,7 @@
             width: 95px;
         }
         .status-badge.new { background: #fff3e0; color: #e65100; border: 1px solid var(--new); }
-        .status-badge.process { background: #e3f2fd; color: #0d47a1; border: 1px solid var(--process); }
+        .status-badge.process, .status-badge.accepted { background: #e3f2fd; color: #0d47a1; border: 1px solid var(--process); }
         .status-badge.delivered, .status-badge.done { background: #e8f5e9; color: #1b5e20; border: 1px solid var(--done); }
     </style>
 </head>
@@ -152,19 +153,19 @@
         <thead>
             <tr>
                 <th style="width: 5%">ID</th>
-                <th style="width: 12%">Ordered By</th>
-                <th style="width: 11%">Time</th>
-                <th style="width: 18%">Description</th>
-                <th style="width: 13%">Grower</th>
+                <th style="width: 10%">Ordered By</th>
+                <th style="width: 10%">Time</th>
+                <th style="width: 16%">Description</th>
+                <th style="width: 12%">Grower</th>
                 <th style="width: 11%">Consignment</th>
-                <th style="width: 8%">Store</th>
-                <th style="width: 7%">Qty</th>
+                <th style="width: 8%">Size</th> <th style="width: 8%">Store</th>
+                <th style="width: 5%">Qty</th>
                 <th style="width: 10%">Taken By</th>
                 <th style="width: 5%; text-align: center;">Status</th>
             </tr>
         </thead>
         <tbody id="tv_orders_body">
-            </tbody>
+        </tbody>
     </table>
 
 <script>
@@ -172,23 +173,22 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Объект для связи системного логина (driver2) и реального имени (John Doe)
     let driverNamesMap = {};
 
-    // Функция предварительной загрузки реальных имен водителей
     async function loadDriversMap() {
         try {
             const { data: users, error } = await _db
                 .from('users_table')
-                .select('user, name')
+                .select('u, name') // Исправлено на правильную колонку 'u' вместо 'user'
                 .eq('t', 'driver');
             
             if (error) throw error;
 
             if (users) {
+                driverNamesMap = {};
                 users.forEach(u => {
-                    if (u.user && u.name) {
-                        driverNamesMap[u.user.toLowerCase().trim()] = u.name;
+                    if (u.u && u.name) {
+                        driverNamesMap[u.u.toLowerCase().trim()] = u.name;
                     }
                 });
             }
@@ -208,24 +208,24 @@
 
             const now = new Date();
 
-            // Auto-hide delivered/done orders after 1 minute
+            // Авто-скрытие завершенных заказов через 1 минуту
             const activeOrders = orders.filter(o => {
                 const status = (o.status || 'new').toLowerCase();
                 if (status === 'delivered' || status === 'done') {
-                    const createdTime = new Date(o.created_at);
-                    if (now - createdTime > 60000) {
+                    const deliveredTime = new Date(o.delivered_at || o.created_at);
+                    if (now - deliveredTime > 60000) {
                         return false; 
                     }
                 }
                 return true;
             });
 
-            // Sorting: Urgent orders pinned to the top -> process -> new -> delivered
+            // Сортировка: Срочные -> В процессе -> Новые -> Выполненные
             const sortedOrders = activeOrders.sort((a, b) => {
                 if (a.urgent && !b.urgent) return -1;
                 if (!a.urgent && b.urgent) return 1;
 
-                const weights = { 'process': 1, 'new': 2, 'delivered': 3, 'done': 3 };
+                const weights = { 'process': 1, 'accepted': 1, 'new': 2, 'delivered': 3, 'done': 3 };
                 return (weights[(a.status || 'new').toLowerCase()] || 2) - (weights[(b.status || 'new').toLowerCase()] || 2);
             });
 
@@ -236,7 +236,6 @@
                     timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
                 }
 
-                // Ищем реальное имя по системному логину водителя
                 let rawDriver = (o.driver_name || '').toLowerCase().trim();
                 let realDriverName = driverNamesMap[rawDriver] || o.driver_name;
 
@@ -250,9 +249,10 @@
                 const rowClass = isUrgent ? 'class="urgent-row"' : '';
                 const urgentPrefix = isUrgent ? '<span class="urgent-label">⚠️ URGENT:</span> ' : '';
 
-                // ЗАЩИТА ОТ РЕГИСТРА КОЛОНОК (Проверяем и маленькую, и большую букву из базы данных)
+                // Защита регистра данных из базы данных
                 const consignmentVal = o.consignment || o.Consignment || '-';
                 const quantityVal = o.quantity || o.Quantity || o.qty || o.Qty || '-';
+                const sizeVal = o.size || o.Size || '-'; // Читаем размер из базы данных
 
                 return `
                 <tr ${rowClass}>
@@ -262,7 +262,7 @@
                     <td><span class="desc-text">${urgentPrefix}${o.description || '-'}</span></td>
                     <td><span class="grower-text">${o.grower || '-'}</span></td>
                     <td><code>${consignmentVal}</code></td>
-                    <td><span class="store-text">${o.store || '-'}</span></td>
+                    <td><span class="size-text">${sizeVal}</span></td> <td><span class="store-text">${o.store || '-'}</span></td>
                     <td><span class="qty-text">${quantityVal}</span></td>
                     <td>${driverDisplay}</td>
                     <td style="text-align: center;">
@@ -278,15 +278,15 @@
         }
     }
 
-    // Инициализация
     async function start() {
-        await loadDriversMap(); // Сначала загружаем карту имен
-        await loadTVDashboard(); // Потом рендерим таблицу
+        await loadDriversMap(); 
+        await loadTVDashboard(); 
         
-        // Каждые 5 секунд обновляем экран, раз в 30 секунд обновляем карту имен (на случай добавления новых водителей)
         setInterval(loadTVDashboard, 5000);
         setInterval(loadDriversMap, 30000);
     }
 
     start();
 </script>
+</body>
+</html>
