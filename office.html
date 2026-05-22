@@ -416,31 +416,40 @@
 
     async function loadOfficeDashboard() {
         try {
+            // Перед обновлением проверяем, активен ли какой-то инпут комментариев
+            const activeElement = document.activeElement;
+            let focusedOrderId = null;
+            let savedTypedValue = "";
+
+            if (activeElement && activeElement.tagName === 'INPUT' && activeElement.id.startsWith('office_reply_to_')) {
+                focusedOrderId = parseInt(activeElement.id.replace('office_reply_to_', ''));
+                savedTypedValue = activeElement.value; // сохраняем текст, который менеджер пишет прямо сейчас
+            }
+
             const { data: orders, error } = await clientDb.from('orders').select('*').order('id', { ascending: false }).limit(5);
             if (error) throw error;
             
             currentOrdersData = orders || [];
 
-            const html = orders.map(o => {
+            const tableBody = document.getElementById('office_orders_body');
+            tableBody.innerHTML = ""; // очищаем перед обновлением
+
+            orders.forEach(o => {
+                const tr = document.createElement('tr');
+
                 // Генерация цепочки логов в ячейке комментариев
-                let commentCell = `<div style="margin-bottom: 2px; color: var(--text);">Line: ${o.comment || '-'}</div>`;
+                let commentHtml = `<div style="margin-bottom: 2px; color: var(--text);">Line: ${o.comment || '-'}</div>`;
                 if (o.driver_comment) {
-                    commentCell += `<div style="color:#2e7d32; font-weight:600; margin-bottom: 2px;">Driver: ${o.driver_comment}</div>`;
+                    commentHtml += `<div style="color:#2e7d32; font-weight:600; margin-bottom: 2px;">Driver: ${o.driver_comment}</div>`;
                 }
                 
+                // Создаем блок для ввода или вывода ответа офиса
+                let officeSectionHtml = "";
                 if (o.office_comment) {
-                    commentCell += `<div style="color:#0288d1; font-weight:600;">Office: ${o.office_comment}</div>`;
-                } else {
-                    commentCell += `
-                        <div class="reply-box">
-                            <input type="text" id="office_reply_to_${o.id}" placeholder="Office note...">
-                            <button class="btn-reply" onclick="sendOfficeReply(${o.id})">Reply</button>
-                        </div>
-                    `;
+                    officeSectionHtml = `<div style="color:#0288d1; font-weight:600;">Office: ${o.office_comment}</div>`;
                 }
 
-                return `
-                <tr>
+                tr.innerHTML = `
                     <td>#${o.id}</td>
                     <td><span style="color:#4a5568; font-weight:500;">⏱ ${formatTime(o.created_at)}</span></td>
                     <td><strong>${o.line || '-'}</strong></td>
@@ -452,14 +461,45 @@
                     <td>${o.available || '-'}</td>
                     <td>${o.store || '-'}</td>
                     <td><strong>${o.qty || '-'}</strong></td>
-                    <td>${commentCell}</td>
+                    <td id="comment_cell_${o.id}">${commentHtml}</td>
                     <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span style="color:var(--text-muted);">Waiting...</span>'}</td>
                     <td><span style="color:var(--status-done); font-weight:bold;">${o.delivered_at ? formatTime(o.delivered_at) : '-'}</span></td>
                     <td><span class="status-badge new">${o.status || 'new'}</span></td>
-                </tr>
                 `;
-            }).join('');
-            document.getElementById('office_orders_body').innerHTML = html;
+
+                // Вставляем сгенерированную строку в DOM
+                tableBody.appendChild(tr);
+
+                // Оперируем блоком ввода ответа отдельно, чтобы сохранить фокус
+                const commentCell = document.getElementById(`comment_cell_${o.id}`);
+                if (o.office_comment) {
+                    commentCell.innerHTML += officeSectionHtml;
+                } else {
+                    const replyBox = document.createElement('div');
+                    replyBox.className = 'reply-box';
+
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.id = `office_reply_to_${o.id}`;
+                    input.placeholder = 'Office note...';
+
+                    // Если менеджер писал в это поле до обновления — возвращаем текст и фокус
+                    if (focusedOrderId === o.id) {
+                        input.value = savedTypedValue;
+                        setTimeout(() => input.focus(), 1);
+                    }
+
+                    const sendBtn = document.createElement('button');
+                    sendBtn.className = 'btn-reply';
+                    sendBtn.innerText = 'Reply';
+                    sendBtn.onclick = () => sendOfficeReply(o.id);
+
+                    replyBox.appendChild(input);
+                    replyBox.appendChild(sendBtn);
+                    commentCell.appendChild(replyBox);
+                }
+            });
+
         } catch (e) { console.error(e); }
     }
 
