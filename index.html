@@ -456,6 +456,15 @@
                 const specAvail = o.available || '-';
                 const statusLwr = (o.status || 'new').toLowerCase();
 
+                // Объединение комментариев от Линии, Офиса и Водителя
+                let logsHtml = `<div style="font-weight: 500;">Line: ${o.comment || '-'}</div>`;
+                if (o.office_comment) {
+                    logsHtml += `<div style="color:#0288d1; font-size:11px; margin-top:2px; font-weight:600;">Office: ${o.office_comment}</div>`;
+                }
+                if (o.driver_comment) {
+                    logsHtml += `<div style="color:#2e7d32; font-size:11px; margin-top:2px; font-weight:600;">Driver: ${o.driver_comment}</div>`;
+                }
+
                 return `
                 <tr>
                     <td>#${o.id}</td>
@@ -466,7 +475,7 @@
                     <td><span style="font-family:monospace; background:#f1f3f5; padding:2px 6px; border-radius:3px; font-weight:600;">${o.consignment || o.Consignment || '-'}</span></td>
                     <td>${specOrigin} / ${specSize} / ${specAvail}</td>
                     <td><strong style="font-size:14px; color:#0288d1;">${o.qty || '1'}</strong></td>
-                    <td>${o.comment || '-'}</td>
+                    <td>${logsHtml}</td>
                     <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span style="color:var(--text-muted);">Waiting...</span>'}</td>
                     <td><span style="color:var(--status-done); font-weight:bold;">${o.delivered_at ? formatTime(o.delivered_at) : '-'}</span></td>
                     <td><span class="status-badge ${statusLwr}">${o.status || 'new'}</span></td>
