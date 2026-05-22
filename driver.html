@@ -65,7 +65,7 @@
         }
 
         .table-responsive { overflow-x: auto; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; min-width: 950px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1050px; }
         th { background: #f8f9fa; color: var(--text-muted); padding: 10px; text-align: left; font-size: 12px; border-bottom: 2px solid var(--border); }
         td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #edf2f7; }
 
@@ -74,6 +74,12 @@
         .btn-accept:hover { background: #006699; }
         .btn-complete { background: #2e7d32; }
         .btn-complete:hover { background: #1b5e20; }
+        
+        .btn-reply { background: #e65100; padding: 4px 8px; font-size: 11px; margin-top: 4px; border-radius: 4px; border: none; color: white; cursor: pointer; font-weight: bold; }
+        .btn-reply:hover { background: #bf360c; }
+        
+        .reply-box { display: flex; flex-direction: column; gap: 4px; margin-top: 5px; }
+        .reply-box input { padding: 5px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; width: 150px; }
 
         .row-urgent { background-color: #fff5f5 !important; border-left: 4px solid #e53e3e; }
     </style>
@@ -104,7 +110,7 @@
                         <th>Consignment</th>
                         <th>Size</th>
                         <th>Qty</th>
-                        <th>Comment</th>
+                        <th>Comment / Reply</th>
                         <th>Driver Assigned</th>
                         <th>Action</th>
                     </tr>
@@ -196,6 +202,18 @@
                     actionButton = `<span style="color:#a0aec0; font-size:11px;">In progress</span>`;
                 }
 
+                let commentCell = `<div>Line: ${o.comment || '-'}</div>`;
+                if (o.driver_comment) {
+                    commentCell += `<div style="color:#2e7d32; font-weight:600; margin-top:2px;">You: ${o.driver_comment}</div>`;
+                } else if (o.driver_name === cachedDriverRealName) {
+                    commentCell += `
+                        <div class="reply-box">
+                            <input type="text" id="reply_to_${o.id}" placeholder="Type reply...">
+                            <button class="btn-reply" onclick="sendReply(${o.id})">Reply</button>
+                        </div>
+                    `;
+                }
+
                 return `
                 <tr ${isUrgentRow}>
                     <td>#${o.id}</td>
@@ -207,7 +225,7 @@
                     <td><span style="font-family:monospace; background:#f1f3f5; padding:2px 6px; border-radius:3px; font-weight:600;">${o.consignment || o.Consignment || '-'}</span></td>
                     <td>${o.size || '-'}</td>
                     <td><strong style="font-size:15px; color:#0288d1;">${o.qty || '1'}</strong></td>
-                    <td>${o.comment || '-'}</td>
+                    <td>${commentCell}</td>
                     <td>${driverStatus}</td>
                     <td>${actionButton}</td>
                 </tr>
@@ -216,6 +234,21 @@
 
             document.getElementById('driver_orders_body').innerHTML = html;
         } catch (e) {}
+    }
+
+    async function sendReply(orderId) {
+        const replyText = document.getElementById(`reply_to_${orderId}`).value.trim();
+        if (!replyText) return;
+
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .update({ driver_comment: replyText })
+                .eq('id', orderId);
+
+            if (error) throw error;
+            loadDriverTasks();
+        } catch (e) { alert("Error sending reply: " + e.message); }
     }
 
     async function acceptOrder(orderId) {
