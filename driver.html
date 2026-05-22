@@ -3,81 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <title>Peake Fruit — Driver Terminal</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg: #f8fafc;
+            --bg: #f4f6f9;
             --card-bg: #ffffff;
-            --text: #0f172a;
-            --text-muted: #64748b;
+            --text: #1a1a2e;
+            --text-muted: #6c757d;
             --accent: #0288d1;
-            --border: #cbd5e1;
+            --border: #e2e8f0;
         }
 
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            margin: 0; 
-            padding: 8px;
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 10px;
         }
 
-        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
-        
-        .header { 
-            display: flex; 
-            flex-direction: column;
-            gap: 10px;
-            background: var(--card-bg); 
-            padding: 12px; 
-            border-radius: 8px; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 12px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
         }
-        .header-title h1 { margin: 0; font-size: 18px; color: var(--accent); font-weight: 700; text-align: center; }
-        .header-right { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; }
-        
-        .driver-badge { background: #e0f2fe; color: #0369a1; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 13px; flex-grow: 1; text-align: center; }
-        .btn-logout { background: #f1f5f9; color: #e11d48; border: 1px solid #ffe4e6; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .header h2 { margin: 0; font-size: 18px; color: var(--accent); }
 
-        .dashboard-card { background: var(--card-bg); padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #edf2f7; }
-        .dashboard-card h3 { margin-top: 0; margin-bottom: 10px; font-size: 15px; color: #334155; }
-
-        .table-responsive { overflow-x: auto; margin-top: 5px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; }
-        table { width: 100%; border-collapse: collapse; min-width: 850px; }
-        th { background: #f8fafc; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 14px 10px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
-
-        .btn-action { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; color: white; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; min-height: 34px; }
-        .btn-accept { background: #0288d1; width: 100%; }
-        .btn-complete { background: #16a34a; width: 100%; }
-
-        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-        .status-badge.new { background: #fef3c7; color: #d97706; }
-
-        @media (min-width: 768px) {
-            body { padding: 15px; }
-            .header { flex-direction: row; justify-content: space-between; align-items: center; padding: 14px 20px; }
-            .header-title h1 { font-size: 20px; text-align: left; }
-            .header-right { width: auto; }
-            .driver-badge { flex-grow: 0; min-width: 180px; }
-            .btn-action { width: auto; }
+        .driver-badge {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 13px;
         }
+
+        .btn-logout {
+            background: #fff5f5;
+            color: #c53030;
+            border: 1px solid #feb2b2;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .dashboard-card {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+        }
+
+        .table-responsive { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; min-width: 950px; }
+        th { background: #f8f9fa; color: var(--text-muted); padding: 10px; text-align: left; font-size: 12px; border-bottom: 2px solid var(--border); }
+        td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #edf2f7; }
+
+        .btn-action { padding: 6px 12px; border: none; border-radius: 4px; font-weight: 700; font-size: 12px; cursor: pointer; color: white; }
+        .btn-accept { background: #0088cc; }
+        .btn-accept:hover { background: #006699; }
+        .btn-complete { background: #2e7d32; }
+        .btn-complete:hover { background: #1b5e20; }
+
+        .row-urgent { background-color: #fff5f5 !important; border-left: 4px solid #e53e3e; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <div class="header-title"><h1>Peake Fruit — Driver Terminal</h1></div>
-        <div class="header-right">
-            <div class="driver-badge" id="driver_name_display">Driver: Loading...</div>
+        <h2>Peake Fruit — Driver Terminal</h2>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="driver-badge" id="driver_display">Driver: Loading...</div>
             <button class="btn-logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
         </div>
     </div>
 
     <div class="dashboard-card">
-        <h3>Active Line Pallet Requests</h3>
+        <h3 style="margin-top:0; font-size:16px; color:var(--text);">Active Line Pallet Requests</h3>
         <div class="table-responsive">
             <table>
                 <thead>
@@ -86,17 +99,18 @@
                         <th>Line Name</th>
                         <th>Ordered At</th>
                         <th>Store</th>
-                        <th>Variety</th>
+                        <th>Variety / Fruit</th>
                         <th>Grower</th>
                         <th>Consignment</th>
                         <th>Size</th>
                         <th>Qty</th>
+                        <th>Comment</th>
                         <th>Driver Assigned</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody id="driver_orders_body">
-                    <tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Loading requests...</td></tr>
+                    <tr><td colspan="12" style="text-align:center; color:var(--text-muted);">Loading active tasks...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -105,16 +119,15 @@
 
 <script>
     const currentUser = localStorage.getItem('user');
-    let currentRole = localStorage.getItem('role') || '';
+    const currentRole = localStorage.getItem('role');
 
-    currentRole = currentRole.toLowerCase().trim();
-
-    // Проверка прав доступа водителя
     if (!currentUser || currentRole !== 'driver') {
-        alert("Access denied! Only drivers are allowed here.");
+        alert("Access denied!");
         localStorage.clear();
         window.location.href = 'login.html';
     }
+
+    document.getElementById('driver_display').innerText = 'Driver: ' + currentUser;
 
     const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
     const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
@@ -124,100 +137,119 @@
     const supabaseKey = k1 + k2 + k3;
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
-    let cachedDriverFullName = localStorage.getItem('name') || currentUser;
-    document.getElementById('driver_name_display').innerText = 'Driver: ' + cachedDriverFullName;
+    let cachedDriverRealName = currentUser;
 
     function formatTime(isoString) {
         if (!isoString) return '-';
         const date = new Date(isoString);
-        return isNaN(date.getTime()) ? '-' : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (isNaN(date.getTime())) return '-';
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    async function loadAllOrders() {
+    async function fetchDriverRealName() {
+        try {
+            const { data, error } = await clientDb
+                .from('users_table')
+                .select('*')
+                .eq('u', currentUser);
+
+            if (error) throw error;
+
+            if (data && data.length > 0 && data[0].name) {
+                cachedDriverRealName = data[0].name;
+                document.getElementById('driver_display').innerText = 'Driver: ' + cachedDriverRealName;
+            }
+        } catch (e) {}
+        loadDriverTasks();
+    }
+
+    async function loadDriverTasks() {
         try {
             const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
-                .not('status', 'eq', 'delivered')
-                .order('id', { ascending: false });
+                .neq('status', 'delivered') 
+                .order('urgent', { ascending: false }) 
+                .order('id', { ascending: false });    
 
             if (error) throw error;
 
             if (!orders || orders.length === 0) {
-                document.getElementById('driver_orders_body').innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--text-muted);">No active orders.</td></tr>`;
+                document.getElementById('driver_orders_body').innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-muted);">No active requests on the floor.</td></tr>`;
                 return;
             }
 
             const html = orders.map(o => {
-                let actionBtn = '';
-                if (o.status === 'new') {
-                    actionBtn = `<button class="btn-action btn-accept" onclick="acceptOrder(${o.id})">✅ Accept</button>`;
-                } else if (o.status === 'accepted' && o.driver_name === cachedDriverFullName) {
-                    // Теперь здесь простая кнопка завершения заказа без вызова сканера
-                    actionBtn = `<button class="btn-action btn-complete" onclick="completeOrder(${o.id})">📦 Complete Order</button>`;
-                } else if (o.status === 'accepted') {
-                    actionBtn = `<span style="color:var(--text-muted); font-size:11px;">Locked</span>`;
+                const isUrgentRow = o.urgent === true ? 'class="row-urgent"' : '';
+                
+                let actionButton = '';
+                let driverStatus = '';
+
+                if (!o.driver_name) {
+                    driverStatus = `<span style="color:#d69e2e; font-weight:bold;">FREE</span>`;
+                    actionButton = `<button class="btn-action btn-accept" onclick="acceptOrder(${o.id})">✓ Accept</button>`;
+                } else if (o.driver_name === cachedDriverRealName) {
+                    driverStatus = `<span style="color:#2b6cb0; font-weight:bold;">🚚 You</span>`;
+                    actionButton = `<button class="btn-action btn-complete" onclick="completeOrder(${o.id})">📁 Complete Order</button>`;
+                } else {
+                    driverStatus = `<span style="color:#718096;">🔒 ${o.driver_name}</span>`;
+                    actionButton = `<span style="color:#a0aec0; font-size:11px;">In progress</span>`;
                 }
 
                 return `
-                    <tr>
-                        <td>#${o.id}</td>
-                        <td><strong>${o.line || '-'}</strong></td>
-                        <td><span style="color:#4a5568;">⏱ ${formatTime(o.created_at)}</span></td>
-                        <td><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
-                        <td><strong>${o.description || '-'}</strong></td>
-                        <td>${o.grower || '-'}</td>
-                        <td><span style="font-family:monospace; background:#f1f3f5; padding:4px 6px; border-radius:4px; font-weight:600;">${o.consignment || '-'}</span></td>
-                        <td><strong>${o.size || '-'}</strong></td>
-                        <td><strong style="color:#0288d1; font-size:14px;">${o.qty || '1'}</strong></td>
-                        <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span class="status-badge new">Free</span>'}</td>
-                        <td>${actionBtn}</td>
-                    </tr>
+                <tr ${isUrgentRow}>
+                    <td>#${o.id}</td>
+                    <td><strong>${o.line || '-'}</strong></td>
+                    <td><span style="color:#4a5568;">⏱ ${formatTime(o.created_at)}</span></td>
+                    <td><span style="color:#6b46c1; font-weight:700; font-size:14px;">${o.store || '-'}</span></td>
+                    <td><strong>${o.description || '-'}</strong></td>
+                    <td>${o.grower || '-'}</td>
+                    <td><span style="font-family:monospace; background:#f1f3f5; padding:2px 6px; border-radius:3px; font-weight:600;">${o.consignment || o.Consignment || '-'}</span></td>
+                    <td>${o.size || '-'}</td>
+                    <td><strong style="font-size:15px; color:#0288d1;">${o.qty || '1'}</strong></td>
+                    <td>${o.comment || '-'}</td>
+                    <td>${driverStatus}</td>
+                    <td>${actionButton}</td>
+                </tr>
                 `;
             }).join('');
 
             document.getElementById('driver_orders_body').innerHTML = html;
-        } catch (e) { console.error(e); }
+        } catch (e) {}
     }
 
     async function acceptOrder(orderId) {
         try {
             const { error } = await clientDb
                 .from('orders')
-                .update({ status: 'accepted', driver_name: cachedDriverFullName })
+                .update({ 
+                    driver_name: cachedDriverRealName, 
+                    status: 'accepted'                 
+                })
                 .eq('id', orderId);
-                
+
             if (error) throw error;
-            loadAllOrders();
-        } catch (e) { alert(e.message); }
+            loadDriverTasks();
+        } catch (e) { alert("Error accepting task: " + e.message); }
     }
 
-    // Новая функция мгновенного закрытия заказа без сканирования
     async function completeOrder(orderId) {
-        if (!confirm(`Вы действительно доставили паллет по заказу #${orderId}?`)) {
-            return;
-        }
-
         try {
             const { error } = await clientDb
                 .from('orders')
                 .update({ 
-                    status: 'delivered', 
+                    status: 'delivered',              
                     delivered_at: new Date().toISOString() 
                 })
                 .eq('id', orderId);
 
             if (error) throw error;
-            
-            alert(`✅ Заказ #${orderId} успешно доставлен на линию!`);
-            loadAllOrders();
-        } catch (e) {
-            alert("Error updating order: " + e.message);
-        }
+            loadDriverTasks();
+        } catch (e) { alert("Error completing task: " + e.message); }
     }
 
-    // Первоначальная загрузка
-    loadAllOrders();
+    fetchDriverRealName();
+    setInterval(loadDriverTasks, 5000);
 </script>
 </body>
 </html>
