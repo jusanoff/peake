@@ -2,292 +2,304 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit — Production Dashboard</title>
+    <title>Peake Fruit - TV Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --bg: #0f172a;
-            --card-bg: #1e293b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent: #38bdf8;
-            --border: #334155;
-            --success: #10b981;
+        :root { 
+            --bg: #f4f6f9; 
+            --card-bg: #ffffff; 
+            --text: #1a1a2e; 
+            --text-muted: #6c757d;
+            --new: #ef6c00; 
+            --process: #1565c0; 
+            --done: #2e7d32; 
+            --urgent-bg: #ffebee;
+            --urgent-border: #ef5350;
         }
-
         body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text-main);
-            margin: 0;
-            padding: 10px;
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 20px;
+            overflow-x: hidden;
         }
-
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: var(--card-bg);
-            padding: 12px 15px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 15px;
         }
-        .header h1 { margin: 0; font-size: 18px; color: var(--accent); }
-        .btn-logout {
-            background: transparent;
+        h1 { margin: 0; font-size: 26px; letter-spacing: 1px; color: var(--text); font-weight: 800; }
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
             color: var(--text-muted);
-            border: 1px solid var(--border);
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            background: #2e7d32;
+            border-radius: 50%;
+            animation: blinkLive 1.5s infinite;
+        }
+        @keyframes blinkLive { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
+        
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+        th {
+            color: var(--text-muted);
+            padding: 10px 15px;
+            text-align: left;
+            text-transform: uppercase;
             font-size: 13px;
+            letter-spacing: 0.5px;
+            font-weight: bold;
         }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-        }
-
-        @media (min-width: 1024px) {
-            .dashboard-grid { grid-template-columns: 2fr 1fr; }
-        }
-
-        .panel {
+        td {
             background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 15px;
+            padding: 16px 15px;
+            font-size: 18px; 
+            color: var(--text);
+            border-top: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: all 0.3s ease;
         }
-        .panel h2 { margin-top: 0; font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px; color: #fff; }
-
-        .table-responsive {
-            overflow-x: auto;
+        td:first-child { border-left: 1px solid #e2e8f0; border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
+        td:last-child { border-right: 1px solid #e2e8f0; border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
+        
+        tr.urgent-row td {
+            background: var(--urgent-bg);
+            border-top: 1px solid var(--urgent-border);
+            border-bottom: 1px solid var(--urgent-border);
+            animation: pulseUrgent 2s infinite ease-in-out;
         }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { padding: 8px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border); }
-        td { padding: 10px 8px; font-size: 13px; border-bottom: 1px solid var(--border); }
+        tr.urgent-row td:first-child { border-left: 2px solid var(--urgent-border); }
+        tr.urgent-row td:last-child { border-right: 2px solid var(--urgent-border); }
+        
+        @keyframes pulseUrgent {
+            0% { opacity: 1; }
+            50% { opacity: 0.75; }
+            100% { opacity: 1; }
+        }
 
-        .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-        .status-new { background: rgba(245,158,11,0.2); color: #f59e0b; }
-        .status-accepted { background: rgba(59,130,246,0.2); color: #3b82f6; }
-        .status-delivered { background: rgba(16,185,129,0.2); color: #10b981; }
+        .time-text { color: #4a5568; font-size: 16px; font-weight: bold; }
+        .line-text { color: #0288d1; font-weight: bold; }
+        .desc-text { color: var(--text); font-weight: 600; }
+        .grower-text { color: #2d3748; }
+        .store-text { color: #6b46c1; font-weight: bold; }
+        .qty-text { color: #b7791f; font-weight: bold; }
+        .size-text { color: #2d3748; font-weight: bold; }
+        
+        code {
+            background: #edf2f7;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #dd6b20;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .urgent-label {
+            color: #d32f2f;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 14px;
+            display: inline-block;
+            margin-right: 4px;
+        }
 
-        .reply-box { display: flex; gap: 4px; margin-top: 4px; }
-        .reply-box input { background: #0f172a; border: 1px solid var(--border); color: #fff; padding: 4px; font-size: 12px; border-radius: 4px; flex: 1; }
-        .btn-reply { background: #475569; color: #fff; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; }
+        .driver-text { font-weight: bold; color: #1a1a2e; }
+        .no-driver { color: var(--text-muted); font-style: italic; }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            display: inline-block;
+            text-align: center;
+            width: 95px;
+        }
+        .status-badge.new { background: #fff3e0; color: #e65100; border: 1px solid var(--new); }
+        .status-badge.process, .status-badge.accepted { background: #e3f2fd; color: #0d47a1; border: 1px solid var(--process); }
+        .status-badge.delivered, .status-badge.done { background: #e8f5e9; color: #1b5e20; border: 1px solid var(--done); }
     </style>
 </head>
 <body>
 
-<div class="container">
     <div class="header">
-        <h1>Peake Fruit — Production Terminal Dashboard</h1>
-        <button class="btn-logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
-    </div>
-
-    <div class="dashboard-grid">
-        <div class="panel">
-            <h2>Live Production Orders Pipeline (Last 5 Requests)</h2>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Time</th>
-                            <th>Line</th>
-                            <th>Description</th>
-                            <th>Consignment</th>
-                            <th>Store</th>
-                            <th>Qty</th>
-                            <th>Logs & Comments</th>
-                            <th>Driver</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dashboard_orders_body">
-                        <tr><td colspan="10" style="text-align:center; color:var(--text-muted);">Loading active pipeline...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="panel">
-            <h2>Quick Live Stock Explorer</h2>
-            <div style="margin-bottom: 10px;">
-                <input type="text" id="stock_search" placeholder="Search by Variety, Consignment or Store..." style="width:100%; padding:8px; background:#0f172a; border:1px solid var(--border); color:white; border-radius:6px; box-sizing:border-box;" oninput="searchStockLocal()">
-            </div>
-            <div class="table-responsive" style="max-height: 400px;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Consignment</th>
-                            <th>Variety / Description</th>
-                            <th>Store</th>
-                            <th>Available</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dashboard_stock_body">
-                        <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Loading stock base...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+        <h1>PEAKE FRUIT — LOGISTICS BOARD</h1>
+        <div class="live-indicator">
+            <div class="dot"></div>
+            <span>Live Monitoring</span>
         </div>
     </div>
-</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 5%">ID</th>
+                <th style="width: 8%">Ordered By</th>
+                <th style="width: 8%">Time</th>
+                <th style="width: 14%">Description</th>
+                <th style="width: 10%">Grower</th>
+                <th style="width: 10%">Consignment</th>
+                <th style="width: 7%">Size</th> 
+                <th style="width: 7%">Store</th>
+                <th style="width: 4%">Qty</th>
+                <th style="width: 10%">Taken By</th>
+                <th style="width: 12%">Comments</th>
+                <th style="width: 5%; text-align: center;">Status</th>
+            </tr>
+        </thead>
+        <tbody id="tv_orders_body">
+        </tbody>
+    </table>
 
 <script>
-    const currentUser = localStorage.getItem('user');
-    const currentRole = localStorage.getItem('role');
-
-    if (!currentUser || currentRole !== 'production') {
-        alert("Access denied!");
-        localStorage.clear();
-        window.location.href = 'login.html';
-    }
-
-    const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
-    const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
-    const k3 = 'LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
-
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
-    const supabaseKey = k1 + k2 + k3;
-    const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+    const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    let localStockArray = [];
+    let driverNamesMap = {};
 
-    function formatTime(isoString) {
-        if (!isoString) return '-';
-        const date = new Date(isoString);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-
-    async function loadDashboardData() {
+    async function loadDriversMap() {
         try {
-            // === ВОТ ЗДЕСЬ ЗАПОМИНАЕМ ТЕКСТ И КУРСОР В ТАБЛИЦЕ ЗАКАЗОВ ===
-            const activeElement = document.activeElement;
-            let focusedInputId = null;
-            let savedValue = "";
-            if (activeElement && activeElement.tagName === 'INPUT') {
-                focusedInputId = activeElement.id;
-                savedValue = activeElement.value;
-            }
+            const { data: users, error } = await _db
+                .from('users_table')
+                .select('u, name') // Исправлено на правильную колонку 'u' вместо 'user'
+                .eq('t', 'driver');
+            
+            if (error) throw error;
 
-            const { data: orders, error: oErr } = await clientDb
-                .from('orders')
-                .select('*')
-                .order('id', { ascending: false })
-                .limit(5);
-
-            if (oErr) throw oErr;
-
-            let oHtml = "";
-            if (!orders || orders.length === 0) {
-                oHtml = `<tr><td colspan="10" style="text-align:center; color:var(--text-muted);">No orders created today yet.</td></tr>`;
-            } else {
-                orders.forEach(o => {
-                    let statusClass = "status-new";
-                    if (o.status === 'accepted') statusClass = "status-accepted";
-                    if (o.status === 'delivered') statusClass = "status-delivered";
-
-                    let logsHtml = `<div style="color:#fff;">Line: ${o.comment || '-'}</div>`;
-                    if (o.driver_comment) {
-                        logsHtml += `<div style="color:#10b981; font-size:11px; margin-top:2px;">Driver: ${o.driver_comment}</div>`;
+            if (users) {
+                driverNamesMap = {};
+                users.forEach(u => {
+                    if (u.u && u.name) {
+                        driverNamesMap[u.u.toLowerCase().trim()] = u.name;
                     }
-                    if (o.office_comment) {
-                        logsHtml += `<div style="color:#38bdf8; font-size:11px; margin-top:2px;">Office: ${o.office_comment}</div>`;
-                    }
-
-                    oHtml += `
-                        <tr>
-                            <td>#${o.id}</td>
-                            <td>${formatTime(o.created_at)}</td>
-                            <td><strong>${o.line || '-'}</strong></td>
-                            <td>${o.description || '-'}</td>
-                            <td><span style="font-family:monospace; background:#334155; padding:2px 4px; border-radius:3px;">${o.consignment || '-'}</span></td>
-                            <td><span style="color:#c084fc; font-weight:700;">${o.store || '-'}</span></td>
-                            <td><strong style="color:#38bdf8;">${o.qty || '1'}</strong></td>
-                            <td>${logsHtml}</td>
-                            <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span style="color:var(--text-muted);">Waiting...</span>'}</td>
-                            <td><span class="status-badge ${statusClass}">${o.status || 'new'}</span></td>
-                        </tr>
-                    `;
                 });
             }
-
-            document.getElementById('dashboard_orders_body').innerHTML = oHtml;
-
-            // === ВОТ ЗДЕСЬ ВОЗВРАЩАЕМ ВСЁ НА МЕСТО ПОСЛЕ ОБНОВЛЕНИЯ ===
-            if (focusedInputId) {
-                const inputEl = document.getElementById(focusedInputId);
-                if (inputEl) {
-                    inputEl.value = savedValue;
-                    inputEl.focus();
-                }
-            }
-
-        } catch (e) { console.error("Dashboard pipeline error:", e); }
-    }
-
-    async function loadInitialStock() {
-        try {
-            const { data: stock, error: sErr } = await clientDb
-                .from('stock')
-                .select('*')
-                .order('id', { ascending: true });
-
-            if (sErr) throw sErr;
-            localStockArray = stock || [];
-            searchStockLocal(); 
-        } catch (e) { console.error("Dashboard stock error:", e); }
-    }
-
-    function searchStockLocal() {
-        const query = document.getElementById('stock_search').value.toLowerCase().trim();
-        const tbody = document.getElementById('dashboard_stock_body');
-
-        const filtered = localStockArray.filter(s => {
-            const cons = String(s.consignment || "").toLowerCase();
-            const desc = String(s.description || "").toLowerCase();
-            const store = String(s.store || "").toLowerCase();
-            const grower = String(s.grower || "").toLowerCase();
-            return cons.includes(query) || desc.includes(query) || store.includes(query) || grower.includes(query);
-        });
-
-        if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No matching stock found.</td></tr>`;
-            return;
+        } catch (e) {
+            console.error("Error loading drivers names map:", e);
         }
-
-        let html = "";
-        filtered.forEach(s => {
-            html += `
-                <tr>
-                    <td><span style="font-family:monospace; background:#334155; padding:2px 4px; border-radius:3px;">${s.consignment || '-'}</span></td>
-                    <td><strong>${s.description || '-'}</strong><br><small style="color:var(--text-muted);">${s.grower || '-'}</small></td>
-                    <td><span style="color:#c084fc; font-weight:700;">${s.store || '-'}</span></td>
-                    <td><strong style="color:var(--success); font-size:14px;">${s.available || '0'}</strong></td>
-                </tr>
-            `;
-        });
-        tbody.innerHTML = html;
     }
 
-    // Первичная загрузка
-    loadDashboardData();
-    loadInitialStock();
+    async function loadTVDashboard() {
+        try {
+            const { data: orders, error } = await _db
+                .from('orders')
+                .select('*')
+                .order('id', { ascending: false });
 
-    // Каждые 5 секунд обновляем пайплайн заказов (поиск по стоку не сбрасывается, так как он локальный)
-    setInterval(loadDashboardData, 5000);
+            if (error) throw error;
+
+            const now = new Date();
+
+            // Авто-скрытие завершенных заказов через 1 минуту
+            const activeOrders = orders.filter(o => {
+                const status = (o.status || 'new').toLowerCase();
+                if (status === 'delivered' || status === 'done') {
+                    const deliveredTime = new Date(o.delivered_at || o.created_at);
+                    if (now - deliveredTime > 60000) {
+                        return false; 
+                    }
+                }
+                return true;
+            });
+
+            // Сортировка: Срочные -> В процессе -> Новые -> Выполненные
+            const sortedOrders = activeOrders.sort((a, b) => {
+                if (a.urgent && !b.urgent) return -1;
+                if (!a.urgent && b.urgent) return 1;
+
+                const weights = { 'process': 1, 'accepted': 1, 'new': 2, 'delivered': 3, 'done': 3 };
+                return (weights[(a.status || 'new').toLowerCase()] || 2) - (weights[(b.status || 'new').toLowerCase()] || 2);
+            });
+
+            const html = sortedOrders.map(o => {
+                let timeStr = "-";
+                if (o.created_at) {
+                    const d = new Date(o.created_at);
+                    timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                }
+
+                let rawDriver = (o.driver_name || '').toLowerCase().trim();
+                let realDriverName = driverNamesMap[rawDriver] || o.driver_name;
+
+                const driverDisplay = realDriverName 
+                    ? `<span class="driver-text">🚚 ${realDriverName}</span>` 
+                    : `<span class="no-driver">—</span>`;
+
+                const statusClass = (o.status || 'new').toLowerCase();
+                
+                const isUrgent = o.urgent === true || o.urgent === 'true';
+                const rowClass = isUrgent ? 'class="urgent-row"' : '';
+                const urgentPrefix = isUrgent ? '<span class="urgent-label">⚠️ URGENT:</span> ' : '';
+
+                // Защита регистра данных из базы данных
+                const consignmentVal = o.consignment || o.Consignment || '-';
+                const quantityVal = o.quantity || o.Quantity || o.qty || o.Qty || '-';
+                const sizeVal = o.size || o.Size || '-'; // Читаем размер из базы данных
+
+                // Формирование логов комментариев (Line Note, Office, Driver) для новой колонки
+                let logsHtml = `<div style="font-size: 14px; font-weight: 500;">Line: ${o.comment || '-'}</div>`;
+                if (o.office_comment) {
+                    logsHtml += `<div style="color:#0288d1; font-size:12px; margin-top:2px; font-weight:600;">Office: ${o.office_comment}</div>`;
+                }
+                if (o.driver_comment) {
+                    logsHtml += `<div style="color:#2e7d32; font-size:12px; margin-top:2px; font-weight:600;">Driver: ${o.driver_comment}</div>`;
+                }
+
+                return `
+                <tr ${rowClass}>
+                    <td><span style="color: var(--text-muted);">#${o.id}</span></td>
+                    <td><span class="line-text">${o.line || '-'}</span></td>
+                    <td><span class="time-text">${timeStr}</span></td>
+                    <td><span class="desc-text">${urgentPrefix}${o.description || '-'}</span></td>
+                    <td><span class="grower-text">${o.grower || '-'}</span></td>
+                    <td><code>${consignmentVal}</code></td>
+                    <td><span class="size-text">${sizeVal}</span></td> 
+                    <td><span class="store-text">${o.store || '-'}</span></td>
+                    <td><span class="qty-text">${quantityVal}</span></td>
+                    <td>${driverDisplay}</td>
+                    <td>${logsHtml}</td>
+                    <td style="text-align: center;">
+                        <span class="status-badge ${statusClass}">${o.status || 'new'}</span>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('tv_orders_body').innerHTML = html;
+
+        } catch (e) {
+            console.error("TV Update Error: ", e);
+        }
+    }
+
+    async function start() {
+        await loadDriversMap(); 
+        await loadTVDashboard(); 
+        
+        setInterval(loadTVDashboard, 5000);
+        setInterval(loadDriversMap, 30000);
+    }
+
+    start();
 </script>
 </body>
 </html>
