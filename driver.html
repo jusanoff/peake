@@ -3,172 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <title>Peake Fruit — Driver Terminal</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg: #111827;
-            --card-bg: #1f2937;
-            --text-main: #f9fafb;
-            --text-muted: #9ca3af;
-            --accent: #f43f5e;
-            --border: #374151;
-            --success: #10b981;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --accent: #0288d1;
+            --border: #cbd5e1;
         }
 
-        body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text-main);
-            margin: 0;
-            padding: 10px;
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 8px;
         }
 
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--card-bg);
-            padding: 12px 15px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
-        .header h1 { margin: 0; font-size: 18px; color: var(--accent); }
-
-        .driver-badge {
-            background: #fff1f2;
-            color: #9f1239;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 13px;
-        }
-
-        .btn-logout {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--border);
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-        }
-
-        .order-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 15px;
-            display: flex;
+        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+        
+        .header { 
+            display: flex; 
             flex-direction: column;
             gap: 10px;
-            position: relative;
+            background: var(--card-bg); 
+            padding: 12px; 
+            border-radius: 8px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
         }
-
-        .order-card.urgent {
-            border-left: 5px solid #ef4444;
-            background: linear-gradient(90deg, rgba(239,68,68,0.05) 0%, rgba(31,41,55,1) 100%);
-        }
-
-        .card-row { display: flex; justify-content: space-between; align-items: center; }
-        .line-num { font-size: 20px; font-weight: 800; color: #fff; }
-        .store-badge { background: #6b21a8; color: #fff; padding: 3px 8px; border-radius: 4px; font-weight: 700; }
-        .qty-badge { background: #0369a1; color: #fff; padding: 3px 8px; border-radius: 4px; font-weight: 700; }
+        .header-title h1 { margin: 0; font-size: 18px; color: var(--accent); font-weight: 700; text-align: center; }
+        .header-right { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; }
         
-        .fruit-desc { font-size: 16px; font-weight: 700; color: #fff; margin: 5px 0; }
-        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 13px; color: var(--text-muted); }
-        
-        .logs-block {
-            background: rgba(0,0,0,0.2);
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 13px;
-            margin-top: 5px;
-        }
+        .driver-badge { background: #e0f2fe; color: #0369a1; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 13px; flex-grow: 1; text-align: center; }
+        .btn-logout { background: #f1f5f9; color: #e11d48; border: 1px solid #ffe4e6; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
 
-        .driver-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
+        .dashboard-card { background: var(--card-bg); padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #edf2f7; }
+        .dashboard-card h3 { margin-top: 0; margin-bottom: 10px; font-size: 15px; color: #334155; }
 
-        .btn-action {
-            flex: 1;
-            padding: 10px;
-            border-radius: 6px;
-            border: none;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-        .btn-accept { background: #2563eb; color: white; }
-        .btn-deliver { background: var(--success); color: white; }
+        .table-responsive { overflow-x: auto; margin-top: 5px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; }
+        table { width: 100%; border-collapse: collapse; min-width: 850px; }
+        th { background: #f8fafc; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 14px 10px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
 
-        .driver-comment-box {
-            display: flex;
-            gap: 8px;
-            margin-top: 5px;
-            width: 100%;
-        }
-        .driver-comment-box input {
-            flex: 1;
-            padding: 8px;
-            background: #111827;
-            border: 1px solid var(--border);
-            color: white;
-            border-radius: 4px;
-            font-size: 13px;
-        }
-        .btn-comment-send {
-            background: #4b5563;
-            color: white;
-            border: none;
-            padding: 0 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-        }
+        .btn-action { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; color: white; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; min-height: 34px; }
+        .btn-accept { background: #0288d1; width: 100%; }
+        .btn-complete { background: #16a34a; width: 100%; }
 
-        .no-orders { text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 16px; }
+        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .status-badge.new { background: #fef3c7; color: #d97706; }
+
+        /* Стили для блока ответа на комментарий внутри таблицы */
+        .reply-box { display: flex; gap: 4px; margin-top: 4px; }
+        .reply-box input { border: 1px solid var(--border); padding: 4px; font-size: 12px; border-radius: 4px; flex: 1; }
+        .btn-reply { background: #475569; color: #fff; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        @media (min-width: 768px) {
+            body { padding: 15px; }
+            .header { flex-direction: row; justify-content: space-between; align-items: center; padding: 14px 20px; }
+            .header-title h1 { font-size: 20px; text-align: left; }
+            .header-right { width: auto; }
+            .driver-badge { flex-grow: 0; min-width: 180px; }
+            .btn-action { width: auto; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1>Peake Fruit — Driver Terminal</h1>
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <div class="driver-badge" id="driver_display">Driver: Loading...</div>
+        <div class="header-title"><h1>Peake Fruit — Driver Terminal</h1></div>
+        <div class="header-right">
+            <div class="driver-badge" id="driver_name_display">Driver: Loading...</div>
             <button class="btn-logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
         </div>
     </div>
 
-    <div id="driver_orders_list">
-        <div class="no-orders">Loading active pallet requests...</div>
+    <div class="dashboard-card">
+        <h3>Active Line Pallet Requests</h3>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Line Name</th>
+                        <th>Ordered At</th>
+                        <th>Store</th>
+                        <th>Variety</th>
+                        <th>Grower</th>
+                        <th>Consignment</th>
+                        <th>Size</th>
+                        <th>Qty</th>
+                        <th>Driver Assigned</th>
+                        <th>Comments & Logs</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="driver_orders_body">
+                    <tr><td colspan="12" style="text-align:center; color:var(--text-muted);">Loading requests...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <script>
     const currentUser = localStorage.getItem('user');
-    const currentRole = localStorage.getItem('role');
+    let currentRole = localStorage.getItem('role') || '';
 
+    currentRole = currentRole.toLowerCase().trim();
+
+    // Проверка прав доступа водителя
     if (!currentUser || currentRole !== 'driver') {
-        alert("Access denied!");
+        alert("Access denied! Only drivers are allowed here.");
         localStorage.clear();
         window.location.href = 'login.html';
     }
-
-    document.getElementById('driver_display').innerText = '🚚 ' + currentUser;
 
     const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
     const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
@@ -178,162 +130,167 @@
     const supabaseKey = k1 + k2 + k3;
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
+    let cachedDriverFullName = localStorage.getItem('name') || currentUser;
+    document.getElementById('driver_name_display').innerText = 'Driver: ' + cachedDriverFullName;
+
+    // Переменная для контроля таймера автообновления
+    let updateInterval = null;
+    let isUserTyping = false;
+
     function formatTime(isoString) {
         if (!isoString) return '-';
         const date = new Date(isoString);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return isNaN(date.getTime()) ? '-' : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    async function loadDriverOrders() {
-        try {
-            // === ВОТ ЗДЕСЬ ЗАПОМИНАЕМ ТЕКСТ И КУРСОР ===
-            const activeElement = document.activeElement;
-            let focusedInputId = null;
-            let savedValue = "";
-            if (activeElement && activeElement.tagName === 'INPUT') {
-                focusedInputId = activeElement.id;
-                savedValue = activeElement.value;
-            }
+    async function loadAllOrders() {
+        // Если водитель сейчас пишет в инпут, полностью отменяем шаг обновления структуры
+        if (isUserTyping) return;
 
+        try {
             const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
-                .neq('status', 'delivered')
-                .or(`driver_name.is.null,driver_name.eq."${currentUser}"`)
-                .order('urgent', { ascending: false })
+                .not('status', 'eq', 'delivered')
                 .order('id', { ascending: false });
 
             if (error) throw error;
 
             if (!orders || orders.length === 0) {
-                document.getElementById('driver_orders_list').innerHTML = `
-                    <div class="no-orders">📭 No active tasks. All clear!</div>
-                `;
+                document.getElementById('driver_orders_body').innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-muted);">No active orders.</td></tr>`;
                 return;
             }
 
-            let html = "";
-            orders.forEach(o => {
-                const isUrgent = o.urgent === true ? 'urgent' : '';
-                const isMyJob = o.driver_name === currentUser;
-                
-                let logsHtml = `<div style="color:var(--text-main);">Line Note: ${o.comment || '-'}</div>`;
+            const html = orders.map(o => {
+                let actionBtn = '';
+                if (o.status === 'new') {
+                    actionBtn = `<button class="btn-action btn-accept" onclick="acceptOrder(${o.id})">✅ Accept</button>`;
+                } else if (o.status === 'accepted' && o.driver_name === cachedDriverFullName) {
+                    actionBtn = `<button class="btn-action btn-complete" onclick="completeOrder(${o.id})">📦 Complete Order</button>`;
+                } else if (o.status === 'accepted') {
+                    actionBtn = `<span style="color:var(--text-muted); font-size:11px;">Locked</span>`;
+                }
+
+                // Логика вывода логов комментариев (Line, Office, Driver)
+                let logsHtml = `<div style="color:var(--text);">Line: ${o.comment || '-'}</div>`;
                 if (o.office_comment) {
-                    logsHtml += `<div style="color:#38bdf8; font-weight:600; margin-top:2px;">Office: ${o.office_comment}</div>`;
+                    logsHtml += `<div style="color:#0288d1; font-size:11px; margin-top:2px; font-weight:600;">Office: ${o.office_comment}</div>`;
                 }
                 if (o.driver_comment) {
-                    logsHtml += `<div style="color:#4ade80; font-weight:600; margin-top:2px;">Your Reply: ${o.driver_comment}</div>`;
+                    logsHtml += `<div style="color:#16a34a; font-size:11px; margin-top:2px; font-weight:600;">Driver: ${o.driver_comment}</div>`;
                 }
 
-                let actionButtonHtml = "";
-                if (!o.driver_name) {
-                    actionButtonHtml = `<button class="btn-action btn-accept" onclick="acceptJob(${o.id})">🔗 Accept Job</button>`;
-                } else if (isMyJob && o.status !== 'delivered') {
-                    actionButtonHtml = `<button class="btn-action btn-deliver" onclick="completeJob(${o.id})">✅ Mark as Delivered</button>`;
-                }
-
-                let commentBoxHtml = "";
-                if (isMyJob && !o.driver_comment) {
-                    commentBoxHtml = `
-                        <div class="driver-comment-box">
-                            <input type="text" id="driver_msg_for_${o.id}" placeholder="Write a reply to line...">
-                            <button class="btn-comment-send" onclick="sendDriverComment(${o.id})">Send</button>
+                // Поле ввода показывается только для заказов, которые взял этот водитель и где он еще не ответил
+                if (o.status === 'accepted' && o.driver_name === cachedDriverFullName && !o.driver_comment) {
+                    logsHtml += `
+                        <div class="reply-box">
+                            <input type="text" id="driver_reply_to_${o.id}" placeholder="Driver note..." 
+                                onfocus="pauseUpdate()" 
+                                onblur="resumeUpdateDelayed()">
+                            <button class="btn-reply" onclick="sendDriverReply(${o.id})">Reply</button>
                         </div>
                     `;
                 }
 
-                html += `
-                    <div class="order-card ${isUrgent}">
-                        <div class="card-row">
-                            <span class="line-num">${o.line || 'Line ?'}</span>
-                            <span style="font-size:12px; color:var(--text-muted);">⏱ ${formatTime(o.created_at)}</span>
-                        </div>
-                        <div class="fruit-desc">${o.description || 'No description'}</div>
-                        
-                        <div class="details-grid">
-                            <div>Cons: <span style="color:#38bdf8; font-weight:700;">${o.consignment || o.Consignment || '-'}</span></div>
-                            <div>Grower: <span>${o.grower || '-'}</span></div>
-                            <div>Size: <span>${o.size || '-'}</span></div>
-                            <div>Origin: <span>${o.origin || '-'}</span></div>
-                        </div>
-
-                        <div class="card-row" style="margin-top:5px;">
-                            <div>Store: <span class="store-badge">${o.store || '-'}</span></div>
-                            <div>Qty: <span class="qty-badge">${o.qty || '1'}</span></div>
-                        </div>
-
-                        <div class="logs-block">${logsHtml}</div>
-                        ${commentBoxHtml}
-                        ${actionButtonHtml ? `<div class="driver-actions">${actionButtonHtml}</div>` : ''}
-                    </div>
+                return `
+                    <tr>
+                        <td>#${o.id}</td>
+                        <td><strong>${o.line || '-'}</strong></td>
+                        <td><span style="color:#4a5568;">⏱ ${formatTime(o.created_at)}</span></td>
+                        <td><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
+                        <td><strong>${o.description || '-'}</strong></td>
+                        <td>${o.grower || '-'}</td>
+                        <td><span style="font-family:monospace; background:#f1f3f5; padding:4px 6px; border-radius:4px; font-weight:600;">${o.consignment || '-'}</span></td>
+                        <td><strong>${o.size || '-'}</strong></td>
+                        <td><strong style="color:#0288d1; font-size:14px;">${o.qty || '1'}</strong></td>
+                        <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span class="status-badge new">Free</span>'}</td>
+                        <td>${logsHtml}</td>
+                        <td>${actionBtn}</td>
+                    </tr>
                 `;
-            });
+            }).join('');
 
-            // Твой оригинальный innerHTML
-            document.getElementById('driver_orders_list').innerHTML = html;
+            document.getElementById('driver_orders_body').innerHTML = html;
+        } catch (e) { console.error(e); }
+    }
 
-            // === ВОТ ЗДЕСЬ ВОЗВРАЩАЕМ ВСЁ НА МЕСТО ПОСЛЕ ОБНОВЛЕНИЯ ===
-            if (focusedInputId) {
-                const inputEl = document.getElementById(focusedInputId);
-                if (inputEl) {
-                    inputEl.value = savedValue; // Возвращаем введенный текст
-                    inputEl.focus();            // Возвращаем курсор
-                }
-            }
+    // Функции управления паузой автообновления
+    function pauseUpdate() {
+        isUserTyping = true;
+        clearInterval(updateInterval);
+    }
 
-        } catch (err) {
-            console.error("Driver fetch error:", err);
+    function resumeUpdateDelayed() {
+        // Небольшая задержка, чтобы клик по кнопке "Reply" успел сработать до перезапуска интервала
+        setTimeout(() => {
+            isUserTyping = false;
+            startAutoUpdate();
+        }, 300);
+    }
+
+    function startAutoUpdate() {
+        clearInterval(updateInterval);
+        updateInterval = setInterval(loadAllOrders, 4000);
+    }
+
+    async function acceptOrder(orderId) {
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .update({ status: 'accepted', driver_name: cachedDriverFullName })
+                .eq('id', orderId);
+                
+            if (error) throw error;
+            loadAllOrders();
+        } catch (e) { alert(e.message); }
+    }
+
+    async function completeOrder(orderId) {
+        if (!confirm(`Вы действительно доставили паллет по заказу #${orderId}?`)) {
+            return;
+        }
+
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .update({ 
+                    status: 'delivered', 
+                    delivered_at: new Date().toISOString() 
+                })
+                .eq('id', orderId);
+
+            if (error) throw error;
+            
+            alert(`✅ Заказ #${orderId} успешно доставлен на линию!`);
+            loadAllOrders();
+        } catch (e) {
+            alert("Error updating order: " + e.message);
         }
     }
 
-    async function acceptJob(orderId) {
-        try {
-            const { error } = await clientDb
-                .from('orders')
-                .update({ 
-                    driver_name: currentUser,
-                    status: 'accepted'
-                })
-                .eq('id', orderId);
-
-            if (error) throw error;
-            loadDriverOrders();
-        } catch (e) { alert("Error accepting job: " + e.message); }
-    }
-
-    async function completeJob(orderId) {
-        try {
-            const { error } = await clientDb
-                .from('orders')
-                .update({ 
-                    status: 'delivered',
-                    delivered_at: new Date().toISOString()
-                })
-                .eq('id', orderId);
-
-            if (error) throw error;
-            loadDriverOrders();
-        } catch (e) { alert("Error completing job: " + e.message); }
-    }
-
-    async function sendDriverComment(orderId) {
-        const inputEl = document.getElementById(`driver_msg_for_${orderId}`);
-        const text = inputEl ? inputEl.value.trim() : "";
-        if (!text) return;
+    // Функция отправки ответа водителя в базу данных
+    async function sendDriverReply(orderId) {
+        const replyInput = document.getElementById(`driver_reply_to_${orderId}`);
+        const replyText = replyInput ? replyInput.value.trim() : "";
+        if (!replyText) return;
 
         try {
             const { error } = await clientDb
                 .from('orders')
-                .update({ driver_comment: text })
+                .update({ driver_comment: replyText })
                 .eq('id', orderId);
 
             if (error) throw error;
-            loadDriverOrders();
-        } catch (e) { alert("Error sending comment: " + e.message); }
+            
+            isUserTyping = false;
+            loadAllOrders();
+            startAutoUpdate();
+        } catch (e) { alert("Error sending driver reply: " + e.message); }
     }
 
-    loadDriverOrders();
-    setInterval(loadDriverOrders, 4000);
+    // Первоначальная загрузка и старт интервала обновления (4 секунды)
+    loadAllOrders();
+    startAutoUpdate();
 </script>
 </body>
 </html>
