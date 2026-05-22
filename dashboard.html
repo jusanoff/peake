@@ -2,291 +2,288 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Peake Fruit - TV Dashboard</title>
+    <title>Peake Fruit — Production Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { 
-            --bg: #f4f6f9; 
-            --card-bg: #ffffff; 
-            --text: #1a1a2e; 
-            --text-muted: #6c757d;
-            --new: #ef6c00; 
-            --process: #1565c0; 
-            --done: #2e7d32; 
-            --urgent-bg: #ffebee;
-            --urgent-border: #ef5350;
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --accent: #38bdf8;
         }
+
         body {
-            font-family: 'Segoe UI', Roboto, sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            margin: 0; 
-            padding: 20px;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px;
             overflow-x: hidden;
         }
-        .header {
+
+        .dashboard-container {
+            max-width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .header-panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 15px 20px;
+            border-radius: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e2e8f0;
-            margin-bottom: 15px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        h1 { margin: 0; font-size: 26px; letter-spacing: 1px; color: var(--text); font-weight: 800; }
+
+        .header-title h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--accent);
+        }
+
+        .header-title p {
+            margin: 5px 0 0 0;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
         .live-indicator {
             display: flex;
             align-items: center;
             gap: 8px;
             font-size: 14px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            font-weight: bold;
+            font-weight: 600;
+            background: #0284c7;
+            padding: 6px 12px;
+            border-radius: 20px;
         }
-        .dot {
-            width: 10px;
-            height: 10px;
-            background: #2e7d32;
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #34d399;
             border-radius: 50%;
-            animation: blinkLive 1.5s infinite;
+            animation: pulse 2s infinite;
         }
-        @keyframes blinkLive { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
-        
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(52, 211, 153, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+        }
+
+        .table-panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            overflow-hidden: hidden;
+        }
+
         table {
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 8px;
-        }
-        th {
-            color: var(--text-muted);
-            padding: 10px 15px;
+            border-collapse: collapse;
             text-align: left;
-            text-transform: uppercase;
-            font-size: 13px;
-            letter-spacing: 0.5px;
-            font-weight: bold;
-        }
-        td {
-            background: var(--card-bg);
-            padding: 16px 15px;
-            font-size: 18px; 
-            color: var(--text);
-            border-top: 1px solid #e2e8f0;
-            border-bottom: 1px solid #e2e8f0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            transition: all 0.3s ease;
-        }
-        td:first-child { border-left: 1px solid #e2e8f0; border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
-        td:last-child { border-right: 1px solid #e2e8f0; border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
-        
-        tr.urgent-row td {
-            background: var(--urgent-bg);
-            border-top: 1px solid var(--urgent-border);
-            border-bottom: 1px solid var(--urgent-border);
-            animation: pulseUrgent 2s infinite ease-in-out;
-        }
-        tr.urgent-row td:first-child { border-left: 2px solid var(--urgent-border); }
-        tr.urgent-row td:last-child { border-right: 2px solid var(--urgent-border); }
-        
-        @keyframes pulseUrgent {
-            0% { opacity: 1; }
-            50% { opacity: 0.75; }
-            100% { opacity: 1; }
         }
 
-        .time-text { color: #4a5568; font-size: 16px; font-weight: bold; }
-        .line-text { color: #0288d1; font-weight: bold; }
-        .desc-text { color: var(--text); font-weight: 600; }
-        .grower-text { color: #2d3748; }
-        .store-text { color: #6b46c1; font-weight: bold; }
-        .qty-text { color: #b7791f; font-weight: bold; }
-        .size-text { color: #2d3748; font-weight: bold; }
-        
-        code {
-            background: #edf2f7;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-family: monospace;
-            color: #dd6b20;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        
-        .urgent-label {
-            color: #d32f2f;
-            font-weight: 900;
-            text-transform: uppercase;
+        th {
+            background-color: #111827;
+            color: var(--accent);
+            padding: 16px 12px;
             font-size: 14px;
-            display: inline-block;
-            margin-right: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            border-bottom: 3px solid var(--border-color);
         }
 
-        .driver-text { font-weight: bold; color: #1a1a2e; }
-        .no-driver { color: var(--text-muted); font-style: italic; }
-        
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
+        td {
+            padding: 16px 12px;
+            font-size: 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(255,255,255,0.02);
+        }
+
+        .badge-store {
+            background: #6b21a8;
+            color: #f3e8ff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 18px;
+        }
+
+        .badge-qty {
+            background: #0369a1;
+            color: #e0f2fe;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 18px;
+        }
+
+        .status-pill {
+            padding: 6px 12px;
+            border-radius: 6px;
             font-size: 13px;
-            font-weight: bold;
+            font-weight: 700;
             text-transform: uppercase;
             display: inline-block;
-            text-align: center;
-            width: 95px;
         }
-        .status-badge.new { background: #fff3e0; color: #e65100; border: 1px solid var(--new); }
-        .status-badge.process, .status-badge.accepted { background: #e3f2fd; color: #0d47a1; border: 1px solid var(--process); }
-        .status-badge.delivered, .status-badge.done { background: #e8f5e9; color: #1b5e20; border: 1px solid var(--done); }
+        .status-pill.new { background: #7c2d12; color: #ffedd5; }
+        .status-pill.accepted { background: #1e3a8a; color: #dbeafe; }
+
+        .row-blink {
+            animation: urgentBlink 1.5s infinite alternate;
+        }
+
+        @keyframes urgentBlink {
+            0% { background-color: rgba(220, 38, 38, 0.1); }
+            100% { background-color: rgba(220, 38, 38, 0.35); }
+        }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>PEAKE FRUIT — LOGISTICS BOARD</h1>
+<div class="dashboard-container">
+    <div class="header-panel">
+        <div class="header-title">
+            <h1>Peake Fruit — Live Production Overview</h1>
+            <p id="live_clock">Loading time...</p>
+        </div>
         <div class="live-indicator">
-            <div class="dot"></div>
-            <span>Live Monitoring</span>
+            <div class="pulse-dot"></div>
+            <span>LIVE MONITOR</span>
         </div>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 5%">ID</th>
-                <th style="width: 10%">Ordered By</th>
-                <th style="width: 10%">Time</th>
-                <th style="width: 16%">Description</th>
-                <th style="width: 12%">Grower</th>
-                <th style="width: 11%">Consignment</th>
-                <th style="width: 8%">Size</th> <th style="width: 8%">Store</th>
-                <th style="width: 5%">Qty</th>
-                <th style="width: 10%">Taken By</th>
-                <th style="width: 5%; text-align: center;">Status</th>
-            </tr>
-        </thead>
-        <tbody id="tv_orders_body">
-        </tbody>
-    </table>
+    <div class="table-panel">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Line</th>
+                    <th>Time</th>
+                    <th>Store</th>
+                    <th>Variety / Fruit Description</th>
+                    <th>Grower</th>
+                    <th>Consignment</th>
+                    <th>Size</th>
+                    <th>Qty</th>
+                    <th>Comments / Reply</th>
+                    <th>Assigned Driver</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="dashboard_tbody">
+                <tr>
+                    <td colspan="12" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 18px;">
+                        Connecting to live database stream...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
 <script>
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('live_clock').innerText = 'Factory Floor Monitor | ' + now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
+    const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
+    const k3 = 'LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
-    const _db = supabase.createClient(supabaseUrl, supabaseKey);
+    const supabaseKey = k1 + k2 + k3;
+    const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
-    let driverNamesMap = {};
-
-    async function loadDriversMap() {
-        try {
-            const { data: users, error } = await _db
-                .from('users_table')
-                .select('u, name') // Исправлено на правильную колонку 'u' вместо 'user'
-                .eq('t', 'driver');
-            
-            if (error) throw error;
-
-            if (users) {
-                driverNamesMap = {};
-                users.forEach(u => {
-                    if (u.u && u.name) {
-                        driverNamesMap[u.u.toLowerCase().trim()] = u.name;
-                    }
-                });
-            }
-        } catch (e) {
-            console.error("Error loading drivers names map:", e);
-        }
+    function formatTime(isoString) {
+        if (!isoString) return '-';
+        const date = new Date(isoString);
+        if (isNaN(date.getTime())) return '-';
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
-    async function loadTVDashboard() {
+    async function fetchLiveOrders() {
         try {
-            const { data: orders, error } = await _db
+            const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
+                .neq('status', 'delivered') 
+                .order('urgent', { ascending: false })
                 .order('id', { ascending: false });
 
             if (error) throw error;
 
-            const now = new Date();
+            if (!orders || orders.length === 0) {
+                document.getElementById('dashboard_tbody').innerHTML = `
+                    <tr>
+                        <td colspan="12" style="text-align: center; padding: 50px; color: var(--text-muted); font-size: 20px; font-weight: 600;">
+                            📭 No active pallet requests at the moment.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
 
-            // Авто-скрытие завершенных заказов через 1 минуту
-            const activeOrders = orders.filter(o => {
-                const status = (o.status || 'new').toLowerCase();
-                if (status === 'delivered' || status === 'done') {
-                    const deliveredTime = new Date(o.delivered_at || o.created_at);
-                    if (now - deliveredTime > 60000) {
-                        return false; 
-                    }
+            const html = orders.map(o => {
+                const isUrgent = o.urgent === true ? 'class="row-blink"' : '';
+                const statusLwr = (o.status || 'new').toLowerCase();
+                const driverDisplay = o.driver_name ? '🚚 ' + o.driver_name : '⚡ Waiting...';
+
+                let commentBlock = `<div style="font-size: 14px; color: var(--text-main); font-weight: 500;">${o.comment || '-'}</div>`;
+                if (o.driver_comment) {
+                    commentBlock += `<div style="font-size: 13px; color: #4ade80; font-weight: bold; margin-top: 3px;">➜ Driver: ${o.driver_comment}</div>`;
                 }
-                return true;
-            });
-
-            // Сортировка: Срочные -> В процессе -> Новые -> Выполненные
-            const sortedOrders = activeOrders.sort((a, b) => {
-                if (a.urgent && !b.urgent) return -1;
-                if (!a.urgent && b.urgent) return 1;
-
-                const weights = { 'process': 1, 'accepted': 1, 'new': 2, 'delivered': 3, 'done': 3 };
-                return (weights[(a.status || 'new').toLowerCase()] || 2) - (weights[(b.status || 'new').toLowerCase()] || 2);
-            });
-
-            const html = sortedOrders.map(o => {
-                let timeStr = "-";
-                if (o.created_at) {
-                    const d = new Date(o.created_at);
-                    timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                }
-
-                let rawDriver = (o.driver_name || '').toLowerCase().trim();
-                let realDriverName = driverNamesMap[rawDriver] || o.driver_name;
-
-                const driverDisplay = realDriverName 
-                    ? `<span class="driver-text">🚚 ${realDriverName}</span>` 
-                    : `<span class="no-driver">—</span>`;
-
-                const statusClass = (o.status || 'new').toLowerCase();
-                
-                const isUrgent = o.urgent === true || o.urgent === 'true';
-                const rowClass = isUrgent ? 'class="urgent-row"' : '';
-                const urgentPrefix = isUrgent ? '<span class="urgent-label">⚠️ URGENT:</span> ' : '';
-
-                // Защита регистра данных из базы данных
-                const consignmentVal = o.consignment || o.Consignment || '-';
-                const quantityVal = o.quantity || o.Quantity || o.qty || o.Qty || '-';
-                const sizeVal = o.size || o.Size || '-'; // Читаем размер из базы данных
 
                 return `
-                <tr ${rowClass}>
-                    <td><span style="color: var(--text-muted);">#${o.id}</span></td>
-                    <td><span class="line-text">${o.line || '-'}</span></td>
-                    <td><span class="time-text">${timeStr}</span></td>
-                    <td><span class="desc-text">${urgentPrefix}${o.description || '-'}</span></td>
-                    <td><span class="grower-text">${o.grower || '-'}</span></td>
-                    <td><code>${consignmentVal}</code></td>
-                    <td><span class="size-text">${sizeVal}</span></td> <td><span class="store-text">${o.store || '-'}</span></td>
-                    <td><span class="qty-text">${quantityVal}</span></td>
-                    <td>${driverDisplay}</td>
-                    <td style="text-align: center;">
-                        <span class="status-badge ${statusClass}">${o.status || 'new'}</span>
-                    </td>
-                </tr>`;
+                    <tr ${isUrgent}>
+                        <td style="color: var(--text-muted); font-family: monospace;">#${o.id}</td>
+                        <td style="font-size: 18px; font-weight: 800; color: #ffffff;">${o.line || '-'}</td>
+                        <td style="color: #cbd5e1; font-weight: 600;">${formatTime(o.created_at)}</td>
+                        <td><span class="badge-store">${o.store || '-'}</span></td>
+                        <td style="font-size: 18px; font-weight: 700; color: #ffffff;">${o.description || '-'}</td>
+                        <td>${o.grower || '-'}</td>
+                        <td style="font-family: monospace; font-size: 17px; color: var(--accent); font-weight: 700;">${o.consignment || o.Consignment || '-'}</td>
+                        <td style="font-weight: 700;">${o.size || '-'}</td>
+                        <td><span class="badge-qty">${o.qty || '1'}</span></td>
+                        <td>${commentBlock}</td>
+                        <td style="font-size: 17px; font-weight: 700; color: #f43f5e;">${driverDisplay}</td>
+                        <td><span class="status-pill ${statusLwr}">${o.status || 'new'}</span></td>
+                    </tr>
+                `;
             }).join('');
 
-            document.getElementById('tv_orders_body').innerHTML = html;
+            document.getElementById('dashboard_tbody').innerHTML = html;
 
-        } catch (e) {
-            console.error("TV Update Error: ", e);
+        } catch (err) {
+            console.error('Dashboard reload exception:', err.message);
         }
     }
 
-    async function start() {
-        await loadDriversMap(); 
-        await loadTVDashboard(); 
-        
-        setInterval(loadTVDashboard, 5000);
-        setInterval(loadDriversMap, 30000);
-    }
-
-    start();
+    fetchLiveOrders();
+    setInterval(fetchLiveOrders, 4000);
 </script>
 </body>
 </html>
