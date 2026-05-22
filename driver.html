@@ -113,7 +113,6 @@
         .btn-accept { background: #2563eb; color: white; }
         .btn-deliver { background: var(--success); color: white; }
 
-        /* Стили для блока комментария водителя */
         .driver-comment-box {
             display: flex;
             gap: 8px;
@@ -187,14 +186,13 @@
 
     async function loadDriverOrders() {
         try {
-            // Проверяем, сфокусирован ли пользователь на каком-либо текстовом поле прямо сейчас
+            // === ВОТ ЗДЕСЬ ЗАПОМИНАЕМ ТЕКСТ И КУРСОР ===
             const activeElement = document.activeElement;
-            let focusedOrderId = null;
-            let savedTypedValue = "";
-
-            if (activeElement && activeElement.tagName === 'INPUT' && activeElement.id.startsWith('driver_msg_for_')) {
-                focusedOrderId = parseInt(activeElement.id.replace('driver_msg_for_', ''));
-                savedTypedValue = activeElement.value; // сохраняем то, что водитель уже успел набрать
+            let focusedInputId = null;
+            let savedValue = "";
+            if (activeElement && activeElement.tagName === 'INPUT') {
+                focusedInputId = activeElement.id;
+                savedValue = activeElement.value;
             }
 
             const { data: orders, error } = await clientDb
@@ -214,17 +212,11 @@
                 return;
             }
 
-            const listContainer = document.getElementById('driver_orders_list');
-            listContainer.innerHTML = ""; // Очищаем список перед выводом новых данных
-
+            let html = "";
             orders.forEach(o => {
                 const isUrgent = o.urgent === true ? 'urgent' : '';
                 const isMyJob = o.driver_name === currentUser;
                 
-                const card = document.createElement('div');
-                card.className = `order-card ${isUrgent}`;
-
-                // Формируем цепочку отображения логов комментариев внутри карточки заказа
                 let logsHtml = `<div style="color:var(--text-main);">Line Note: ${o.comment || '-'}</div>`;
                 if (o.office_comment) {
                     logsHtml += `<div style="color:#38bdf8; font-weight:600; margin-top:2px;">Office: ${o.office_comment}</div>`;
@@ -233,7 +225,6 @@
                     logsHtml += `<div style="color:#4ade80; font-weight:600; margin-top:2px;">Your Reply: ${o.driver_comment}</div>`;
                 }
 
-                // Логика кнопок статуса
                 let actionButtonHtml = "";
                 if (!o.driver_name) {
                     actionButtonHtml = `<button class="btn-action btn-accept" onclick="acceptJob(${o.id})">🔗 Accept Job</button>`;
@@ -241,64 +232,54 @@
                     actionButtonHtml = `<button class="btn-action btn-deliver" onclick="completeJob(${o.id})">✅ Mark as Delivered</button>`;
                 }
 
-                // Конструктор внутреннего HTML карточки
-                card.innerHTML = `
-                    <div class="card-row">
-                        <span class="line-num">${o.line || 'Line ?'}</span>
-                        <span style="font-size:12px; color:var(--text-muted);">⏱ ${formatTime(o.created_at)}</span>
-                    </div>
-                    <div class="fruit-desc">${o.description || 'No description'}</div>
-                    
-                    <div class="details-grid">
-                        <div>Cons: <span style="color:#38bdf8; font-weight:700;">${o.consignment || o.Consignment || '-'}</span></div>
-                        <div>Grower: <span>${o.grower || '-'}</span></div>
-                        <div>Size: <span>${o.size || '-'}</span></div>
-                        <div>Origin: <span>${o.origin || '-'}</span></div>
-                    </div>
-
-                    <div class="card-row" style="margin-top:5px;">
-                        <div>Store: <span class="store-badge">${o.store || '-'}</span></div>
-                        <div>Qty: <span class="qty-badge">${o.qty || '1'}</span></div>
-                    </div>
-
-                    <div class="logs-block">${logsHtml}</div>
-                `;
-
-                // Поле ввода комментария показываем только если заказ взят текущим водителем и ответа еще нет
+                let commentBoxHtml = "";
                 if (isMyJob && !o.driver_comment) {
-                    const commentBox = document.createElement('div');
-                    commentBox.className = 'driver-comment-box';
-                    
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.id = `driver_msg_for_${o.id}`;
-                    input.placeholder = 'Write a reply to line...';
-                    
-                    // Ключевой момент: возвращаем фокус и текст, если водитель писал именно здесь
-                    if (focusedOrderId === o.id) {
-                        input.value = savedTypedValue;
-                        setTimeout(() => input.focus(), 1); 
-                    }
-
-                    const sendBtn = document.createElement('button');
-                    sendBtn.className = 'btn-comment-send';
-                    sendBtn.innerText = 'Send';
-                    sendBtn.onclick = () => sendDriverComment(o.id);
-
-                    commentBox.appendChild(input);
-                    commentBox.appendChild(sendBtn);
-                    card.appendChild(commentBox);
+                    commentBoxHtml = `
+                        <div class="driver-comment-box">
+                            <input type="text" id="driver_msg_for_${o.id}" placeholder="Write a reply to line...">
+                            <button class="btn-comment-send" onclick="sendDriverComment(${o.id})">Send</button>
+                        </div>
+                    `;
                 }
 
-                if (actionButtonHtml) {
-                    const actionWrapper = document.createElement('div');
-                    actionWrapper.className = 'driver-actions';
-                    actionWrapper.innerHTML = actionButtonHtml;
-                    card.appendChild(actionWrapper);
-                }
+                html += `
+                    <div class="order-card ${isUrgent}">
+                        <div class="card-row">
+                            <span class="line-num">${o.line || 'Line ?'}</span>
+                            <span style="font-size:12px; color:var(--text-muted);">⏱ ${formatTime(o.created_at)}</span>
+                        </div>
+                        <div class="fruit-desc">${o.description || 'No description'}</div>
+                        
+                        <div class="details-grid">
+                            <div>Cons: <span style="color:#38bdf8; font-weight:700;">${o.consignment || o.Consignment || '-'}</span></div>
+                            <div>Grower: <span>${o.grower || '-'}</span></div>
+                            <div>Size: <span>${o.size || '-'}</span></div>
+                            <div>Origin: <span>${o.origin || '-'}</span></div>
+                        </div>
 
-                listContainer.appendChild(card);
+                        <div class="card-row" style="margin-top:5px;">
+                            <div>Store: <span class="store-badge">${o.store || '-'}</span></div>
+                            <div>Qty: <span class="qty-badge">${o.qty || '1'}</span></div>
+                        </div>
+
+                        <div class="logs-block">${logsHtml}</div>
+                        ${commentBoxHtml}
+                        ${actionButtonHtml ? `<div class="driver-actions">${actionButtonHtml}</div>` : ''}
+                    </div>
+                `;
             });
+
+            // Твой оригинальный innerHTML
+            document.getElementById('driver_orders_list').innerHTML = html;
+
+            // === ВОТ ЗДЕСЬ ВОЗВРАЩАЕМ ВСЁ НА МЕСТО ПОСЛЕ ОБНОВЛЕНИЯ ===
+            if (focusedInputId) {
+                const inputEl = document.getElementById(focusedInputId);
+                if (inputEl) {
+                    inputEl.value = savedValue; // Возвращаем введенный текст
+                    inputEl.focus();            // Возвращаем курсор
+                }
+            }
 
         } catch (err) {
             console.error("Driver fetch error:", err);
@@ -351,7 +332,6 @@
         } catch (e) { alert("Error sending comment: " + e.message); }
     }
 
-    // Первичный запуск и интервал автоматического обновления (4 секунды)
     loadDriverOrders();
     setInterval(loadDriverOrders, 4000);
 </script>
