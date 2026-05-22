@@ -174,7 +174,7 @@
             border-radius: 6px;
         }
 
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        table { width: 100%; border-collapse: collapse; min-width: 950px; }
         th { background: #f8f9fa; color: var(--text-muted); padding: 10px; text-align: left; font-size: 12px; border-bottom: 2px solid var(--border); }
         td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #edf2f7; }
 
@@ -182,14 +182,6 @@
         .status-badge.new { background: #e0f2fe; color: #0369a1; }
         .status-badge.process, .status-badge.accepted { background: #fff3e0; color: #e65100; }
         .status-badge.delivered, .status-badge.done { background: #e2f0d9; color: #385723; }
-
-        @media (min-width: 768px) {
-            body { padding: 20px; }
-            .container { gap: 20px; }
-            .header { padding: 15px 25px; }
-            .header-title h1 { font-size: 22px; }
-            .dashboard-card { padding: 20px; }
-        }
     </style>
 </head>
 <body>
@@ -243,6 +235,11 @@
             </div>
         </div>
 
+        <div class="input-group" style="margin-top: 15px;">
+            <label style="color: #4a5568; font-weight:600;">Comment</label>
+            <input type="text" id="inp_comment" placeholder="Add a comment for the driver...">
+        </div>
+
         <div class="qty-section">
             <div class="input-group">
                 <label style="color: var(--accent); font-weight:700;">Quantity Needed (QTY)</label>
@@ -272,13 +269,14 @@
                         <th>Consignment</th>
                         <th>Specs (O/S/C)</th>
                         <th>Qty</th>
+                        <th>Comment</th>
                         <th>Driver</th>
                         <th>Delivered At</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody id="line_requests_body">
-                    <tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Loading requests...</td></tr>
+                    <tr><td colspan="12" style="text-align:center; color:var(--text-muted);">Loading requests...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -306,7 +304,7 @@
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
     let stockItemsGlobal = [];
-    let cachedLineFullName = currentUser; 
+    let cachedLineFullName = currentUser;
 
     function formatTime(isoString) {
         if (!isoString) return '-';
@@ -322,10 +320,7 @@
                 .select('*')
                 .eq('u', currentUser);
 
-            if (error) {
-                console.error("Ошибка Supabase:", error.message);
-                return;
-            }
+            if (error) return;
 
             if (data && data.length > 0) {
                 const userRow = data[0];
@@ -333,34 +328,28 @@
 
                 if (realName) {
                     cachedLineFullName = realName; 
-                    
                     const badge = document.getElementById('line_name_display');
                     if (badge) {
                         badge.innerText = 'Line: ' + realName;
                     }
                 }
             }
-        } catch (err) {
-            console.error("Критическая ошибка в функции fetchLineFullName:", err);
-        }
-        
+        } catch (err) {}
         loadActiveRequests();
     }
 
-    // ДОБАВЛЕНА НЕДОСТАЮЩАЯ ФУНКЦИЯ ДЛЯ ЗАГРУЗКИ ТОВАРОВ ИЗ ТАБЛИЦЫ ОСТАТКОВ
     async function loadStockDropdown() {
         try {
             const { data: stock, error } = await clientDb
-                .from('stock') // Использует вашу таблицу остатков
+                .from('stock')
                 .select('*')
-                .gt('count', 0); // Показываем только поддоны, которые физически есть на складе
+                .gt('count', 0);
 
             if (error) throw error;
 
             if (stock) {
                 stockItemsGlobal = stock;
                 const selector = document.getElementById('stock_selector');
-                
                 const optionsHtml = stock.map(item => {
                     const desc = item.description || 'Unknown Fruit';
                     const cons = item.consignment || item.Consignment || 'No Cons';
@@ -371,9 +360,7 @@
 
                 selector.innerHTML = '<option value="">-- Choose fruit pallet (Auto-fills fields below) --</option>' + optionsHtml;
             }
-        } catch (e) {
-            console.error("Error loading stock dropdown:", e.message);
-        }
+        } catch (e) {}
     }
 
     function handleStockSelect() {
@@ -401,6 +388,7 @@
         const size = document.getElementById('inp_size').value.trim();
         const count = document.getElementById('inp_count').value.trim();
         const qty = parseInt(document.getElementById('inp_qty').value) || 1;
+        const comment = document.getElementById('inp_comment').value.trim();
         const isUrgent = document.getElementById('inp_urgent').checked;
 
         if (!desc || !cons) {
@@ -409,7 +397,6 @@
         }
 
         try {
-            // ИСПРАВЛЕНО: Теперь передаем истинное булево значение в поле 'urgent', чтобы ТВ-борд запускал мигание
             const { error } = await clientDb.from('orders').insert([{
                 line: cachedLineFullName, 
                 description: isUrgent ? '⚠️ ' + desc : desc,
@@ -421,7 +408,8 @@
                 available: count, 
                 qty: qty,
                 status: 'new',
-                urgent: isUrgent // Запись признака срочности напрямую в базу данных
+                urgent: isUrgent,
+                comment: comment
             }]);
 
             if (error) throw error;
@@ -437,6 +425,7 @@
             document.getElementById('inp_size').value = '';
             document.getElementById('inp_count').value = '';
             document.getElementById('inp_qty').value = '1';
+            document.getElementById('inp_comment').value = '';
             document.getElementById('inp_urgent').checked = false;
 
             loadActiveRequests();
@@ -457,7 +446,7 @@
             if (error) throw error;
 
             if (!orders || orders.length === 0) {
-                document.getElementById('line_requests_body').innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--text-muted);">No active requests.</td></tr>`;
+                document.getElementById('line_requests_body').innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-muted);">No active requests.</td></tr>`;
                 return;
             }
 
@@ -477,6 +466,7 @@
                     <td><span style="font-family:monospace; background:#f1f3f5; padding:2px 6px; border-radius:3px; font-weight:600;">${o.consignment || o.Consignment || '-'}</span></td>
                     <td>${specOrigin} / ${specSize} / ${specAvail}</td>
                     <td><strong style="font-size:14px; color:#0288d1;">${o.qty || '1'}</strong></td>
+                    <td>${o.comment || '-'}</td>
                     <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span style="color:var(--text-muted);">Waiting...</span>'}</td>
                     <td><span style="color:var(--status-done); font-weight:bold;">${o.delivered_at ? formatTime(o.delivered_at) : '-'}</span></td>
                     <td><span class="status-badge ${statusLwr}">${o.status || 'new'}</span></td>
@@ -484,14 +474,11 @@
             `}).join('');
 
             document.getElementById('line_requests_body').innerHTML = html;
-        } catch (e) { console.error(e); }
+        } catch (e) {}
     }
 
-    // Запуск процессов
     fetchLineFullName();
     loadStockDropdown();
-
-    // Автообновление таблицы активных заказов каждые 5 секунд
     setInterval(loadActiveRequests, 5000);
 </script>
 </body>
