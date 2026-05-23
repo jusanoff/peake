@@ -515,7 +515,6 @@
 </div>
 
 <script>
-    // Абсолютно полный словарь локализации интерфейса
     const i18n = {
         en: {
             main_title: "Peake Fruit — Production Line Control",
@@ -658,7 +657,6 @@
         document.getElementById('th_status').innerText = lang.th_status;
         document.getElementById('th_action').innerText = lang.th_action;
 
-        // Перевод динамических блоков ранера
         document.getElementById('btn_tab_driver').innerText = lang.btn_tab_driver;
         document.getElementById('btn_tab_runner').innerText = lang.btn_tab_runner;
         document.getElementById('lbl_runner_task_type').innerText = lang.lbl_runner_task_type;
@@ -670,7 +668,6 @@
         document.getElementById('lbl_runner_comment').innerText = lang.lbl_runner_comment;
         document.getElementById('btn_send_runner').innerText = lang.btn_send_runner;
 
-        // Заполнение селектов ранера
         document.getElementById('runner_task_type').innerHTML = `
             <option value="bins">${lang.task_bins}</option>
             <option value="boxes">${lang.task_boxes}</option>
@@ -975,19 +972,16 @@
                 if(el) currentTypingValue = el.value;
             }
 
-            // Вычисляем ISO-строку для 00:00:00 сегодняшнего дня (местное время)
+            // Получаем начало сегодняшнего дня (00:00) в местном времени
             const todayStart = new Date();
             todayStart.setHours(0, 0, 0, 0);
             const todayIso = todayStart.toISOString();
 
-            // Запрашиваем из базы данных:
-            // 1. Все незавершенные заявки линии (статус НЕ 'done', 'delivered', 'canceled')
-            // 2. ИЛИ завершенные/отмененные заявки линии, но созданные строго СЕГОДНЯ (после полуночи)
+            // Запрашиваем заявки для текущей линии
             const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
                 .or(`line.eq."${currentUser}",line.eq."${cachedLineFullName}"`)
-                .or(`not.status.in.("done","delivered","canceled"),created_at.gte."${todayIso}"`)
                 .order('id', { ascending: false });
 
             if (error) throw error;
@@ -998,7 +992,25 @@
                 return;
             }
 
-            const tableHtml = orders.map(o => {
+            // Фильтруем массив данных: на экране остаются только СВЕЖИЕ завершенные/отмененные (созданные после 00:00) 
+            // ИЛИ абсолютно все заявки со статусом 'new', 'process', 'accepted' (чтобы активные висели до завершения)
+            const filteredOrders = orders.filter(o => {
+                const statusLwr = (o.status || 'new').toLowerCase();
+                const isFinished = (statusLwr === 'done' || statusLwr === 'delivered' || statusLwr === 'canceled');
+                
+                if (isFinished) {
+                    return o.created_at >= todayIso; // Скрываем после полуночи
+                }
+                return true; // Активные задачи показываем всегда
+            });
+
+            if (filteredOrders.length === 0) {
+                document.getElementById('line_requests_body').innerHTML = `<tr><td colspan="13" style="text-align:center; color:var(--text-muted);">${lang.no_requests}</td></tr>`;
+                document.getElementById('line_requests_mobile').innerHTML = `<div style="text-align:center; color:var(--text-muted); padding: 20px;">${lang.no_requests}</div>`;
+                return;
+            }
+
+            const tableHtml = filteredOrders.map(o => {
                 const statusLwr = (o.status || 'new').toLowerCase();
                 const actionHtml = statusLwr === 'new' 
                     ? `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>` 
@@ -1031,7 +1043,7 @@
                 </tr>`;
             }).join('');
 
-            const mobileHtml = orders.map(o => {
+            const mobileHtml = filteredOrders.map(o => {
                 const statusLwr = (o.status || 'new').toLowerCase();
                 const actionButton = statusLwr === 'new' 
                     ? `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>` 
@@ -1083,7 +1095,9 @@
                     if (currentTypingValue !== null) targetInput.value = currentTypingValue;
                 }
             }
-        } catch (e) {}
+        } catch (e) {
+            console.error(e);
+        }
     }
 
     fetchLineFullName();
