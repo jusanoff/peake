@@ -182,6 +182,21 @@
         .status-badge.new { background: #e0f2fe; color: #0369a1; }
         .status-badge.process, .status-badge.accepted { background: #fff3e0; color: #e65100; }
         .status-badge.delivered, .status-badge.done { background: #e2f0d9; color: #385723; }
+        
+        /* Стиль для кнопки отмены заказа */
+        .btn-cancel {
+            background: #fff5f5;
+            color: #e53e3e;
+            border: 1px solid #fed7d7;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 11px;
+        }
+        .btn-cancel:hover {
+            background: #fed7d7;
+        }
     </style>
 </head>
 <body>
@@ -273,10 +288,11 @@
                         <th>Driver</th>
                         <th>Delivered At</th>
                         <th>Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody id="line_requests_body">
-                    <tr><td colspan="12" style="text-align:center; color:var(--text-muted);">Loading requests...</td></tr>
+                    <tr><td colspan="13" style="text-align:center; color:var(--text-muted);">Loading requests...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -435,6 +451,24 @@
         }
     }
 
+    /* Функция для удаления (отмены) заказа */
+    async function cancelOrder(orderId) {
+        if (!confirm("Are you sure you want to cancel request #" + orderId + "?")) return;
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .delete()
+                .eq('id', orderId);
+
+            if (error) throw error;
+
+            alert("Request #" + orderId + " has been canceled.");
+            loadActiveRequests();
+        } catch (e) {
+            alert("Error canceling request: " + e.message);
+        }
+    }
+
     async function loadActiveRequests() {
         try {
             const { data: orders, error } = await clientDb
@@ -446,7 +480,7 @@
             if (error) throw error;
 
             if (!orders || orders.length === 0) {
-                document.getElementById('line_requests_body').innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-muted);">No active requests.</td></tr>`;
+                document.getElementById('line_requests_body').innerHTML = `<tr><td colspan="13" style="text-align:center; color:var(--text-muted);">No active requests.</td></tr>`;
                 return;
             }
 
@@ -465,6 +499,11 @@
                     logsHtml += `<div style="color:#2e7d32; font-size:11px; margin-top:2px; font-weight:600;">Driver: ${o.driver_comment}</div>`;
                 }
 
+                // Кнопка отмены доступна только для новых заказов (статус 'new')
+                const actionHtml = statusLwr === 'new' 
+                    ? `<button class="btn-cancel" onclick="cancelOrder(${o.id})">Cancel</button>` 
+                    : `<span style="color:var(--text-muted); font-size:11px;">In progress</span>`;
+
                 return `
                 <tr>
                     <td>#${o.id}</td>
@@ -479,6 +518,7 @@
                     <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span style="color:var(--text-muted);">Waiting...</span>'}</td>
                     <td><span style="color:var(--status-done); font-weight:bold;">${o.delivered_at ? formatTime(o.delivered_at) : '-'}</span></td>
                     <td><span class="status-badge ${statusLwr}">${o.status || 'new'}</span></td>
+                    <td>${actionHtml}</td>
                 </tr>
             `}).join('');
 
