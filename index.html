@@ -129,6 +129,9 @@
             color: #0288d1;
             margin-bottom: 8px;
             font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         select, input {
@@ -157,13 +160,28 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
-            margin-bottom: 10px;
         }
         .input-group label {
             font-size: 11px;
             text-transform: uppercase;
             color: var(--text-muted);
             font-weight: 600;
+        }
+
+        .qty-section {
+            margin-top: 15px;
+        }
+        .qty-section input {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+        }
+        
+        .runner-qty-section input {
+            border: 2px solid var(--runner-accent) !important;
+            color: var(--runner-accent) !important;
         }
 
         .urgent-box {
@@ -192,6 +210,10 @@
             font-weight: 700;
             cursor: pointer;
             margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             box-shadow: 0 2px 6px rgba(0,119,194,0.2);
         }
         .btn-send:hover { background: #005fa3; }
@@ -207,6 +229,10 @@
             font-weight: 700;
             cursor: pointer;
             margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             box-shadow: 0 2px 6px rgba(107,70,193,0.2);
         }
         .btn-send-runner:hover { background: #553c9a; }
@@ -246,6 +272,7 @@
             margin-bottom: 8px;
             gap: 10px;
         }
+        .card-row:last-child { margin-bottom: 0; }
 
         .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
         .status-badge.new { background: #e0f2fe; color: #0369a1; }
@@ -273,11 +300,13 @@
             font-weight: 600;
             font-size: 11px;
         }
+        .btn-cancel:hover { background: #fed7d7; }
 
         .table-comment-box {
             display: flex;
             gap: 4px;
             align-items: center;
+            margin-bottom: 4px;
         }
         .table-comment-box input {
             padding: 6px;
@@ -286,16 +315,6 @@
             border-radius: 4px;
             width: 100%;
             max-width: 150px;
-        }
-
-        .btn-save-comment {
-            background: #e0f2fe;
-            color: #0369a1;
-            border: 1px solid #bae6fd;
-            padding: 6px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
         }
         
         .mobile-comment-wrapper {
@@ -310,13 +329,32 @@
             flex-grow: 1;
         }
 
+        .btn-save-comment {
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+            padding: 6px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .btn-save-comment:hover { background: #bae6fd; }
+
         @media (max-width: 992px) {
             .grid-inputs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            th:nth-child(7), td:nth-child(7), th:nth-child(11), td:nth-child(11) { display: none; }
         }
+
         @media (max-width: 768px) {
             .grid-inputs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            th:nth-child(5), td:nth-child(5), th:nth-child(10), td:nth-child(10) { display: none; }
         }
+
         @media (max-width: 576px) {
+            body { padding: 5px; }
+            .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+            .header-right { width: 100%; justify-content: space-between; }
             .grid-inputs { grid-template-columns: repeat(1, minmax(0, 1fr)); }
             .table-responsive { display: none; }
             .mobile-requests-list { display: flex; }
@@ -329,7 +367,7 @@
     <div class="header">
         <div class="header-title">
             <h1 id="txt_main_title">Peake Fruit — Production Line Control</h1>
-            <p id="txt_sub_title">Line Logistics Terminal</p>
+            <p id="txt_sub_title">Request Pallets from Warehouse</p>
         </div>
         <div class="header-right">
             <div class="line-badge" id="line_name_display">Line: Loading...</div>
@@ -338,35 +376,59 @@
     </div>
 
     <div class="tabs-container">
-        <button class="tab-btn active" data-tab="driver" onclick="switchTab('driver')" id="btn_tab_driver">🚚 Driver Request (Фрукты)</button>
-        <button class="tab-btn" data-tab="runner" onclick="switchTab('runner')" id="btn_tab_runner">🏃‍♂️ Runner Request (Тара / Вывоз)</button>
+        <button class="tab-btn active" data-tab="driver" onclick="switchTab('driver')" id="btn_tab_driver">🚚 Driver Request</button>
+        <button class="tab-btn" data-tab="runner" onclick="switchTab('runner')" id="btn_tab_runner">🏃‍♂️ Runner Request</button>
     </div>
 
     <div id="content_driver" class="dashboard-card tab-content active">
         <div class="card-title-quick" id="txt_quick_select">⚡ Quick Select From Stock Sheet</div>
         
-        <div style="position: relative; width: 100%; margin-bottom: 15px;">
-            <input type="text" id="stock_input" class="stock-search-combo" placeholder="🔍 Search fruit pallet in stock..." oninput="handleCustomSearch(this)" onclick="handleCustomSearch(this)">
-            <div id="custom_dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); max-height: 200px; overflow-y: auto; z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.1);"></div>
+        <div style="position: relative; width: 100%;">
+            <input type="text" id="stock_input" class="stock-search-combo" placeholder="🔍 Click or type to search fruit pallet..." oninput="handleCustomSearch(this)" onclick="handleCustomSearch(this)">
+            <div id="custom_dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-top: none; max-height: 250px; overflow-y: auto; z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 0 0 6px 6px;"></div>
         </div>
 
         <div class="grid-inputs">
-            <div class="input-group"><label id="lbl_desc">Description</label><input type="text" id="inp_description"></div>
-            <div class="input-group"><label id="lbl_cons">Consignment</label><input type="text" id="inp_consignment"></div>
-            <div class="input-group"><label id="lbl_store">Store / Location</label><input type="text" id="inp_store"></div>
-            <div class="input-group"><label id="lbl_grower">Grower</label><input type="text" id="inp_grower"></div>
-            <div class="input-group"><label id="lbl_origin">Origin</label><input type="text" id="inp_origin"></div>
-            <div class="input-group"><label id="lbl_size">Size</label><input type="text" id="inp_size"></div>
-            <div class="input-group"><label id="lbl_count">Stock Count</label><input type="text" id="inp_count" readonly style="background:#f1f5f9;"></div>
             <div class="input-group">
-                <label id="lbl_qty" style="color:var(--accent); font-weight:700;">QTY Needed</label>
-                <input type="number" id="inp_qty" value="1" min="1" style="border:2px solid var(--accent); font-weight:700;">
+                <label id="lbl_desc">Description / Fruit</label>
+                <input type="text" id="inp_description" placeholder="e.g. Royal Gala">
+            </div>
+            <div class="input-group">
+                <label id="lbl_cons">Consignment (Cons)</label>
+                <input type="text" id="inp_consignment" placeholder="e.g. 8885">
+            </div>
+            <div class="input-group">
+                <label id="lbl_store">Store / Location</label>
+                <input type="text" id="inp_store" placeholder="e.g. 41">
+            </div>
+            <div class="input-group">
+                <label id="lbl_grower">Grower</label>
+                <input type="text" id="inp_grower" placeholder="e.g. Clemente">
+            </div>
+            <div class="input-group">
+                <label id="lbl_origin">Origin</label>
+                <input type="text" id="inp_origin" placeholder="Chile">
+            </div>
+            <div class="input-group">
+                <label id="lbl_size">Size</label>
+                <input type="text" id="inp_size" placeholder="73-78">
+            </div>
+            <div class="input-group">
+                <label id="lbl_count">Count</label>
+                <input type="text" id="inp_count" placeholder="100">
             </div>
         </div>
 
         <div class="input-group" style="margin-top: 15px;">
-            <label id="lbl_comment">Comment for Driver</label>
-            <input type="text" id="inp_comment" placeholder="e.g., Put near the roller...">
+            <label id="lbl_comment" style="color: #4a5568; font-weight:600;">Comment</label>
+            <input type="text" id="inp_comment" placeholder="Add a comment for the driver...">
+        </div>
+
+        <div class="qty-section">
+            <div class="input-group">
+                <label id="lbl_qty" style="color: var(--accent); font-weight:700;">Quantity Needed (QTY)</label>
+                <input type="number" id="inp_qty" value="1" min="1">
+            </div>
         </div>
 
         <div class="urgent-box">
@@ -388,12 +450,14 @@
             </select>
         </div>
 
-        <div class="input-group" id="runner_qty_block">
-            <label style="font-weight:700;" id="lbl_runner_qty">Количество (Quantity Needed)</label>
-            <input type="number" id="runner_qty" value="1" min="1">
+        <div class="qty-section runner-qty-section" style="margin-top: 15px;">
+            <div class="input-group">
+                <label id="lbl_runner_qty" style="color: var(--runner-accent); font-weight:700;">Количество (Quantity Needed)</label>
+                <input type="number" id="runner_qty" value="1" min="1">
+            </div>
         </div>
 
-        <div class="input-group" id="runner_bin_color_block">
+        <div class="input-group" id="runner_bin_color_block" style="margin-top: 15px;">
             <label id="lbl_bin_color">Цвет Бина (Bin Color)</label>
             <select id="runner_bin_color">
                 <option value="Red">Красный (Red)</option>
@@ -404,7 +468,7 @@
             </select>
         </div>
 
-        <div class="input-group" id="runner_box_type_block" style="display:none;">
+        <div class="input-group" id="runner_box_type_block" style="display:none; margin-top: 15px;">
             <label id="lbl_box_type">Тип Коробок (Box Type)</label>
             <select id="runner_box_type">
                 <option value="Empty">Пустые (Empty)</option>
@@ -413,18 +477,18 @@
             </select>
         </div>
 
-        <div class="input-group" id="runner_tray_number_block" style="display:none;">
+        <div class="input-group" id="runner_tray_number_block" style="display:none; margin-top: 15px;">
             <label style="color:var(--runner-accent); font-weight:700;" id="lbl_tray_number">Номер Трея / Лотка (Tray Number) *</label>
             <input type="text" id="runner_tray_number" placeholder="e.g. 14, 2A, Line 3...">
         </div>
 
-        <div class="input-group" id="runner_store_block" style="display:none;">
+        <div class="input-group" id="runner_store_block" style="display:none; margin-top: 15px;">
             <label style="color: red; font-weight:700;" id="lbl_target_store">Куда отвезти паллет? Target Store (Обязательно) *</label>
             <input type="text" id="runner_target_store" placeholder="e.g. Store 42, Dispatch, Coldroom...">
         </div>
 
-        <div class="input-group" style="margin-top: 10px;">
-            <label id="lbl_runner_comment">Комментарий к задаче (Optional)</label>
+        <div class="input-group" style="margin-top: 15px;">
+            <label id="lbl_runner_comment" style="color: #4a5568; font-weight:600;">Комментарий к задаче (Optional)</label>
             <input type="text" id="runner_comment" placeholder="...">
         </div>
 
@@ -432,59 +496,537 @@
     </div>
 
     <div class="dashboard-card">
-        <h3 id="txt_active_requests" style="margin-top:0; font-size:16px;">Active Live Requests</h3>
+        <h3 id="txt_active_requests" style="margin-top:0; font-size:16px;">Your Active Line Requests (Live)</h3>
         
         <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Time</th>
-                        <th>Store</th>
-                        <th>Description / Task</th>
-                        <th>Consignment</th>
-                        <th>Specs</th>
-                        <th>Qty</th>
-                        <th>Comment</th>
-                        <th>Assignee</th>
-                        <th>Status</th>
-                        <th>Action</th>
+                        <th id="th_id">ID</th>
+                        <th id="th_time">Ordered At</th>
+                        <th id="th_store">Store</th>
+                        <th id="th_fruit">Fruit Description</th>
+                        <th id="th_grower">Grower</th>
+                        <th id="th_cons">Consignment</th>
+                        <th id="th_specs">Specs (O/S/C)</th>
+                        <th id="th_qty">Qty</th>
+                        <th id="th_comment">Comment</th>
+                        <th id="th_driver">Driver</th>
+                        <th id="th_delivered">Delivered At</th>
+                        <th id="th_status">Status</th>
+                        <th id="th_action">Action</th>
                     </tr>
                 </thead>
                 <tbody id="line_requests_body">
-                    <tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Loading...</td></tr>
+                    <tr><td colspan="13" style="text-align:center; color:var(--text-muted);">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
 
-        <div class="mobile-requests-list" id="line_requests_mobile"></div>
+        <div class="mobile-requests-list" id="line_requests_mobile">
+            <div style="text-align:center; color:var(--text-muted); padding: 20px;">Loading...</div>
+        </div>
     </div>
 </div>
 
 <script>
+    // Мультиязычный словарь
     const i18n = {
         en: {
             main_title: "Peake Fruit — Production Line Control",
+            sub_title: "Request Pallets from Warehouse",
+            line_badge: "Line",
+            logout: "Log Out",
+            quick_select: "⚡ Quick Select From Stock Sheet",
+            search_placeholder: "🔍 Click or type to search fruit pallet...",
+            lbl_desc: "Description / Fruit",
+            lbl_cons: "Consignment (Cons)",
+            lbl_store: "Store / Location",
+            lbl_grower: "Grower",
+            lbl_origin: "Origin",
+            lbl_size: "Size",
+            lbl_count: "Count",
+            lbl_comment: "Comment",
+            lbl_qty: "Quantity Needed (QTY)",
+            lbl_urgent: "⚠️ MARK AS URGENT (ПРИОРИТЕТ ДЛЯ ВОДИТЕЛЯ)",
+            btn_send: "🚀 SEND REQUEST TO DRIVER",
+            active_requests: "Your Active Line Requests (Live)",
+            th_id: "ID", th_time: "Ordered At", th_store: "Store", th_fruit: "Fruit Description",
+            th_grower: "Grower", th_cons: "Consignment", th_specs: "Specs (O/S/C)", th_qty: "Qty",
+            th_comment: "Comment", th_driver: "Driver", th_delivered: "Delivered At", th_status: "Status", th_action: "Action",
+            loading: "Loading requests...", no_requests: "No active requests.",
+            waiting: "Waiting...", progress: "In progress", btn_cancel: "Cancel",
             alert_fields: "Please fill in Description and Consignment fields!",
             alert_success: "Request sent successfully!",
+            cancel_title: "Cancel Request",
+            cancel_menu: "Please select a reason (enter number 1-4):\n1. No longer needed (Больше не нужно)\n2. Plans changed (Изменились планы)\n3. Wrong product selected (Выбран не тот продукт)\n4. Other / Mistake (Другое / Ошибка)",
+            cancel_r1: "No longer needed", cancel_r2: "Plans changed", cancel_r3: "Wrong product selected", cancel_r4: "Other / Mistake",
+            alert_canceled: "Request successfully canceled.",
+            alert_comm_updated: "Comment updated!",
             alert_store_req: "Please specify the Target Store for pickup!",
-            alert_tray_req: "Please specify the Tray Number!",
-            waiting: "Waiting...",
-            btn_cancel: "Cancel"
+            alert_tray_req: "Please specify the Tray Number!"
         },
         ru: {
             main_title: "Peake Fruit — Управление Линией",
+            sub_title: "Заказ паллет со склада",
+            line_badge: "Линия",
+            logout: "Выйти",
+            quick_select: "⚡ Быстрый выбор из остатков (Stock)",
+            search_placeholder: "🔍 Нажмите или введите для поиска паллеты...",
+            lbl_desc: "Описание / Фрукт",
+            lbl_cons: "Консигнация (Cons)",
+            lbl_store: "Камера / Локация",
+            lbl_grower: "Фермер (Grower)",
+            lbl_origin: "Страна (Origin)",
+            lbl_size: "Калибр (Size)",
+            lbl_count: "Остаток (Count)",
+            lbl_comment: "Комментарий",
+            lbl_qty: "Количество паллет (QTY)",
+            lbl_urgent: "⚠️ СРОЧНЫЙ ЗАКАЗ (ПРИОРИТЕТ ДЛЯ ВОДИТЕЛЯ)",
+            btn_send: "🚀 ОТПРАВИТЬ ЗАЯВКУ ВОДИТЕЛЮ",
+            active_requests: "Активные заявки вашей линии (Live)",
+            th_id: "ID", th_time: "Время", th_store: "Камера", th_fruit: "Описание фрукта",
+            th_grower: "Фермер", th_cons: "Консигнация", th_specs: "Специф. (O/S/C)", th_qty: "Кол-во",
+            th_comment: "Комментарий", th_driver: "Водитель", th_delivered: "Доставлено", th_status: "Статус", th_action: "Действие",
+            loading: "Загрузка заявок...", no_requests: "Нет активных заявок.",
+            waiting: "Ожидание...", progress: "В работе", btn_cancel: "Отмена",
             alert_fields: "Пожалуйста, заполните поля Описание и Консигнация!",
             alert_success: "Заявка успешно отправлена!",
+            cancel_title: "Отмена заявки",
+            cancel_menu: "Выберите причину отмены (введите цифру 1-4):\n1. Больше не нужно\n2. Изменились планы\n3. Выбран не тот продукт\n4. Другое / Ошибка",
+            cancel_r1: "Больше не нужно", cancel_r2: "Изменились планы", cancel_r3: "Выбран не тот продукт", cancel_r4: "Другое / Ошибка",
+            alert_canceled: "Заявка успешно отменена.",
+            alert_comm_updated: "Комментарий обновлен!",
             alert_store_req: "Пожалуйста, обязательно укажите в какой Store отвезти паллет!",
-            alert_tray_req: "Пожалуйста, укажите номер трея/лотка!",
-            waiting: "Ожидание...",
-            btn_cancel: "Отмена"
+            alert_tray_req: "Пожалуйста, укажите номер трея/лотка!"
         }
     };
 
     const currentLang = localStorage.getItem('lang') === 'ru' ? 'ru' : 'en';
     const lang = i18n[currentLang];
 
+    function applyLocalization() {
+        document.getElementById('txt_main_title').innerText = lang.main_title;
+        document.getElementById('txt_sub_title').innerText = lang.sub_title;
+        document.getElementById('btn_logout').innerText = lang.logout;
+        document.getElementById('txt_quick_select').innerText = lang.quick_select;
+        document.getElementById('stock_input').placeholder = lang.search_placeholder;
+        
+        document.getElementById('lbl_desc').innerText = lang.lbl_desc;
+        document.getElementById('lbl_cons').innerText = lang.lbl_cons;
+        document.getElementById('lbl_store').innerText = lang.lbl_store;
+        document.getElementById('lbl_grower').innerText = lang.lbl_grower;
+        document.getElementById('lbl_origin').innerText = lang.lbl_origin;
+        document.getElementById('lbl_size').innerText = lang.lbl_size;
+        document.getElementById('lbl_count').innerText = lang.lbl_count;
+        document.getElementById('lbl_comment').innerText = lang.lbl_comment;
+        document.getElementById('lbl_qty').innerText = lang.lbl_qty;
+        document.getElementById('lbl_urgent').innerText = lang.lbl_urgent;
+        document.getElementById('btn_send').innerText = lang.btn_send;
+        document.getElementById('txt_active_requests').innerText = lang.active_requests;
+
+        document.getElementById('th_id').innerText = lang.th_id;
+        document.getElementById('th_time').innerText = lang.th_time;
+        document.getElementById('th_store').innerText = lang.th_store;
+        document.getElementById('th_fruit').innerText = lang.th_fruit;
+        document.getElementById('th_grower').innerText = lang.th_grower;
+        document.getElementById('th_cons').innerText = lang.th_cons;
+        document.getElementById('th_specs').innerText = lang.th_specs;
+        document.getElementById('th_qty').innerText = lang.th_qty;
+        document.getElementById('th_comment').innerText = lang.th_comment;
+        document.getElementById('th_driver').innerText = lang.th_driver;
+        document.getElementById('th_delivered').innerText = lang.th_delivered;
+        document.getElementById('th_status').innerText = lang.th_status;
+        document.getElementById('th_action').innerText = lang.th_action;
+    }
+
     const currentUser = localStorage.getItem('user');
-    const current
+    const currentRole = localStorage.getItem('role');
+
+    if (!currentUser || currentRole !== 'line') {
+        alert("Access denied!");
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+
+    applyLocalization();
+    document.getElementById('line_name_display').innerText = `${lang.line_badge}: ${currentUser}`;
+
+    const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
+    const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
+    const k3 = 'LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+
+    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
+    const supabaseKey = k1 + k2 + k3;
+    const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
+
+    let stockItemsGlobal = [];
+    let cachedLineFullName = currentUser;
+
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        document.querySelector(`.tab-btn[data-tab="${tabName}"]`).classList.add('active');
+        document.getElementById(`content_${tabName}`).classList.add('active');
+    }
+
+    function toggleRunnerFields() {
+        const type = document.getElementById('runner_task_type').value;
+        
+        document.getElementById('runner_bin_color_block').style.display = type === 'bins' ? 'flex' : 'none';
+        document.getElementById('runner_box_type_block').style.display = type === 'boxes' ? 'flex' : 'none';
+        document.getElementById('runner_tray_number_block').style.display = type === 'trays' ? 'flex' : 'none';
+        document.getElementById('runner_store_block').style.display = type === 'pickup' ? 'flex' : 'none';
+    }
+
+    function formatTime(isoString) {
+        if (!isoString) return '-';
+        const date = new Date(isoString);
+        if (isNaN(date.getTime())) return '-';
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function fetchLineFullName() {
+        try {
+            const { data, error } = await clientDb.from('users_table').select('*').eq('u', currentUser);
+            if (error) return;
+            if (data && data.length > 0) {
+                const userRow = data[0];
+                const realName = userRow.name;
+                if (realName) {
+                    cachedLineFullName = realName; 
+                    document.getElementById('line_name_display').innerText = `${lang.line_badge}: ${realName}`;
+                }
+            }
+        } catch (err) {}
+        loadActiveRequests();
+    }
+
+    async function loadStockDropdown() {
+        try {
+            const { data: stock, error } = await clientDb.from('stock').select('*').gt('count', 0);
+            if (error) throw error;
+            if (stock) {
+                stockItemsGlobal = stock;
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function handleCustomSearch(inputEl) {
+        const query = inputEl.value.toLowerCase().trim();
+        const dropdown = document.getElementById('custom_dropdown');
+        
+        const filtered = stockItemsGlobal.filter(item => {
+            const desc = (item.description || '').toLowerCase();
+            const cons = String(item.consignment || item.Consignment || '').toLowerCase();
+            const store = String(item.store || '').toLowerCase();
+            return desc.includes(query) || cons.includes(query) || store.includes(query);
+        });
+
+        if (filtered.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        dropdown.innerHTML = filtered.slice(0, 30).map(item => {
+            const desc = item.description || 'Unknown Fruit';
+            const cons = item.consignment || item.Consignment || 'No Cons';
+            const size = item.size || 'No Size';
+            const store = item.store || '?';
+            const fullText = `Store ${store} | ${desc} (Cons: ${cons}, Size: ${size})`;
+            
+            return `
+                <div style="padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #edf2f7; font-size: 14px; background: white;" 
+                     onclick="selectPlatformItem(${item.id}, '${fullText.replace(/'/g, "\\'")}')"
+                     onmouseover="this.style.backgroundColor='#f0f9ff'" 
+                     onmouseout="this.style.backgroundColor='white'">
+                    ${fullText}
+                </div>
+            `;
+        }).join('');
+
+        dropdown.style.display = 'block';
+    }
+
+    function selectPlatformItem(id, fullText) {
+        document.getElementById('stock_input').value = fullText;
+        document.getElementById('custom_dropdown').style.display = 'none';
+
+        const match = stockItemsGlobal.find(i => i.id === id);
+        if (!match) return;
+
+        document.getElementById('inp_description').value = match.description || '';
+        document.getElementById('inp_consignment').value = match.consignment || match.Consignment || '';
+        document.getElementById('inp_store').value = match.store || '';
+        document.getElementById('inp_grower').value = match.grower || '';
+        document.getElementById('inp_origin').value = match.origin || '';
+        document.getElementById('inp_size').value = match.size || '';
+        document.getElementById('inp_count').value = match.count || '';
+    }
+
+    document.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('custom_dropdown');
+        const inputEl = document.getElementById('stock_input');
+        if (e.target !== inputEl && e.target !== dropdown) {
+            if(dropdown) dropdown.style.display = 'none';
+        }
+    });
+
+    async function sendRequestToDriver() {
+        const desc = document.getElementById('inp_description').value.trim();
+        const cons = document.getElementById('inp_consignment').value.trim();
+        const store = document.getElementById('inp_store').value.trim();
+        const grower = document.getElementById('inp_grower').value.trim();
+        const origin = document.getElementById('inp_origin').value.trim();
+        const size = document.getElementById('inp_size').value.trim();
+        const count = document.getElementById('inp_count').value.trim();
+        const qty = parseInt(document.getElementById('inp_qty').value) || 1;
+        const comment = document.getElementById('inp_comment').value.trim();
+        const isUrgent = document.getElementById('inp_urgent').checked;
+
+        if (!desc || !cons) {
+            alert(lang.alert_fields);
+            return;
+        }
+
+        try {
+            const { error } = await clientDb.from('orders').insert([{
+                line: cachedLineFullName, 
+                description: isUrgent ? '⚠️ ' + desc : desc,
+                consignment: cons,
+                store: store,
+                grower: grower,
+                origin: origin,
+                size: size,
+                available: count, 
+                qty: qty,
+                status: 'new',
+                urgent: isUrgent,
+                comment: comment,
+                is_runner: false
+            }]);
+
+            if (error) throw error;
+            alert(lang.alert_success);
+            
+            document.getElementById('stock_input').value = '';
+            document.getElementById('inp_description').value = '';
+            document.getElementById('inp_consignment').value = '';
+            document.getElementById('inp_store').value = '';
+            document.getElementById('inp_grower').value = '';
+            document.getElementById('inp_origin').value = '';
+            document.getElementById('inp_size').value = '';
+            document.getElementById('inp_count').value = '';
+            document.getElementById('inp_qty').value = '1';
+            document.getElementById('inp_comment').value = '';
+            document.getElementById('inp_urgent').checked = false;
+            loadActiveRequests();
+        } catch (e) { alert(e.message); }
+    }
+
+    async function sendRequestToRunner() {
+        const type = document.getElementById('runner_task_type').value;
+        const qty = parseInt(document.getElementById('runner_qty').value) || 1;
+        const comment = document.getElementById('runner_comment').value.trim();
+        
+        let finalDescription = "";
+        let finalStore = "Packaging";
+        let dbType = "runner_materials";
+
+        if (type === 'bins') {
+            const color = document.getElementById('runner_bin_color').value;
+            finalDescription = `🪵 BINS ORDER (${color}) x${qty}`;
+        } else if (type === 'boxes') {
+            const boxType = document.getElementById('runner_box_type').value;
+            finalDescription = `📦 BOXES ORDER (${boxType}) x${qty}`;
+        } else if (type === 'trays') {
+            const trayNum = document.getElementById('runner_tray_number').value.trim();
+            if (!trayNum) { alert(lang.alert_tray_req); return; }
+            finalDescription = `📥 TRAYS ORDER (№ ${trayNum}) x${qty}`;
+        } else if (type === 'pickup') {
+            const targetStore = document.getElementById('runner_target_store').value.trim();
+            if (!targetStore) { alert(lang.alert_store_req); return; }
+            finalDescription = `🚛 PICKUP: Ready Pallet removal x${qty}`;
+            finalStore = targetStore;
+            dbType = "runner_pickup";
+        }
+
+        try {
+            const { error } = await clientDb.from('orders').insert([{
+                line: cachedLineFullName,
+                description: finalDescription,
+                store: finalStore,
+                qty: qty,
+                status: 'new',
+                is_runner: true,
+                type: dbType,
+                comment: comment
+            }]);
+            if (error) throw error;
+            alert(lang.alert_success);
+            
+            document.getElementById('runner_target_store').value = '';
+            document.getElementById('runner_tray_number').value = '';
+            document.getElementById('runner_comment').value = '';
+            document.getElementById('runner_qty').value = '1';
+            loadActiveRequests();
+        } catch (e) { alert(e.message); }
+    }
+
+    async function cancelOrder(orderId) {
+        const choice = prompt(`${lang.cancel_title} #${orderId}\n\n${lang.cancel_menu}`, "1");
+        if (choice === null) return; 
+
+        let reasonText = "";
+        switch(choice.trim()) {
+            case "1": reasonText = lang.cancel_r1; break;
+            case "2": reasonText = lang.cancel_r2; break;
+            case "3": reasonText = lang.cancel_r3; break;
+            case "4": reasonText = lang.cancel_r4; break;
+            default: reasonText = choice.trim() ? choice.trim() : "Canceled";
+        }
+
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .update({ status: 'canceled', comment: `❌ ${reasonText}` })
+                .eq('id', orderId);
+
+            if (error) throw error;
+            alert(lang.alert_canceled);
+            loadActiveRequests();
+        } catch (e) { alert(e.message); }
+    }
+
+    async function updateOrderComment(orderId) {
+        const inputEl = document.getElementById(`inline_comment_${orderId}`) || document.getElementById(`inline_comment_mob_${orderId}`);
+        if (!inputEl) return;
+        const newComment = inputEl.value.trim();
+
+        try {
+            const { error } = await clientDb.from('orders').update({ comment: newComment }).eq('id', orderId);
+            if (error) throw error;
+            alert(lang.alert_comm_updated);
+            loadActiveRequests();
+        } catch (e) { alert(e.message); }
+    }
+
+    async function loadActiveRequests() {
+        try {
+            const activeId = document.activeElement ? document.activeElement.id : null;
+            let currentTypingValue = null;
+            
+            if (activeId && (activeId.startsWith('inline_comment_') || activeId === 'stock_input')) {
+                const el = document.getElementById(activeId);
+                if(el) currentTypingValue = el.value;
+            }
+
+            const { data: orders, error } = await clientDb
+                .from('orders')
+                .select('*')
+                .or(`line.eq."${currentUser}",line.eq."${cachedLineFullName}"`)
+                .order('id', { ascending: false });
+
+            if (error) throw error;
+
+            if (!orders || orders.length === 0) {
+                document.getElementById('line_requests_body').innerHTML = `<tr><td colspan="13" style="text-align:center; color:var(--text-muted);">${lang.no_requests}</td></tr>`;
+                document.getElementById('line_requests_mobile').innerHTML = `<div style="text-align:center; color:var(--text-muted); padding: 20px;">${lang.no_requests}</div>`;
+                return;
+            }
+
+            const tableHtml = orders.map(o => {
+                const statusLwr = (o.status || 'new').toLowerCase();
+                const actionHtml = statusLwr === 'new' 
+                    ? `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>` 
+                    : `<span style="color:var(--text-muted); font-size:11px;">${lang.progress}</span>`;
+
+                const assigneeDisplay = o.is_runner 
+                    ? (o.driver_name ? '🏃‍♂️ ' + o.driver_name : '<span class="runner-badge">Runner Task</span>')
+                    : (o.driver_name ? '🚚 ' + o.driver_name : lang.waiting);
+
+                return `
+                <tr>
+                    <td>#${o.id}</td>
+                    <td>⏱ ${formatTime(o.created_at)}</td>
+                    <td><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
+                    <td><strong style="${o.is_runner ? 'color:var(--runner-accent);' : ''}">${o.description || '-'}</strong></td>
+                    <td>${o.grower || '-'}</td>
+                    <td>${o.consignment || o.Consignment || '-'}</td>
+                    <td>${o.origin || '-'} / ${o.size || '-'} / ${o.available || '-'}</td>
+                    <td><strong style="color:#0288d1;">${o.qty || '1'}</strong></td>
+                    <td>
+                        <div class="table-comment-box">
+                            <input type="text" id="inline_comment_${o.id}" value="${(o.comment || '').replace(/"/g, '&quot;')}" placeholder="...">
+                            <button class="btn-save-comment" onclick="updateOrderComment(${o.id})">💾</button>
+                        </div>
+                    </td>
+                    <td>${assigneeDisplay}</td>
+                    <td>${o.delivered_at ? formatTime(o.delivered_at) : '-'}</td>
+                    <td><span class="status-badge ${statusLwr}">${o.status || 'new'}</span></td>
+                    <td>${actionHtml}</td>
+                </tr>`;
+            }).join('');
+
+            const mobileHtml = orders.map(o => {
+                const statusLwr = (o.status || 'new').toLowerCase();
+                const actionButton = statusLwr === 'new' 
+                    ? `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>` 
+                    : `<span style="color:var(--text-muted); font-size:12px;">${lang.progress}</span>`;
+
+                const driverDisplay = o.is_runner 
+                    ? (o.driver_name ? o.driver_name : 'Runner Waiting...')
+                    : (o.driver_name ? o.driver_name : lang.waiting);
+
+                const badgeOrRunner = o.is_runner ? `<span class="runner-badge" style="margin-left:5px;">Runner</span>` : '';
+
+                return `
+                <div class="request-card" style="${o.is_runner ? 'border-left: 4px solid var(--runner-accent);' : ''}">
+                    <div class="card-row">
+                        <div><span style="font-weight:700; color:var(--accent);">#${o.id}</span> ${badgeOrRunner} <span style="color:var(--text-muted); font-size:12px; margin-left:5px;">⏱ ${formatTime(o.created_at)}</span></div>
+                        <span class="status-badge ${statusLwr}">${o.status || 'new'}</span>
+                    </div>
+                    <div class="card-row">
+                        <div>
+                            <span><strong style="${o.is_runner ? 'color:var(--runner-accent);' : ''}">${o.description || '-'}</strong></span><br>
+                            <span style="font-size:12px; color:var(--text-muted);">Cons: ${o.consignment || '-'} | Store: ${o.store || '-'}</span>
+                        </div>
+                        <div style="text-align:right;"><span style="font-size:18px; color:var(--accent); font-weight:800;">${o.qty || '1'}</span></div>
+                    </div>
+                    <div class="card-row" style="font-size:12px; border-top:1px dashed #e2e8f0; padding-top:8px;">
+                        <div>Assignee: <strong>${driverDisplay}</strong></div>
+                        <div>${actionButton}</div>
+                    </div>
+                    <div class="mobile-comment-wrapper">
+                        <div class="table-comment-box">
+                            <input type="text" id="inline_comment_mob_${o.id}" value="${(o.comment || '').replace(/"/g, '&quot;')}" placeholder="...">
+                            <button class="btn-save-comment" onclick="updateOrderComment(${o.id})">💾</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            document.getElementById('line_requests_body').innerHTML = tableHtml;
+            document.getElementById('line_requests_mobile').innerHTML = mobileHtml;
+
+            if (activeId) {
+                let targetInput = document.getElementById(activeId);
+                if (!targetInput && activeId.startsWith('inline_comment_')) {
+                    const rawId = activeId.replace('inline_comment_mob_', '').replace('inline_comment_', '');
+                    targetInput = document.getElementById(`inline_comment_${rawId}`) || document.getElementById(`inline_comment_mob_${rawId}`);
+                }
+                if (targetInput) {
+                    targetInput.focus();
+                    if (currentTypingValue !== null) targetInput.value = currentTypingValue;
+                }
+            }
+        } catch (e) {}
+    }
+
+    fetchLineFullName();
+    loadStockDropdown();
+    setInterval(loadActiveRequests, 5000);
+</script>
+</body>
+</html>
