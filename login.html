@@ -2,111 +2,278 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Вход в систему - Peake Fruit</title>
+    <title>Peake Fruit — Login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --p:#d32f2f; --s:#1a1a2e; --bg:#f0f2f5; }
-        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 100%; max-width: 360px; box-sizing: border-box; }
-        h2 { margin-top: 0; color: var(--s); text-align: center; margin-bottom: 20px; }
-        input, button { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; box-sizing: border-box; }
-        button { background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #b71c1c; }
-        .lang-select { text-align: center; margin-bottom: 15px; }
-        .lang-select button { width: auto; display: inline-block; padding: 5px 10px; margin: 0 3px; background: #eee; color: #333; font-size: 12px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; }
+        :root {
+            --bg: #1a1a2e;
+            --card-bg: #ffffff;
+            --text: #1a1a2e;
+            --accent: #0288d1;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .logo-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--bg);
+            margin-bottom: 5px;
+        }
+
+        .logo-sub {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #495057;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 15px;
+            box-sizing: border-box;
+            background: #f8fafc;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: #fff;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.2s;
+        }
+
+        .btn-login:hover {
+            background: #0277bd;
+        }
+
+        .lang-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .lang-btn {
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .lang-btn.active {
+            background: var(--bg);
+            color: white;
+            border-color: var(--bg);
+        }
+
+        .error-msg {
+            color: #dc3545;
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+        }
     </style>
 </head>
 <body>
 
-    <div class="login-card">
-        <div class="lang-select">
-            <button onclick="changeLang('ru')">RU</button>
-            <button onclick="changeLang('en')">EN</button>
-            <button onclick="changeLang('lt')">LT</button>
-        </div>
-        
-        <h2 id="log_title">Авторизация</h2>
-        
-        <form id="loginForm">
-            <input type="text" id="username" placeholder="Логин" required autocomplete="username">
-            <input type="password" id="password" placeholder="Пароль" required autocomplete="current-password">
-            <button type="submit" id="btn_enter">ВОЙТИ</button>
-        </form>
+<div class="login-card">
+    <div class="lang-selector">
+        <button class="lang-btn" id="lng_ru" onclick="changeLang('ru')">RU</button>
+        <button class="lang-btn" id="lng_en" onclick="changeLang('en')">EN</button>
+        <button class="lang-btn" id="lng_lt" onclick="changeLang('lt')">LT</button>
     </div>
 
+    <div class="logo-title">Peake Fruit</div>
+    <div class="logo-sub" id="txt_sub">Internal Logistics System</div>
+
+    <div class="form-group">
+        <label id="lbl_user">Username</label>
+        <input type="text" id="username" autocomplete="username">
+    </div>
+
+    <div class="form-group">
+        <label id="lbl_pass">Password</label>
+        <input type="password" id="password" autocomplete="current-password">
+    </div>
+
+    <button class="btn-login" id="btn_submit" onclick="handleLogin()">Sign In</button>
+    <div class="error-msg" id="error_box"></div>
+</div>
+
 <script>
+    // Инициализация Supabase
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
 
-    const lang = {
-        ru: { title: "Авторизация", u_ph: "Логин", p_ph: "Пароль", btn: "ВОЙТИ", err: "Неверный логин или пароль!" },
-        en: { title: "Login", u_ph: "Username", p_ph: "Password", btn: "LOG IN", err: "Wrong username or password!" },
-        lt: { title: "Prisijungimas", u_ph: "Prisijungimo vardas", p_ph: "Slaptažodis", btn: "PRISIJUNGTI", err: "Neteisingas vardas arba slaptažodis!" }
+    // Локализация экрана авторизации
+    const dictionary = {
+        ru: {
+            sub: "Внутренняя логистическая система",
+            lbl_user: "Имя пользователя / Логин",
+            lbl_pass: "Пароль",
+            btn_submit: "Войти в систему",
+            err_empty: "Пожалуйста, заполните все поля!",
+            err_wrong: "Неверный логин или пароль!"
+        },
+        en: {
+            sub: "Internal Logistics System",
+            lbl_user: "Username / Login",
+            lbl_pass: "Password",
+            btn_submit: "Sign In",
+            err_empty: "Please fill in all fields!",
+            err_wrong: "Invalid username or password!"
+        },
+        lt: {
+            sub: "Vidinė logistikos sistema",
+            lbl_user: "Vartotojo vardas",
+            lbl_pass: "Slaptažodis",
+            btn_submit: "Prisijungti",
+            err_empty: "Prašome užpildyti visus laukus!",
+            err_wrong: "Neteisingas vartotojo vardas arba slaptažodis!"
+        }
     };
 
-    let curL = localStorage.getItem('dash_lang') || 'ru';
+    // Определяем текущий сохраненный язык (по умолчанию ru)
+    let currentLang = localStorage.getItem('lang') || 'ru';
+    // Для совместимости с админкой также обновим dash_lang
+    localStorage.setItem('dash_lang', currentLang);
 
-    function changeLang(l) {
-        curL = l;
-        localStorage.setItem('dash_lang', l);
-        updateUI();
-    }
-
-    function updateUI() {
-        const t = lang[curL];
-        document.getElementById('log_title').innerText = t.title;
-        document.getElementById('username').placeholder = t.u_ph;
-        document.getElementById('password').placeholder = t.p_ph;
-        document.getElementById('btn_enter').innerText = t.btn;
-    }
-
-    document.getElementById('loginForm').onsubmit = async (e) => {
-        e.preventDefault();
+    function applyLanguage() {
+        const t = dictionary[currentLang];
+        document.getElementById('txt_sub').innerText = t.sub;
+        document.getElementById('lbl_user').innerText = t.lbl_user;
+        document.getElementById('lbl_pass').innerText = t.lbl_pass;
+        document.getElementById('btn_submit').innerText = t.btn_submit;
         
-        const usernameInput = document.getElementById('username').value.trim();
-        const passwordInput = document.getElementById('password').value.trim();
+        // Подсвечиваем активную кнопку языка
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+        const activeBtn = document.getElementById(`lng_${currentLang}`);
+        if(activeBtn) activeBtn.classList.add('active');
+    }
+
+    function changeLang(lng) {
+        currentLang = lng;
+        localStorage.setItem('lang', lng);
+        localStorage.setItem('dash_lang', lng);
+        applyLanguage();
+        document.getElementById('error_box').style.display = 'none';
+    }
+
+    async function handleLogin() {
+        const uInput = document.getElementById('username').value.trim().toLowerCase();
+        const pInput = document.getElementById('password').value.trim();
+        const errorBox = document.getElementById('error_box');
+        
+        errorBox.style.display = 'none';
+
+        if (!uInput || !pInput) {
+            errorBox.innerText = dictionary[currentLang].err_empty;
+            errorBox.style.display = 'block';
+            return;
+        }
 
         try {
+            // Ищем пользователя в таблице по полю 'u'
             const { data, error } = await _db
                 .from('users_table')
                 .select('*')
-                .eq('u', usernameInput)
-                .single();
+                .eq('u', uInput)
+                .eq('p', pInput);
 
-            if (error || !data || String(data.p).trim() !== passwordInput) {
-                alert(lang[curL]?.err || "Неверный логин или пароль!");
-                return;
-            }
+            if (error) throw error;
 
-            // 1. ВОТ ЭТА СТРОЧКА ОБЯЗАТЕЛЬНО ДОЛЖНА БЫТЬ ТУТ:
-            const userRole = String(data.t || '').toLowerCase().trim();
+            if (data && data.length > 0) {
+                const userObj = data[0];
+                
+                // Сохраняем сессию пользователя
+                localStorage.setItem('user', userObj.u);
+                localStorage.setItem('role', userObj.t); // Сохраняем тип роли ('line', 'runner', etc.)
 
-            localStorage.setItem('user', data.u);
-            localStorage.setItem('role', userRole); 
-            localStorage.setItem('name', data.name || data.u); 
-            localStorage.setItem('dash_lang', curL);
-
-            // 2. Все проверки ролей должны быть ВНУТРИ блока try:
-            if (userRole === 'admin') {
-                window.location.href = 'superadmin.html';
-            } else if (userRole === 'office') {
-                window.location.href = 'office.html';
-            } else if (userRole === 'driver') {
-                window.location.href = 'driver.html';
+                // Умный редирект в зависимости от роли 't'
+                if (userObj.t === 'line') {
+                    window.location.href = 'index.html';
+                } else if (userObj.t === 'runner') {
+                    window.location.href = 'runner.html';
+                } else if (userObj.t === 'admin') {
+                    window.location.href = 'admin.html'; // или как называется ваша админка
+                } else {
+                    // Если роль другая (например, driver или office), пока отправляем на главную или пишем ошибку
+                    window.location.href = 'index.html';
+                }
             } else {
-                // Если это линия (line) или любой другой аккаунт — пускаем на главную панель
-                window.location.href = 'index.html';
+                errorBox.innerText = dictionary[currentLang].err_wrong;
+                errorBox.style.display = 'block';
             }
-
         } catch (err) {
-            // Теперь сюда код попадет только если реально упал интернет
-            console.error("Критическая ошибка:", err);
-            alert("Connection error / Ошибка соединения");
+            errorBox.innerText = "Error: " + err.message;
+            errorBox.style.display = 'block';
         }
-    };
-    updateUI();
+    }
+
+    // Позволяет отправлять форму по нажатию Enter
+    document.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            handleLogin();
+        }
+    });
+
+    // Применяем язык при загрузке страницы
+    applyLanguage();
 </script>
 </body>
 </html>
