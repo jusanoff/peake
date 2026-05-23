@@ -975,10 +975,19 @@
                 if(el) currentTypingValue = el.value;
             }
 
+            // Вычисляем ISO-строку для 00:00:00 сегодняшнего дня (местное время)
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+            const todayIso = todayStart.toISOString();
+
+            // Запрашиваем из базы данных:
+            // 1. Все незавершенные заявки линии (статус НЕ 'done', 'delivered', 'canceled')
+            // 2. ИЛИ завершенные/отмененные заявки линии, но созданные строго СЕГОДНЯ (после полуночи)
             const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
                 .or(`line.eq."${currentUser}",line.eq."${cachedLineFullName}"`)
+                .or(`not.status.in.("done","delivered","canceled"),created_at.gte."${todayIso}"`)
                 .order('id', { ascending: false });
 
             if (error) throw error;
