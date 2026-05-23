@@ -103,15 +103,10 @@
             background: #ffffff;
         }
 
-        /* Стиль поля живого поиска для сток-листа */
-        .stock-search-input {
-            margin-bottom: 8px;
+        /* Стиль для инпута со встроенным поиском паллет */
+        .stock-search-combo {
             border-color: #bae6fd;
             background-color: #f0f9ff;
-        }
-        .stock-search-input:focus {
-            border-color: var(--accent);
-            outline: none;
         }
 
         .grid-inputs {
@@ -253,12 +248,11 @@
     <div class="dashboard-card">
         <div class="card-title-quick">⚡ Quick Select From Stock Sheet</div>
         
-        <!-- Поле текстового поиска по подгруженному стоку -->
-        <input type="text" id="stock_search" class="stock-search-input" placeholder="🔍 Type to search stock (e.g. 41, Gala, 8885)..." oninput="filterStockDropdown()">
-        
-        <select id="stock_selector" onchange="handleStockSelect()">
-            <option value="">-- Choose fruit pallet (Auto-fills fields below) --</option>
-        </select>
+        <!-- Инпут с поиском и привязанным к нему списком datalist -->
+        <input type="text" id="stock_input" list="stock_datalist" class="stock-search-combo" placeholder="🔍 Click or type to search fruit pallet (e.g. 41, Gala, 8885)..." oninput="handleStockSelect()">
+        <datalist id="stock_datalist">
+            <!-- Сюда динамически подгрузятся паллеты -->
+        </datalist>
 
         <div class="grid-inputs">
             <div class="input-group">
@@ -406,52 +400,37 @@
 
             if (stock) {
                 stockItemsGlobal = stock;
-                renderStockOptions(stockItemsGlobal);
+                const datalist = document.getElementById('stock_datalist');
+                
+                // Наполняем datalist элементами <option>. В value пишем понятный текст для автопоиска.
+                const optionsHtml = stock.map(item => {
+                    const desc = item.description || 'Unknown Fruit';
+                    const cons = item.consignment || item.Consignment || 'No Cons';
+                    const size = item.size || 'No Size';
+                    const store = item.store || '?';
+                    const fullText = `Store ${store} | ${desc} (Cons: ${cons}, Size: ${size})`;
+                    return `<option value="${fullText}" data-id="${item.id}"></option>`;
+                }).join('');
+
+                datalist.innerHTML = optionsHtml;
             }
         } catch (e) {}
     }
 
-    /* Функция отрисовки вариантов выпадающего списка */
-    function renderStockOptions(items) {
-        const selector = document.getElementById('stock_selector');
-        const optionsHtml = items.map(item => {
-            const desc = item.description || 'Unknown Fruit';
-            const cons = item.consignment || item.Consignment || 'No Cons';
-            const size = item.size || 'No Size';
-            const store = item.store || '?';
-            return `<option value="${item.id}">📦 Store ${store} | ${desc} (Cons: ${cons}, Size: ${size})</option>`;
-        }).join('');
-
-        selector.innerHTML = '<option value="">-- Choose fruit pallet (Auto-fills fields below) --</option>' + optionsHtml;
-    }
-
-    /* Живой фильтр списка на основе введенного текста */
-    function filterStockDropdown() {
-        const query = document.getElementById('stock_search').value.toLowerCase().trim();
-        if (!query) {
-            renderStockOptions(stockItemsGlobal);
-            return;
-        }
-
-        const filtered = stockItemsGlobal.filter(item => {
-            const desc = (item.description || '').toLowerCase();
-            const cons = (item.consignment || item.Consignment || '').toLowerCase();
-            const store = String(item.store || '').toLowerCase();
-            const grower = (item.grower || '').toLowerCase();
-            
-            return desc.includes(query) || cons.includes(query) || store.includes(query) || grower.includes(query);
-        });
-
-        renderStockOptions(filtered);
-    }
-
+    // Обработчик выбора элемента из списка (срабатывает, когда текст совпал с опцией)
     function handleStockSelect() {
-        const selId = document.getElementById('stock_selector').value;
-        if (!selId) return;
+        const inputVal = document.getElementById('stock_input').value;
+        const datalist = document.getElementById('stock_datalist');
+        
+        // Ищем опцию, текст которой совпадает со значением в инпуте
+        const option = Array.from(datalist.options).find(opt => opt.value === inputVal);
+        if (!option) return; // Если пользователь просто пишет текст, а не выбрал готовую строку — ничего не делаем
 
+        const selId = option.getAttribute('data-id');
         const match = stockItemsGlobal.find(i => String(i.id) === String(selId));
         if (!match) return;
 
+        // Автозаполнение полей формы
         document.getElementById('inp_description').value = match.description || '';
         document.getElementById('inp_consignment').value = match.consignment || match.Consignment || '';
         document.getElementById('inp_store').value = match.store || '';
@@ -498,10 +477,8 @@
 
             alert("Request sent successfully!");
             
-            document.getElementById('stock_search').value = '';
-            renderStockOptions(stockItemsGlobal);
-
-            document.getElementById('stock_selector').value = '';
+            // Сброс формы и поля выбора
+            document.getElementById('stock_input').value = '';
             document.getElementById('inp_description').value = '';
             document.getElementById('inp_consignment').value = '';
             document.getElementById('inp_store').value = '';
@@ -559,7 +536,7 @@
 
     async function loadActiveRequests() {
         try {
-            const { data: orders, error } = await clientDb
+            const { data: orders, error = null } = await clientDb
                 .from('orders')
                 .select('*')
                 .or(`line.eq."${currentUser}",line.eq."${cachedLineFullName}"`)
