@@ -103,7 +103,6 @@
             background: #ffffff;
         }
 
-        /* Стиль для инпута со встроенным поиском паллет */
         .stock-search-combo {
             border-color: #bae6fd;
             background-color: #f0f9ff;
@@ -248,8 +247,7 @@
     <div class="dashboard-card">
         <div class="card-title-quick">⚡ Quick Select From Stock Sheet</div>
         
-        <!-- Инпут с поиском и привязанным к нему списком datalist -->
-        <input type="text" id="stock_input" list="stock_datalist" class="stock-search-combo" placeholder="🔍 Click or type to search fruit pallet (e.g. 41, Gala, 8885)..." oninput="handleStockSelect()">
+        <input type="text" id="stock_input" list="stock_datalist" class="stock-search-combo" placeholder="🔍 Click or type to search fruit pallet (e.g. 41, Gala, 8885)..." oninput="handleStockInput(this)">
         <datalist id="stock_datalist">
             <!-- Сюда динамически подгрузятся паллеты -->
         </datalist>
@@ -402,7 +400,6 @@
                 stockItemsGlobal = stock;
                 const datalist = document.getElementById('stock_datalist');
                 
-                // Наполняем datalist элементами <option>. В value пишем понятный текст для автопоиска.
                 const optionsHtml = stock.map(item => {
                     const desc = item.description || 'Unknown Fruit';
                     const cons = item.consignment || item.Consignment || 'No Cons';
@@ -417,20 +414,26 @@
         } catch (e) {}
     }
 
-    // Обработчик выбора элемента из списка (срабатывает, когда текст совпал с опцией)
-    function handleStockSelect() {
-        const inputVal = document.getElementById('stock_input').value;
+    function handleStockInput(inputEl) {
+        const inputVal = inputEl.value;
         const datalist = document.getElementById('stock_datalist');
+
+        // Микро-хак: если поле ввода очищено полностью, сбрасываем фильтрацию списка datalist
+        if (inputVal === '') {
+            inputEl.removeAttribute('list');
+            setTimeout(() => {
+                inputEl.setAttribute('list', 'stock_datalist');
+            }, 1);
+            return;
+        }
         
-        // Ищем опцию, текст которой совпадает со значением в инпуте
         const option = Array.from(datalist.options).find(opt => opt.value === inputVal);
-        if (!option) return; // Если пользователь просто пишет текст, а не выбрал готовую строку — ничего не делаем
+        if (!option) return; 
 
         const selId = option.getAttribute('data-id');
         const match = stockItemsGlobal.find(i => String(i.id) === String(selId));
         if (!match) return;
 
-        // Автозаполнение полей формы
         document.getElementById('inp_description').value = match.description || '';
         document.getElementById('inp_consignment').value = match.consignment || match.Consignment || '';
         document.getElementById('inp_store').value = match.store || '';
@@ -477,7 +480,6 @@
 
             alert("Request sent successfully!");
             
-            // Сброс формы и поля выбора
             document.getElementById('stock_input').value = '';
             document.getElementById('inp_description').value = '';
             document.getElementById('inp_consignment').value = '';
@@ -536,6 +538,15 @@
 
     async function loadActiveRequests() {
         try {
+            // КРИТИЧЕСКИЙ ФИКС: Запоминаем текущий активный элемент перед обновлением
+            const activeId = document.activeElement ? document.activeElement.id : null;
+            let currentTypingValue = null;
+            
+            // Если фокус на инпуте комментария или основном поиске — сохраняем набранный текст
+            if (activeId && (activeId.startsWith('inline_comment_') || activeId === 'stock_input')) {
+                currentTypingValue = document.getElementById(activeId).value;
+            }
+
             const { data: orders, error = null } = await clientDb
                 .from('orders')
                 .select('*')
@@ -592,15 +603,16 @@
                 </tr>
             `}).join('');
 
-            const activeId = document.activeElement ? document.activeElement.id : null;
-            const activeValue = activeId && activeId.startsWith('inline_comment_') ? document.getElementById(activeId).value : null;
-
+            // Перерисовываем исключительно тело таблицы запросов
             document.getElementById('line_requests_body').innerHTML = html;
 
+            // Восстанавливаем фокус и возвращаем текст на место, если элемент все еще на странице
             if (activeId && document.getElementById(activeId)) {
-                const el = document.getElementById(activeId);
-                el.focus();
-                el.value = activeValue;
+                const targetInput = document.getElementById(activeId);
+                targetInput.focus();
+                if (currentTypingValue !== null) {
+                    targetInput.value = currentTypingValue;
+                }
             }
 
         } catch (e) {}
@@ -608,6 +620,7 @@
 
     fetchLineFullName();
     loadStockDropdown();
+    // Интервал автообновления данных (раз в 5 секунд)
     setInterval(loadActiveRequests, 5000);
 </script>
 </body>
