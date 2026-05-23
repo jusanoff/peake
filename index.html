@@ -598,22 +598,55 @@
         }
     }
 
-    async function cancelOrder(orderId) {
-        if (!confirm("Are you sure you want to cancel request #" + orderId + "?")) return;
-        try {
-            const { error } = await clientDb
-                .from('orders')
-                .delete()
-                .eq('id', orderId);
+   async function cancelOrder(orderId) {
+    // Текст меню для выбора причины
+    const menuText = 
+        "Cancel Request #" + orderId + "\n\n" +
+        "Please select a reason (enter number 1-4):\n" +
+        "1. No longer needed (Больше не нужно)\n" +
+        "2. Plans changed (Изменились планы)\n" +
+        "3. Wrong product selected (Выбран не тот продукт)\n" +
+        "4. Other / Mistake (Другое / Ошибка)";
 
-            if (error) throw error;
+    const choice = prompt(menuText, "1");
 
-            alert("Request #" + orderId + " has been canceled.");
-            loadActiveRequests();
-        } catch (e) {
-            alert("Error canceling request: " + e.message);
-        }
+    // Если пользователь нажал "Отмена" в самом окне prompt
+    if (choice === null) return; 
+
+    let reasonText = "";
+    switch(choice.trim()) {
+        case "1": reasonText = "No longer needed"; break;
+        case "2": reasonText = "Plans changed"; break;
+        case "3": reasonText = "Wrong product selected"; break;
+        case "4": reasonText = "Other / Mistake"; break;
+        default: 
+            // Если ввели свой текст вместо цифры, запишем его
+            reasonText = choice.trim() ? choice.trim() : "Canceled by Line";
     }
+
+    try {
+        // Чтобы данные не пропадали бесследно, мы можем либо:
+        // Вариант А: Удалить заказ (как сейчас у вас)
+        // Вариант Б (Рекомендуемый): Меняем статус на 'canceled' и пишем причину в коммент, чтобы админ видел историю.
+        
+        // Ниже код для Варианта Б (так профессиональнее, водитель увидит "Canceled"). 
+        // Если хотите жестко удалять, поменяйте .update на .delete()
+        const { error } = await clientDb
+            .from('orders')
+            .update({ 
+                status: 'canceled', 
+                comment: `❌ Canceled: ${reasonText}` 
+            })
+            .eq('id', orderId);
+
+        if (error) throw error;
+
+        alert(`Request #${orderId} successfully canceled.`);
+        loadActiveRequests();
+    } catch (e) {
+        alert("Error canceling request: " + e.message);
+    }
+}
 
     async function updateOrderComment(orderId) {
         // Проверяем инпут как в десктопной версии, так и в мобильной
