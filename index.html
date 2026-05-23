@@ -26,7 +26,7 @@
         }
 
         .container { 
-            max-width: 100%; 
+            max-width: 1200px; 
             margin: 0 auto; 
             display: flex; 
             flex-direction: column; 
@@ -108,9 +108,10 @@
             background-color: #f0f9ff;
         }
 
+        /* Адаптивная сетка полей ввода */
         .grid-inputs {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 10px;
             margin-top: 15px;
         }
@@ -172,16 +173,44 @@
         }
         .btn-send:hover { background: #005fa3; }
 
+        /* Элементы таблицы и адаптивного контейнера */
         .table-responsive {
+            display: block;
+            width: 100%;
             overflow-x: auto;
             margin-top: 15px;
             border: 1px solid var(--border);
             border-radius: 6px;
         }
 
-        table { width: 100%; border-collapse: collapse; min-width: 950px; }
-        th { background: #f8f9fa; color: var(--text-muted); padding: 10px; text-align: left; font-size: 12px; border-bottom: 2px solid var(--border); }
-        td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #edf2f7; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; color: var(--text-muted); padding: 10px; text-align: left; font-size: 12px; border-bottom: 2px solid var(--border); white-space: nowrap; }
+        td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #edf2f7; white-space: nowrap; }
+
+        /* Мобильный вид для списков (карточки) — по умолчанию скрыт */
+        .mobile-requests-list {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .request-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+            gap: 10px;
+        }
+        .card-row:last-child { margin-bottom: 0; }
 
         .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
         .status-badge.new { background: #e0f2fe; color: #0369a1; }
@@ -192,15 +221,13 @@
             background: #fff5f5;
             color: #e53e3e;
             border: 1px solid #fed7d7;
-            padding: 4px 8px;
+            padding: 6px 10px;
             border-radius: 4px;
             cursor: pointer;
             font-weight: 600;
             font-size: 11px;
         }
-        .btn-cancel:hover {
-            background: #fed7d7;
-        }
+        .btn-cancel:hover { background: #fed7d7; }
 
         .table-comment-box {
             display: flex;
@@ -209,24 +236,89 @@
             margin-bottom: 4px;
         }
         .table-comment-box input {
-            padding: 4px 6px;
+            padding: 6px;
             font-size: 12px;
             border: 1px solid var(--border);
             border-radius: 4px;
-            width: 150px;
+            width: 100%;
+            max-width: 150px;
         }
+        
+        /* Стили инпута комментария внутри мобильной карточки */
+        .mobile-comment-wrapper {
+            width: 100%;
+            background: #f8fafc;
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 5px;
+        }
+        .mobile-comment-wrapper .table-comment-box input {
+            max-width: none;
+            flex-grow: 1;
+        }
+
         .btn-save-comment {
             background: #e0f2fe;
             color: #0369a1;
             border: 1px solid #bae6fd;
-            padding: 4px 6px;
+            padding: 6px 8px;
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
             font-size: 12px;
         }
-        .btn-save-comment:hover {
-            background: #bae6fd;
+        .btn-save-comment:hover { background: #bae6fd; }
+
+        /* ================= MEDIA QUERIES (АДАПТИВНОСТЬ) ================= */
+
+        /* Планшеты и небольшие мониторы */
+        @media (max-width: 992px) {
+            .grid-inputs {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            /* Скрываем менее важные столбцы в таблице на планшетах для экономии места */
+            th:nth-child(7), td:nth-child(7),
+            th:nth-child(11), td:nth-child(11) {
+                display: none;
+            }
+        }
+
+        /* Крупные смартфоны */
+        @media (max-width: 768px) {
+            .grid-inputs {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            th:nth-child(5), td:nth-child(5),
+            th:nth-child(10), td:nth-child(10) {
+                display: none;
+            }
+        }
+
+        /* Смартфоны (Мобильные устройства) */
+        @media (max-width: 576px) {
+            body { padding: 5px; }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            .header-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .grid-inputs {
+                grid-template-columns: repeat(1, minmax(0, 1fr)); /* Все поля в один ряд */
+            }
+
+            /* Полностью переключаем логику отображения логов: скрываем таблицу, включаем карточки */
+            .table-responsive {
+                display: none;
+            }
+            .mobile-requests-list {
+                display: flex;
+            }
         }
     </style>
 </head>
@@ -305,6 +397,8 @@
 
     <div class="dashboard-card">
         <h3 style="margin-top:0; font-size:16px;">Your Active Line Requests (Live)</h3>
+        
+        <!-- Контейнер №1: Настольная таблица -->
         <div class="table-responsive">
             <table>
                 <thead>
@@ -329,6 +423,12 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Контейнер №2: Мобильный список карточек (включается через CSS Media Queries) -->
+        <div class="mobile-requests-list" id="line_requests_mobile">
+            <div style="text-align:center; color:var(--text-muted); padding: 20px;">Loading requests...</div>
+        </div>
+
     </div>
 </div>
 
@@ -418,7 +518,6 @@
         const inputVal = inputEl.value;
         const datalist = document.getElementById('stock_datalist');
 
-        // Микро-хак: если поле ввода очищено полностью, сбрасываем фильтрацию списка datalist
         if (inputVal === '') {
             inputEl.removeAttribute('list');
             setTimeout(() => {
@@ -517,7 +616,8 @@
     }
 
     async function updateOrderComment(orderId) {
-        const inputEl = document.getElementById(`inline_comment_${orderId}`);
+        // Проверяем инпут как в десктопной версии, так и в мобильной
+        const inputEl = document.getElementById(`inline_comment_${orderId}`) || document.getElementById(`inline_comment_mob_${orderId}`);
         if (!inputEl) return;
         const newComment = inputEl.value.trim();
 
@@ -538,13 +638,13 @@
 
     async function loadActiveRequests() {
         try {
-            // КРИТИЧЕСКИЙ ФИКС: Запоминаем текущий активный элемент перед обновлением
             const activeId = document.activeElement ? document.activeElement.id : null;
             let currentTypingValue = null;
             
-            // Если фокус на инпуте комментария или основном поиске — сохраняем набранный текст
+            // Защита фокуса ввода
             if (activeId && (activeId.startsWith('inline_comment_') || activeId === 'stock_input')) {
-                currentTypingValue = document.getElementById(activeId).value;
+                const el = document.getElementById(activeId);
+                if(el) currentTypingValue = el.value;
             }
 
             const { data: orders, error = null } = await clientDb
@@ -556,30 +656,29 @@
             if (error) throw error;
 
             if (!orders || orders.length === 0) {
-                document.getElementById('line_requests_body').innerHTML = `<tr><td colspan="13" style="text-align:center; color:var(--text-muted);">No active requests.</td></tr>`;
+                const emptyRow = `<tr><td colspan="13" style="text-align:center; color:var(--text-muted);">No active requests.</td></tr>`;
+                const emptyCard = `<div style="text-align:center; color:var(--text-muted); padding: 20px;">No active requests.</div>`;
+                document.getElementById('line_requests_body').innerHTML = emptyRow;
+                document.getElementById('line_requests_mobile').innerHTML = emptyCard;
                 return;
             }
 
-            const html = orders.map(o => {
+            // 1. ГЕНЕРАЦИЯ ДЛЯ БОЛЬШИХ ЭКРАНОВ (ТАБЛИЦА)
+            const tableHtml = orders.map(o => {
                 const specOrigin = o.origin || '-';
                 const specSize = o.size || '-';
                 const specAvail = o.available || '-';
                 const statusLwr = (o.status || 'new').toLowerCase();
-
                 const currentComment = o.comment || '';
+
                 let logsHtml = `
                     <div class="table-comment-box">
-                        <input type="text" id="inline_comment_${o.id}" value="${currentComment.replace(/"/g, '&quot;')}" placeholder="Edit line comment...">
-                        <button class="btn-save-comment" onclick="updateOrderComment(${o.id})" title="Save Comment">💾</button>
+                        <input type="text" id="inline_comment_${o.id}" value="${currentComment.replace(/"/g, '&quot;')}" placeholder="Edit comment...">
+                        <button class="btn-save-comment" onclick="updateOrderComment(${o.id})">💾</button>
                     </div>
                 `;
-
-                if (o.office_comment) {
-                    logsHtml += `<div style="color:#0288d1; font-size:11px; margin-top:2px; font-weight:600;">Office: ${o.office_comment}</div>`;
-                }
-                if (o.driver_comment) {
-                    logsHtml += `<div style="color:#2e7d32; font-size:11px; margin-top:2px; font-weight:600;">Driver: ${o.driver_comment}</div>`;
-                }
+                if (o.office_comment) logsHtml += `<div style="color:#0288d1; font-size:11px; margin-top:2px; font-weight:600;">Off: ${o.office_comment}</div>`;
+                if (o.driver_comment) logsHtml += `<div style="color:#2e7d32; font-size:11px; margin-top:2px; font-weight:600;">Drvr: ${o.driver_comment}</div>`;
 
                 const actionHtml = statusLwr === 'new' 
                     ? `<button class="btn-cancel" onclick="cancelOrder(${o.id})">Cancel</button>` 
@@ -600,18 +699,73 @@
                     <td><span style="color:var(--status-done); font-weight:bold;">${o.delivered_at ? formatTime(o.delivered_at) : '-'}</span></td>
                     <td><span class="status-badge ${statusLwr}">${o.status || 'new'}</span></td>
                     <td>${actionHtml}</td>
-                </tr>
-            `}).join('');
+                </tr>`;
+            }).join('');
 
-            // Перерисовываем исключительно тело таблицы запросов
-            document.getElementById('line_requests_body').innerHTML = html;
+            // 2. ГЕНЕРАЦИЯ ДЛЯ СМАРТФОНОВ (КАРТОЧКИ)
+            const mobileHtml = orders.map(o => {
+                const statusLwr = (o.status || 'new').toLowerCase();
+                const currentComment = o.comment || '';
+                
+                let driverState = o.driver_name ? '🚚 ' + o.driver_name : 'Waiting...';
+                if (o.delivered_at) driverState += ` (${formatTime(o.delivered_at)})`;
 
-            // Восстанавливаем фокус и возвращаем текст на место, если элемент все еще на странице
-            if (activeId && document.getElementById(activeId)) {
-                const targetInput = document.getElementById(activeId);
-                targetInput.focus();
-                if (currentTypingValue !== null) {
-                    targetInput.value = currentTypingValue;
+                const actionButton = statusLwr === 'new' 
+                    ? `<button class="btn-cancel" onclick="cancelOrder(${o.id})">Cancel</button>` 
+                    : `<span style="color:var(--text-muted); font-size:12px;">In progress</span>`;
+
+                return `
+                <div class="request-card">
+                    <div class="card-row">
+                        <div>
+                            <span style="font-weight:700; color:var(--accent);">#${o.id}</span> 
+                            <span style="color:var(--text-muted); font-size:12px; margin-left:5px;">⏱ ${formatTime(o.created_at)}</span>
+                        </div>
+                        <span class="status-badge ${statusLwr}">${o.status || 'new'}</span>
+                    </div>
+                    <div class="card-row" style="margin-top:5px;">
+                        <div>
+                            <span style="font-size:15px;"><strong>${o.description || '-'}</strong></span><br>
+                            <span style="font-size:12px; color:var(--text-muted);">Cons: <strong>${o.consignment || o.Consignment || '-'}</strong> | Store: <strong style="color:#6b46c1;">${o.store || '-'}</strong></span>
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="font-size:11px; color:var(--text-muted);">QTY</span><br>
+                            <span style="font-size:18px; color:var(--accent); font-weight:800;">${o.qty || '1'}</span>
+                        </div>
+                    </div>
+                    <div class="card-row" style="font-size:12px; border-top:1px dashed #e2e8f0; padding-top:8px; margin-top:5px;">
+                        <div><span style="color:var(--text-muted);">Driver:</span> <strong>${driverState}</strong></div>
+                        <div>${actionButton}</div>
+                    </div>
+                    <div class="mobile-comment-wrapper">
+                        <div class="table-comment-box">
+                            <input type="text" id="inline_comment_mob_${o.id}" value="${currentComment.replace(/"/g, '&quot;')}" placeholder="Edit comment...">
+                            <button class="btn-save-comment" onclick="updateOrderComment(${o.id})">💾</button>
+                        </div>
+                        ${o.office_comment ? `<div style="color:#0288d1; font-size:11px; margin-top:4px;"><strong>Office:</strong> ${o.office_comment}</div>` : ''}
+                        ${o.driver_comment ? `<div style="color:#2e7d32; font-size:11px; margin-top:2px;"><strong>Driver:</strong> ${o.driver_comment}</div>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+
+            // Применяем сгенерированный HTML в оба контейнера
+            document.getElementById('line_requests_body').innerHTML = tableHtml;
+            document.getElementById('line_requests_mobile').innerHTML = mobileHtml;
+
+            // Возврат фокуса и текста
+            if (activeId) {
+                // Если мы были на мобильном инпуте, а из-за обновления ID сменился на десктопный (или наоборот)
+                let targetInput = document.getElementById(activeId);
+                if (!targetInput && activeId.startsWith('inline_comment_')) {
+                    const rawId = activeId.replace('inline_comment_mob_', '').replace('inline_comment_', '');
+                    targetInput = document.getElementById(`inline_comment_${rawId}`) || document.getElementById(`inline_comment_mob_${rawId}`);
+                }
+                
+                if (targetInput) {
+                    targetInput.focus();
+                    if (currentTypingValue !== null) {
+                        targetInput.value = currentTypingValue;
+                    }
                 }
             }
 
@@ -620,7 +774,6 @@
 
     fetchLineFullName();
     loadStockDropdown();
-    // Интервал автообновления данных (раз в 5 секунд)
     setInterval(loadActiveRequests, 5000);
 </script>
 </body>
