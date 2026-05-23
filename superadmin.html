@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --p:#d32f2f; --s:#1a1a2e; --bg:#f0f2f5; --ok:#2e7d32; }
+        :root { --p:#d32f2f; --s:#1a1a2e; --bg:#f0f2f5; --ok:#2e7d32; --runner:#6b46c1; }
         body{font-family:sans-serif; background:var(--bg); margin:0; padding:15px;}
         .card{background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); max-width:1000px; margin:auto}
         h2{margin-top:0; color:var(--s); border-bottom:2px solid #eee; padding-bottom:10px; font-size: 20px;}
@@ -23,6 +23,7 @@
         .u-badge.line { background: #e8f5e9; color: #2e7d32; }
         .u-badge.driver { background: #fff3e0; color: #ef6c00; }
         .u-badge.office { background: #e3f2fd; color: #1565c0; }
+        .u-badge.runner { background: #f3e8ff; color: var(--runner); }
     </style>
 </head>
 <body>
@@ -42,10 +43,11 @@
             <input type="text" id="new_name" placeholder="Имя / Название линии">
             
             <select id="new_t">
-                <option value="line">Line (Линия)</option>
-                <option value="office">Office (Офис)</option>
-                <option value="driver">Driver (Водитель)</option>
-                <option value="admin">Admin (Администратор)</option>
+                <option value="line" id="opt_line">Line (Линия)</option>
+                <option value="runner" id="opt_runner">Runner (Ранер)</option>
+                <option value="office" id="opt_office">Office (Офис)</option>
+                <option value="driver" id="opt_driver">Driver (Водитель)</option>
+                <option value="admin" id="opt_admin">Admin (Администратор)</option>
             </select>
             
             <button class="btn-add" onclick="addUser()" id="btn_add">➕ ДОБАВИТЬ</button>
@@ -75,9 +77,18 @@
     const _db = supabase.createClient(supabaseUrl, supabaseKey);
     
     const lang = {
-        ru: { title:"УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ", btn_add:"ДОБАВИТЬ", th_u:"Логин", th_p:"Пароль", th_name:"Имя / Отображение на экранах", th_t:"Тип", th_a:"Действие", conf:"Удалить пользователя?", back:"⬅ Назад в Логин", u_ph:"Логин (регистр не важен)", p_ph:"Пароль", name_ph:"Реальное имя или Линия" },
-        en: { title:"USER MANAGEMENT", btn_add:"ADD USER", th_u:"Login", th_p:"Password", th_name:"Name / Display on screens", th_t:"Type", th_a:"Action", conf:"Delete this user?", back:"⬅ Back to Login", u_ph:"Login (case-insensitive)", p_ph:"Password", name_ph:"Real Name or Line Name" },
-        lt: { title:"VARTOTOJŲ VALDYMAS", btn_add:"PRIDĖTI", th_u:"Prisijungimas", th_p:"Slaptažodis", th_name:"Vardas / Rodymas ekranuose", th_t:"Tipas", th_a:"Veiksmas", conf:"Ištrinti vartotoją?", back:"⬅ Atgal į Prisijungimą", u_ph:"Prisijungimas", p_ph:"Slaptažodis", name_ph:"Vardas arba Linijos pavadinimas" }
+        ru: { 
+            title:"УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ", btn_add:"ДОБАВИТЬ", th_u:"Логин", th_p:"Пароль", th_name:"Имя / Отображение на экранах", th_t:"Тип", th_a:"Действие", conf:"Удалить пользователя?", back:"⬅ Назад в Логин", u_ph:"Логин (регистр не важен)", p_ph:"Пароль", name_ph:"Реальное имя или Линия",
+            opt_line: "Line (Линия)", opt_runner: "Runner (Ранер)", opt_office: "Office (Офис)", opt_driver: "Driver (Водитель)", opt_admin: "Admin (Администратор)"
+        },
+        en: { 
+            title:"USER MANAGEMENT", btn_add:"ADD USER", th_u:"Login", th_p:"Password", th_name:"Name / Display on screens", th_t:"Type", th_a:"Action", conf:"Delete this user?", back:"⬅ Back to Login", u_ph:"Login (case-insensitive)", p_ph:"Password", name_ph:"Real Name or Line Name",
+            opt_line: "Line", opt_runner: "Runner", opt_office: "Office", opt_driver: "Driver", opt_admin: "Admin"
+        },
+        lt: { 
+            title:"VARTOTOJŲ VALDYMAS", btn_add:"PRIDĖTI", th_u:"Prisijungimas", th_p:"Slaptažodis", th_name:"Vardas / Rodymas ekranuose", th_t:"Tipas", th_a:"Veiksmas", conf:"Ištrinti vartotoją?", back:"⬅ Atgal į Prisijungimą", u_ph:"Prisijungimas", p_ph:"Slaptažodis", name_ph:"Vardas arba Linijos pavadinimas",
+            opt_line: "Line (Linija)", opt_runner: "Runner (Runderis)", opt_office: "Office (Ofisas)", opt_driver: "Driver (Vairuotojas)", opt_admin: "Admin (Administratorius)"
+        }
     };
     let curL = localStorage.getItem('dash_lang') || 'ru';
 
@@ -100,6 +111,13 @@
         document.getElementById('new_u').placeholder = t.u_ph;
         document.getElementById('new_p').placeholder = t.p_ph;
         document.getElementById('new_name').placeholder = t.name_ph;
+        
+        // Обновление текста опций выпадающего списка
+        document.getElementById('opt_line').innerText = t.opt_line;
+        document.getElementById('opt_runner').innerText = t.opt_runner;
+        document.getElementById('opt_office').innerText = t.opt_office;
+        document.getElementById('opt_driver').innerText = t.opt_driver;
+        document.getElementById('opt_admin').innerText = t.opt_admin;
     }
 
     async function loadUsers() {
