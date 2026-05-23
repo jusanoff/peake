@@ -391,49 +391,49 @@
         <div class="grid-inputs">
             <div class="input-group">
                 <label id="lbl_desc">Description / Fruit</label>
-                <input type="text" id="inp_description" placeholder="e.g. Royal Gala">
+                <input type="text" id="inp_description" placeholder="">
             </div>
             <div class="input-group">
                 <label id="lbl_cons">Consignment (Cons)</label>
-                <input type="text" id="inp_consignment" placeholder="e.g. 8885">
+                <input type="text" id="inp_consignment" placeholder="">
             </div>
             <div class="input-group">
                 <label id="lbl_store">Store / Location</label>
-                <input type="text" id="inp_store" placeholder="e.g. 41">
+                <input type="text" id="inp_store" placeholder="">
             </div>
             <div class="input-group">
                 <label id="lbl_grower">Grower</label>
-                <input type="text" id="inp_grower" placeholder="e.g. Clemente">
+                <input type="text" id="inp_grower" placeholder="">
             </div>
             <div class="input-group">
                 <label id="lbl_origin">Origin</label>
-                <input type="text" id="inp_origin" placeholder="Chile">
+                <input type="text" id="inp_origin" placeholder="">
             </div>
             <div class="input-group">
                 <label id="lbl_size">Size</label>
-                <input type="text" id="inp_size" placeholder="73-78">
+                <input type="text" id="inp_size" placeholder="">
             </div>
             <div class="input-group">
                 <label id="lbl_count">Count</label>
-                <input type="text" id="inp_count" placeholder="100">
+                <input type="text" id="inp_count" placeholder="">
             </div>
         </div>
 
         <div class="input-group" style="margin-top: 15px;">
-            <label id="lbl_comment" style="color: #4a5568; font-weight:600;">Comment</label>
-            <input type="text" id="inp_comment" placeholder="Add a comment for the driver...">
+            <label id="lbl_comment">Comment</label>
+            <input type="text" id="inp_comment" placeholder="">
         </div>
 
         <div class="qty-section">
             <div class="input-group">
-                <label id="lbl_qty" style="color: var(--accent); font-weight:700;">Quantity Needed (QTY)</label>
+                <label id="lbl_qty">Quantity Needed (QTY)</label>
                 <input type="number" id="inp_qty" value="1" min="1">
             </div>
         </div>
 
         <div class="urgent-box">
             <input type="checkbox" id="inp_urgent">
-            <label for="inp_urgent" id="lbl_urgent">⚠️ MARK AS URGENT (ПРИОРИТЕТ ДЛЯ ВОДИТЕЛЯ)</label>
+            <label for="inp_urgent" id="lbl_urgent">⚠️ MARK AS URGENT</label>
         </div>
 
         <button class="btn-send" id="btn_send" onclick="sendRequestToDriver()">🚀 SEND REQUEST TO DRIVER</button>
@@ -441,58 +441,43 @@
 
     <div id="content_runner" class="dashboard-card tab-content">
         <div class="input-group">
-            <label style="font-weight:700; color:var(--runner-accent);" id="lbl_runner_task_type">Тип Задачи для Ранера (Select Task)</label>
-            <select id="runner_task_type" onchange="toggleRunnerFields()">
-                <option value="bins">🪵 Заказать Бины (Order Bins)</option>
-                <option value="boxes">📦 Заказать Коробки (Order Boxes)</option>
-                <option value="trays">📥 Заказать Треи / Лотки (Order Trays)</option>
-                <option value="pickup">🚛 Вывезти готовую продукцию (Pallet Pickup)</option>
-            </select>
+            <label style="font-weight:700; color:var(--runner-accent);" id="lbl_runner_task_type">Select Task</label>
+            <select id="runner_task_type" onchange="toggleRunnerFields()"></select>
         </div>
 
         <div class="qty-section runner-qty-section" style="margin-top: 15px;">
             <div class="input-group">
-                <label id="lbl_runner_qty" style="color: var(--runner-accent); font-weight:700;">Количество (Quantity Needed)</label>
+                <label id="lbl_runner_qty" style="color: var(--runner-accent); font-weight:700;">Quantity Needed</label>
                 <input type="number" id="runner_qty" value="1" min="1">
             </div>
         </div>
 
         <div class="input-group" id="runner_bin_color_block" style="margin-top: 15px;">
-            <label id="lbl_bin_color">Цвет Бина (Bin Color)</label>
-            <select id="runner_bin_color">
-                <option value="Red">Красный (Red)</option>
-                <option value="Yellow">Желтый (Yellow)</option>
-                <option value="Blue">Синий (Blue)</option>
-                <option value="Green">Зеленый (Green)</option>
-                <option value="White">Белый (White)</option>
-            </select>
+            <label id="lbl_bin_color">Bin Color</label>
+            <select id="runner_bin_color"></select>
         </div>
 
         <div class="input-group" id="runner_box_type_block" style="display:none; margin-top: 15px;">
-            <label id="lbl_box_type">Тип Коробок (Box Type)</label>
-            <select id="runner_box_type">
-                <option value="Empty">Пустые (Empty)</option>
-                <option value="Reusable">Многоразовые (Reusable)</option>
-                <option value="Pre-printed">С принтом (Pre-printed)</option>
-            </select>
+            <label id="lbl_box_type">Box Type</label>
+            <select id="runner_box_type"></select>
         </div>
 
         <div class="input-group" id="runner_tray_number_block" style="display:none; margin-top: 15px;">
-            <label style="color:var(--runner-accent); font-weight:700;" id="lbl_tray_number">Номер Трея / Лотка (Tray Number) *</label>
-            <input type="text" id="runner_tray_number" placeholder="e.g. 14, 2A, Line 3...">
+            <label style="color:var(--runner-accent); font-weight:700;" id="lbl_tray_number">Tray Number *</label>
+            <input type="text" id="runner_tray_number" placeholder="">
         </div>
 
         <div class="input-group" id="runner_store_block" style="display:none; margin-top: 15px;">
-            <label style="color: red; font-weight:700;" id="lbl_target_store">Куда отвезти паллет? Target Store (Обязательно) *</label>
-            <input type="text" id="runner_target_store" placeholder="e.g. Store 42, Dispatch, Coldroom...">
+            <label style="color: red; font-weight:700;" id="lbl_target_store">Target Store *</label>
+            <input type="text" id="runner_target_store" placeholder="">
         </div>
 
         <div class="input-group" style="margin-top: 15px;">
-            <label id="lbl_runner_comment" style="color: #4a5568; font-weight:600;">Комментарий к задаче (Optional)</label>
+            <label id="lbl_runner_comment" style="color: #4a5568; font-weight:600;">Comment (Optional)</label>
             <input type="text" id="runner_comment" placeholder="...">
         </div>
 
-        <button class="btn-send-runner" id="btn_send_runner" onclick="sendRequestToRunner()">📦 ОТПРАВИТЬ ЗАЯВКУ РАНЕРУ</button>
+        <button class="btn-send-runner" id="btn_send_runner" onclick="sendRequestToRunner()">📦 SEND REQUEST TO RUNNER</button>
     </div>
 
     <div class="dashboard-card">
@@ -530,7 +515,7 @@
 </div>
 
 <script>
-    // Мультиязычный словарь
+    // Абсолютно полный словарь локализации интерфейса
     const i18n = {
         en: {
             main_title: "Peake Fruit — Production Line Control",
@@ -548,7 +533,7 @@
             lbl_count: "Count",
             lbl_comment: "Comment",
             lbl_qty: "Quantity Needed (QTY)",
-            lbl_urgent: "⚠️ MARK AS URGENT (ПРИОРИТЕТ ДЛЯ ВОДИТЕЛЯ)",
+            lbl_urgent: "⚠️ MARK AS URGENT",
             btn_send: "🚀 SEND REQUEST TO DRIVER",
             active_requests: "Your Active Line Requests (Live)",
             th_id: "ID", th_time: "Ordered At", th_store: "Store", th_fruit: "Fruit Description",
@@ -559,12 +544,29 @@
             alert_fields: "Please fill in Description and Consignment fields!",
             alert_success: "Request sent successfully!",
             cancel_title: "Cancel Request",
-            cancel_menu: "Please select a reason (enter number 1-4):\n1. No longer needed (Больше не нужно)\n2. Plans changed (Изменились планы)\n3. Wrong product selected (Выбран не тот продукт)\n4. Other / Mistake (Другое / Ошибка)",
+            cancel_menu: "Please select a reason (enter number 1-4):\n1. No longer needed\n2. Plans changed\n3. Wrong product selected\n4. Other / Mistake",
             cancel_r1: "No longer needed", cancel_r2: "Plans changed", cancel_r3: "Wrong product selected", cancel_r4: "Other / Mistake",
             alert_canceled: "Request successfully canceled.",
             alert_comm_updated: "Comment updated!",
             alert_store_req: "Please specify the Target Store for pickup!",
-            alert_tray_req: "Please specify the Tray Number!"
+            alert_tray_req: "Please specify the Tray Number!",
+            btn_tab_driver: "🚚 Driver Request",
+            btn_tab_runner: "🏃‍♂️ Runner Request",
+            lbl_runner_task_type: "Select Runner Task",
+            lbl_runner_qty: "Quantity Needed",
+            lbl_bin_color: "Bin Color",
+            lbl_box_type: "Box Type",
+            lbl_tray_number: "Tray Number *",
+            lbl_target_store: "Where to take the pallet? Target Store (Required) *",
+            lbl_runner_comment: "Comment (Optional)",
+            btn_send_runner: "📦 SEND REQUEST TO RUNNER",
+            task_bins: "🪵 Order Bins",
+            task_boxes: "📦 Order Boxes",
+            task_trays: "📥 Order Trays",
+            task_pickup: "🚛 Pallet Pickup (Ready Product)",
+            color_red: "Red", color_yellow: "Yellow", color_blue: "Blue", color_green: "Green", color_white: "White",
+            box_empty: "Empty", box_reusable: "Reusable", box_printed: "Pre-printed",
+            task_txt_bins: "BINS ORDER", task_txt_boxes: "BOXES ORDER", task_txt_trays: "TRAYS ORDER", task_txt_pickup: "PICKUP: Ready Pallet removal"
         },
         ru: {
             main_title: "Peake Fruit — Управление Линией",
@@ -582,7 +584,7 @@
             lbl_count: "Остаток (Count)",
             lbl_comment: "Комментарий",
             lbl_qty: "Количество паллет (QTY)",
-            lbl_urgent: "⚠️ СРОЧНЫЙ ЗАКАЗ (ПРИОРИТЕТ ДЛЯ ВОДИТЕЛЯ)",
+            lbl_urgent: "⚠️ СРОЧНЫЙ ЗАКАЗ",
             btn_send: "🚀 ОТПРАВИТЬ ЗАЯВКУ ВОДИТЕЛЮ",
             active_requests: "Активные заявки вашей линии (Live)",
             th_id: "ID", th_time: "Время", th_store: "Камера", th_fruit: "Описание фрукта",
@@ -598,7 +600,24 @@
             alert_canceled: "Заявка успешно отменена.",
             alert_comm_updated: "Комментарий обновлен!",
             alert_store_req: "Пожалуйста, обязательно укажите в какой Store отвезти паллет!",
-            alert_tray_req: "Пожалуйста, укажите номер трея/лотка!"
+            alert_tray_req: "Пожалуйста, укажите номер трея/лотка!",
+            btn_tab_driver: "🚚 Заказ Водителю",
+            btn_tab_runner: "🏃‍♂️ Заказ Ранеру",
+            lbl_runner_task_type: "Тип Задачи для Ранера",
+            lbl_runner_qty: "Количество (Quantity Needed)",
+            lbl_bin_color: "Цвет Бина (Bin Color)",
+            lbl_box_type: "Тип Коробок (Box Type)",
+            lbl_tray_number: "Номер Трея / Лотка (Tray Number) *",
+            lbl_target_store: "Куда отвезти паллет? Target Store (Обязательно) *",
+            lbl_runner_comment: "Комментарий к задаче (Optional)",
+            btn_send_runner: "📦 ОТПРАВИТЬ ЗАЯВКУ РАНЕРУ",
+            task_bins: "🪵 Заказать Бины",
+            task_boxes: "📦 Заказать Коробки",
+            task_trays: "📥 Заказать Треи / Лотки",
+            task_pickup: "🚛 Вывезти готовую продукцию",
+            color_red: "Красный", color_yellow: "Желтый", color_blue: "Синий", color_green: "Зеленый", color_white: "Белый",
+            box_empty: "Пустые", box_reusable: "Многоразовые", box_printed: "С принтом",
+            task_txt_bins: "БИНЫ ЗАКАЗ", task_txt_boxes: "КОРОБКИ ЗАКАЗ", task_txt_trays: "ТРЕИ ЗАКАЗ", task_txt_pickup: "ВЫВОЗ: Готовый паллет"
         }
     };
 
@@ -638,6 +657,38 @@
         document.getElementById('th_delivered').innerText = lang.th_delivered;
         document.getElementById('th_status').innerText = lang.th_status;
         document.getElementById('th_action').innerText = lang.th_action;
+
+        // Перевод динамических блоков ранера
+        document.getElementById('btn_tab_driver').innerText = lang.btn_tab_driver;
+        document.getElementById('btn_tab_runner').innerText = lang.btn_tab_runner;
+        document.getElementById('lbl_runner_task_type').innerText = lang.lbl_runner_task_type;
+        document.getElementById('lbl_runner_qty').innerText = lang.lbl_runner_qty;
+        document.getElementById('lbl_bin_color').innerText = lang.lbl_bin_color;
+        document.getElementById('lbl_box_type').innerText = lang.lbl_box_type;
+        document.getElementById('lbl_tray_number').innerText = lang.lbl_tray_number;
+        document.getElementById('lbl_target_store').innerText = lang.lbl_target_store;
+        document.getElementById('lbl_runner_comment').innerText = lang.lbl_runner_comment;
+        document.getElementById('btn_send_runner').innerText = lang.btn_send_runner;
+
+        // Заполнение селектов ранера
+        document.getElementById('runner_task_type').innerHTML = `
+            <option value="bins">${lang.task_bins}</option>
+            <option value="boxes">${lang.task_boxes}</option>
+            <option value="trays">${lang.task_trays}</option>
+            <option value="pickup">${lang.task_pickup}</option>
+        `;
+        document.getElementById('runner_bin_color').innerHTML = `
+            <option value="${i18n.en.color_red}">${lang.color_red}</option>
+            <option value="${i18n.en.color_yellow}">${lang.color_yellow}</option>
+            <option value="${i18n.en.color_blue}">${lang.color_blue}</option>
+            <option value="${i18n.en.color_green}">${lang.color_green}</option>
+            <option value="${i18n.en.color_white}">${lang.color_white}</option>
+        `;
+        document.getElementById('runner_box_type').innerHTML = `
+            <option value="${i18n.en.box_empty}">${lang.box_empty}</option>
+            <option value="${i18n.en.box_reusable}">${lang.box_reusable}</option>
+            <option value="${i18n.en.box_printed}">${lang.box_printed}</option>
+        `;
     }
 
     const currentUser = localStorage.getItem('user');
@@ -835,19 +886,21 @@
         let dbType = "runner_materials";
 
         if (type === 'bins') {
-            const color = document.getElementById('runner_bin_color').value;
-            finalDescription = `🪵 BINS ORDER (${color}) x${qty}`;
+            const colorSelect = document.getElementById('runner_bin_color');
+            const colorLabel = colorSelect.options[colorSelect.selectedIndex].text;
+            finalDescription = `🪵 ${lang.task_txt_bins} (${colorLabel}) x${qty}`;
         } else if (type === 'boxes') {
-            const boxType = document.getElementById('runner_box_type').value;
-            finalDescription = `📦 BOXES ORDER (${boxType}) x${qty}`;
+            const boxSelect = document.getElementById('runner_box_type');
+            const boxLabel = boxSelect.options[boxSelect.selectedIndex].text;
+            finalDescription = `📦 ${lang.task_txt_boxes} (${boxLabel}) x${qty}`;
         } else if (type === 'trays') {
             const trayNum = document.getElementById('runner_tray_number').value.trim();
             if (!trayNum) { alert(lang.alert_tray_req); return; }
-            finalDescription = `📥 TRAYS ORDER (№ ${trayNum}) x${qty}`;
+            finalDescription = `📥 ${lang.task_txt_trays} (№ ${trayNum}) x${qty}`;
         } else if (type === 'pickup') {
             const targetStore = document.getElementById('runner_target_store').value.trim();
             if (!targetStore) { alert(lang.alert_store_req); return; }
-            finalDescription = `🚛 PICKUP: Ready Pallet removal x${qty}`;
+            finalDescription = `🚛 ${lang.task_txt_pickup} x${qty}`;
             finalStore = targetStore;
             dbType = "runner_pickup";
         }
@@ -943,7 +996,7 @@
                     : `<span style="color:var(--text-muted); font-size:11px;">${lang.progress}</span>`;
 
                 const assigneeDisplay = o.is_runner 
-                    ? (o.driver_name ? '🏃‍♂️ ' + o.driver_name : '<span class="runner-badge">Runner Task</span>')
+                    ? (o.driver_name ? '🏃‍♂️ ' + o.driver_name : `<span class="runner-badge">${currentLang === 'ru' ? 'Ранер' : 'Runner Task'}</span>`)
                     : (o.driver_name ? '🚚 ' + o.driver_name : lang.waiting);
 
                 return `
@@ -976,10 +1029,10 @@
                     : `<span style="color:var(--text-muted); font-size:12px;">${lang.progress}</span>`;
 
                 const driverDisplay = o.is_runner 
-                    ? (o.driver_name ? o.driver_name : 'Runner Waiting...')
+                    ? (o.driver_name ? o.driver_name : (currentLang === 'ru' ? 'Ожидание ранера...' : 'Runner Waiting...'))
                     : (o.driver_name ? o.driver_name : lang.waiting);
 
-                const badgeOrRunner = o.is_runner ? `<span class="runner-badge" style="margin-left:5px;">Runner</span>` : '';
+                const badgeOrRunner = o.is_runner ? `<span class="runner-badge" style="margin-left:5px;">${currentLang === 'ru' ? 'Ранер' : 'Runner'}</span>` : '';
 
                 return `
                 <div class="request-card" style="${o.is_runner ? 'border-left: 4px solid var(--runner-accent);' : ''}">
@@ -995,7 +1048,7 @@
                         <div style="text-align:right;"><span style="font-size:18px; color:var(--accent); font-weight:800;">${o.qty || '1'}</span></div>
                     </div>
                     <div class="card-row" style="font-size:12px; border-top:1px dashed #e2e8f0; padding-top:8px;">
-                        <div>Assignee: <strong>${driverDisplay}</strong></div>
+                        <div>${currentLang === 'ru' ? 'Исполнитель' : 'Assignee'}: <strong>${driverDisplay}</strong></div>
                         <div>${actionButton}</div>
                     </div>
                     <div class="mobile-comment-wrapper">
