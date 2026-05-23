@@ -103,6 +103,17 @@
             background: #ffffff;
         }
 
+        /* Стиль поля живого поиска для сток-листа */
+        .stock-search-input {
+            margin-bottom: 8px;
+            border-color: #bae6fd;
+            background-color: #f0f9ff;
+        }
+        .stock-search-input:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
         .grid-inputs {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -183,7 +194,6 @@
         .status-badge.process, .status-badge.accepted { background: #fff3e0; color: #e65100; }
         .status-badge.delivered, .status-badge.done { background: #e2f0d9; color: #385723; }
         
-        /* Стиль для кнопки отмены заказа */
         .btn-cancel {
             background: #fff5f5;
             color: #e53e3e;
@@ -196,6 +206,33 @@
         }
         .btn-cancel:hover {
             background: #fed7d7;
+        }
+
+        .table-comment-box {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .table-comment-box input {
+            padding: 4px 6px;
+            font-size: 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            width: 150px;
+        }
+        .btn-save-comment {
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+            padding: 4px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .btn-save-comment:hover {
+            background: #bae6fd;
         }
     </style>
 </head>
@@ -215,6 +252,10 @@
 
     <div class="dashboard-card">
         <div class="card-title-quick">⚡ Quick Select From Stock Sheet</div>
+        
+        <!-- Поле текстового поиска по подгруженному стоку -->
+        <input type="text" id="stock_search" class="stock-search-input" placeholder="🔍 Type to search stock (e.g. 41, Gala, 8885)..." oninput="filterStockDropdown()">
+        
         <select id="stock_selector" onchange="handleStockSelect()">
             <option value="">-- Choose fruit pallet (Auto-fills fields below) --</option>
         </select>
@@ -365,18 +406,43 @@
 
             if (stock) {
                 stockItemsGlobal = stock;
-                const selector = document.getElementById('stock_selector');
-                const optionsHtml = stock.map(item => {
-                    const desc = item.description || 'Unknown Fruit';
-                    const cons = item.consignment || item.Consignment || 'No Cons';
-                    const size = item.size || 'No Size';
-                    const store = item.store || '?';
-                    return `<option value="${item.id}">📦 Store ${store} | ${desc} (Cons: ${cons}, Size: ${size})</option>`;
-                }).join('');
-
-                selector.innerHTML = '<option value="">-- Choose fruit pallet (Auto-fills fields below) --</option>' + optionsHtml;
+                renderStockOptions(stockItemsGlobal);
             }
         } catch (e) {}
+    }
+
+    /* Функция отрисовки вариантов выпадающего списка */
+    function renderStockOptions(items) {
+        const selector = document.getElementById('stock_selector');
+        const optionsHtml = items.map(item => {
+            const desc = item.description || 'Unknown Fruit';
+            const cons = item.consignment || item.Consignment || 'No Cons';
+            const size = item.size || 'No Size';
+            const store = item.store || '?';
+            return `<option value="${item.id}">📦 Store ${store} | ${desc} (Cons: ${cons}, Size: ${size})</option>`;
+        }).join('');
+
+        selector.innerHTML = '<option value="">-- Choose fruit pallet (Auto-fills fields below) --</option>' + optionsHtml;
+    }
+
+    /* Живой фильтр списка на основе введенного текста */
+    function filterStockDropdown() {
+        const query = document.getElementById('stock_search').value.toLowerCase().trim();
+        if (!query) {
+            renderStockOptions(stockItemsGlobal);
+            return;
+        }
+
+        const filtered = stockItemsGlobal.filter(item => {
+            const desc = (item.description || '').toLowerCase();
+            const cons = (item.consignment || item.Consignment || '').toLowerCase();
+            const store = String(item.store || '').toLowerCase();
+            const grower = (item.grower || '').toLowerCase();
+            
+            return desc.includes(query) || cons.includes(query) || store.includes(query) || grower.includes(query);
+        });
+
+        renderStockOptions(filtered);
     }
 
     function handleStockSelect() {
@@ -432,6 +498,9 @@
 
             alert("Request sent successfully!");
             
+            document.getElementById('stock_search').value = '';
+            renderStockOptions(stockItemsGlobal);
+
             document.getElementById('stock_selector').value = '';
             document.getElementById('inp_description').value = '';
             document.getElementById('inp_consignment').value = '';
@@ -451,7 +520,6 @@
         }
     }
 
-    /* Функция для удаления (отмены) заказа */
     async function cancelOrder(orderId) {
         if (!confirm("Are you sure you want to cancel request #" + orderId + "?")) return;
         try {
@@ -466,6 +534,26 @@
             loadActiveRequests();
         } catch (e) {
             alert("Error canceling request: " + e.message);
+        }
+    }
+
+    async function updateOrderComment(orderId) {
+        const inputEl = document.getElementById(`inline_comment_${orderId}`);
+        if (!inputEl) return;
+        const newComment = inputEl.value.trim();
+
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .update({ comment: newComment })
+                .eq('id', orderId);
+
+            if (error) throw error;
+
+            alert(`Comment for request #${orderId} updated!`);
+            loadActiveRequests();
+        } catch (e) {
+            alert("Error updating comment: " + e.message);
         }
     }
 
@@ -490,8 +578,14 @@
                 const specAvail = o.available || '-';
                 const statusLwr = (o.status || 'new').toLowerCase();
 
-                // Объединение комментариев от Линии, Офиса и Водителя
-                let logsHtml = `<div style="font-weight: 500;">Line: ${o.comment || '-'}</div>`;
+                const currentComment = o.comment || '';
+                let logsHtml = `
+                    <div class="table-comment-box">
+                        <input type="text" id="inline_comment_${o.id}" value="${currentComment.replace(/"/g, '&quot;')}" placeholder="Edit line comment...">
+                        <button class="btn-save-comment" onclick="updateOrderComment(${o.id})" title="Save Comment">💾</button>
+                    </div>
+                `;
+
                 if (o.office_comment) {
                     logsHtml += `<div style="color:#0288d1; font-size:11px; margin-top:2px; font-weight:600;">Office: ${o.office_comment}</div>`;
                 }
@@ -499,7 +593,6 @@
                     logsHtml += `<div style="color:#2e7d32; font-size:11px; margin-top:2px; font-weight:600;">Driver: ${o.driver_comment}</div>`;
                 }
 
-                // Кнопка отмены доступна только для новых заказов (статус 'new')
                 const actionHtml = statusLwr === 'new' 
                     ? `<button class="btn-cancel" onclick="cancelOrder(${o.id})">Cancel</button>` 
                     : `<span style="color:var(--text-muted); font-size:11px;">In progress</span>`;
@@ -522,7 +615,17 @@
                 </tr>
             `}).join('');
 
+            const activeId = document.activeElement ? document.activeElement.id : null;
+            const activeValue = activeId && activeId.startsWith('inline_comment_') ? document.getElementById(activeId).value : null;
+
             document.getElementById('line_requests_body').innerHTML = html;
+
+            if (activeId && document.getElementById(activeId)) {
+                const el = document.getElementById(activeId);
+                el.focus();
+                el.value = activeValue;
+            }
+
         } catch (e) {}
     }
 
