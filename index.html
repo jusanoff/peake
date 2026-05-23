@@ -12,6 +12,7 @@
             --text: #1a1a2e;
             --text-muted: #6c757d;
             --accent: #0288d1;
+            --runner-accent: #6b46c1; /* Новый цвет для логистики ранеров */
             --border: #e2e8f0;
             --status-new: #ef6c00;
             --status-done: #2e7d32;
@@ -93,6 +94,18 @@
             gap: 4px;
         }
 
+        .card-title-runner {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--runner-accent);
+            margin-bottom: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
         select, input {
             width: 100%;
             padding: 10px;
@@ -113,6 +126,12 @@
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 10px;
             margin-top: 15px;
+        }
+
+        .grid-runner {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
         }
 
         .input-group {
@@ -172,6 +191,41 @@
         }
         .btn-send:hover { background: #005fa3; }
 
+        /* Стили для кнопок Ранера */
+        .btn-runner-mat {
+            background: #af52de;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 2px 6px rgba(175,82,222,0.2);
+        }
+        .btn-runner-mat:hover { background: #963bca; }
+
+        .btn-runner-pick {
+            background: #5856d6;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 2px 6px rgba(88,86,214,0.2);
+        }
+        .btn-runner-pick:hover { background: #4341bc; }
+
         .table-responsive {
             display: block;
             width: 100%;
@@ -215,6 +269,17 @@
         .status-badge.delivered, .status-badge.done { background: #e2f0d9; color: #385723; }
         .status-badge.canceled { background: #ffeeee; color: #e53e3e; }
         
+        /* Метка для задач ранера в таблице */
+        .runner-badge {
+            background: #f3e8ff;
+            color: #6b46c1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
         .btn-cancel {
             background: #fff5f5;
             color: #e53e3e;
@@ -281,6 +346,7 @@
             .header { flex-direction: column; align-items: flex-start; gap: 12px; }
             .header-right { width: 100%; justify-content: space-between; }
             .grid-inputs { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+            .grid-runner { grid-template-columns: repeat(1, minmax(0, 1fr)); }
             .table-responsive { display: none; }
             .mobile-requests-list { display: flex; }
         }
@@ -303,7 +369,6 @@
     <div class="dashboard-card">
         <div class="card-title-quick" id="txt_quick_select">⚡ Quick Select From Stock Sheet</div>
         
-        <!-- Контейнер со стабильным мобильным выпадающим списком -->
         <div style="position: relative; width: 100%;">
             <input type="text" id="stock_input" class="stock-search-combo" placeholder="🔍 Click or type to search fruit pallet..." oninput="handleCustomSearch(this)" onclick="handleCustomSearch(this)">
             <div id="custom_dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-top: none; max-height: 250px; overflow-y: auto; z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 0 0 6px 6px;"></div>
@@ -360,6 +425,14 @@
         <button class="btn-send" id="btn_send" onclick="sendRequestToDriver()">🚀 SEND REQUEST TO DRIVER</button>
     </div>
 
+    <div class="dashboard-card" style="border-left: 5px solid var(--runner-accent);">
+        <div class="card-title-runner" id="txt_runner_section">📦 Runner Logistics (Управление Тарой и Вывозом)</div>
+        <div class="grid-runner">
+            <button class="btn-runner-mat" onclick="sendRunnerMaterialRequest()">🪵 <span id="btn_txt_mat">Request Materials (Bins/Boxes)</span></button>
+            <button class="btn-runner-pick" onclick="sendRunnerPickupRequest()">🚛 <span id="btn_txt_pick">Call Pallet Pickup (Вывоз)</span></button>
+        </div>
+    </div>
+
     <div class="dashboard-card">
         <h3 id="txt_active_requests" style="margin-top:0; font-size:16px;">Your Active Line Requests (Live)</h3>
         
@@ -376,7 +449,7 @@
                         <th id="th_specs">Specs (O/S/C)</th>
                         <th id="th_qty">Qty</th>
                         <th id="th_comment">Comment</th>
-                        <th id="th_driver">Driver</th>
+                        <th id="th_driver">Driver / Runner</th>
                         <th id="th_delivered">Delivered At</th>
                         <th id="th_status">Status</th>
                         <th id="th_action">Action</th>
@@ -427,7 +500,16 @@
             cancel_menu: "Please select a reason (enter number 1-4):\n1. No longer needed (Больше не нужно)\n2. Plans changed (Изменились планы)\n3. Wrong product selected (Выбран не тот продукт)\n4. Other / Mistake (Другое / Ошибка)",
             cancel_r1: "No longer needed", cancel_r2: "Plans changed", cancel_r3: "Wrong product selected", cancel_r4: "Other / Mistake",
             alert_canceled: "Request successfully canceled.",
-            alert_comm_updated: "Comment updated!"
+            alert_comm_updated: "Comment updated!",
+            
+            // Новые переводы для Ранеров
+            runner_section: "📦 Runner Logistics (Packaging & Pallet Removal)",
+            btn_mat: "Request Materials (Bins/Boxes)",
+            btn_pick: "Call Pallet Pickup (Removal)",
+            mat_prompt: "Select materials to order:\n1. Bins (Бины)\n2. Boxes / Cardboard (Коробки)",
+            mat_order_desc: "📦 BINS ORDER",
+            box_order_desc: "📦 BOXES ORDER",
+            pickup_desc: "🚛 PICKUP: Ready Pallet Removal"
         },
         ru: {
             main_title: "Peake Fruit — Управление Линией",
@@ -459,7 +541,16 @@
             cancel_menu: "Выберите причину отмены (введите цифру 1-4):\n1. Больше не нужно\n2. Изменились планы\n3. Выбран не тот продукт\n4. Другое / Ошибка",
             cancel_r1: "Больше не нужно", cancel_r2: "Изменились планы", cancel_r3: "Выбран не тот продукт", cancel_r4: "Другое / Ошибка",
             alert_canceled: "Заявка успешно отменена.",
-            alert_comm_updated: "Комментарий обновлен!"
+            alert_comm_updated: "Комментарий обновлен!" ,
+            
+            // Новые переводы для Ранеров
+            runner_section: "📦 Логистика Ранеров (Тара и Вывоз)",
+            btn_mat: "Заказать Тару (Бины/Коробки)",
+            btn_pick: "Вызвать Ранера на Вывоз Паллета",
+            mat_prompt: "Выберите тип тары (введите цифру 1-2):\n1. Бины (Bins)\n2. Коробки / Картон (Boxes)",
+            mat_order_desc: "📦 ЗАКАЗ: Бины",
+            box_order_desc: "📦 ЗАКАЗ: Коробки",
+            pickup_desc: "🚛 ВЫВОЗ: Готовый паллет"
         }
     };
 
@@ -499,6 +590,11 @@
         document.getElementById('th_delivered').innerText = lang.th_delivered;
         document.getElementById('th_status').innerText = lang.th_status;
         document.getElementById('th_action').innerText = lang.th_action;
+
+        // Локализация новых кнопок
+        document.getElementById('txt_runner_section').innerText = lang.runner_section;
+        document.getElementById('btn_txt_mat').innerText = lang.btn_mat;
+        document.getElementById('btn_txt_pick').innerText = lang.btn_pick;
     }
 
     const currentUser = localStorage.getItem('user');
@@ -547,7 +643,6 @@
         loadActiveRequests();
     }
 
-    // Загрузка стока в глобальный массив
     async function loadStockDropdown() {
         try {
             const { data: stock, error } = await clientDb.from('stock').select('*').gt('count', 0);
@@ -558,7 +653,6 @@
         } catch (e) { console.error(e); }
     }
 
-    // Умный поиск для смартфонов и планшетов
     function handleCustomSearch(inputEl) {
         const query = inputEl.value.toLowerCase().trim();
         const dropdown = document.getElementById('custom_dropdown');
@@ -595,7 +689,6 @@
         dropdown.style.display = 'block';
     }
 
-    // Выбор фрукта из списка и автозаполнение
     function selectPlatformItem(id, fullText) {
         document.getElementById('stock_input').value = fullText;
         document.getElementById('custom_dropdown').style.display = 'none';
@@ -612,7 +705,6 @@
         document.getElementById('inp_count').value = match.count || '';
     }
 
-    // Закрытие списка по клику мимо
     document.addEventListener('click', function(e) {
         const dropdown = document.getElementById('custom_dropdown');
         const inputEl = document.getElementById('stock_input');
@@ -621,6 +713,7 @@
         }
     });
 
+    // ФУНКЦИЯ: Заказ фруктов водителю
     async function sendRequestToDriver() {
         const desc = document.getElementById('inp_description').value.trim();
         const cons = document.getElementById('inp_consignment').value.trim();
@@ -651,23 +744,71 @@
                 qty: qty,
                 status: 'new',
                 urgent: isUrgent,
-                comment: comment
+                comment: comment,
+                is_runner: false // Метка, что это заказ для ВОДИТЕЛЯ
             }]);
 
             if (error) throw error;
             alert(lang.alert_success);
-            
-            document.getElementById('stock_input').value = '';
-            document.getElementById('inp_description').value = '';
-            document.getElementById('inp_consignment').value = '';
-            document.getElementById('inp_store').value = '';
-            document.getElementById('inp_grower').value = '';
-            document.getElementById('inp_origin').value = '';
-            document.getElementById('inp_size').value = '';
-            document.getElementById('inp_count').value = '';
-            document.getElementById('inp_qty').value = '1';
-            document.getElementById('inp_comment').value = '';
-            document.getElementById('inp_urgent').checked = false;
+            clearDriverForm();
+            loadActiveRequests();
+        } catch (e) { alert(e.message); }
+    }
+
+    function clearDriverForm() {
+        document.getElementById('stock_input').value = '';
+        document.getElementById('inp_description').value = '';
+        document.getElementById('inp_consignment').value = '';
+        document.getElementById('inp_store').value = '';
+        document.getElementById('inp_grower').value = '';
+        document.getElementById('inp_origin').value = '';
+        document.getElementById('inp_size').value = '';
+        document.getElementById('inp_count').value = '';
+        document.getElementById('inp_qty').value = '1';
+        document.getElementById('inp_comment').value = '';
+        document.getElementById('inp_urgent').checked = false;
+    }
+
+    // НОВАЯ ФУНКЦИЯ РАНЕРА: Заказ тары (runner_materials)
+    async function sendRunnerMaterialRequest() {
+        const choice = prompt(lang.mat_prompt, "1");
+        if (choice === null) return;
+
+        let description = "";
+        if (choice.trim() === "1") description = lang.mat_order_desc;
+        else if (choice.trim() === "2") description = lang.box_order_desc;
+        else return; // Неверный ввод
+
+        try {
+            const { error } = await clientDb.from('orders').insert([{
+                line: cachedLineFullName,
+                description: description,
+                status: 'new',
+                is_runner: true, // Флаг для runner.html
+                type: 'runner_materials',
+                store: 'Packaging',
+                qty: 1
+            }]);
+            if (error) throw error;
+            alert(lang.alert_success);
+            loadActiveRequests();
+        } catch (e) { alert(e.message); }
+    }
+
+    // НОВАЯ ФУНКЦИЯ РАНЕРА: Запрос на вывоз готового паллета (runner_pickup)
+    async function sendRunnerPickupRequest() {
+        try {
+            const { error } = await clientDb.from('orders').insert([{
+                line: cachedLineFullName,
+                description: lang.pickup_desc,
+                status: 'new',
+                is_runner: true, // Флаг для runner.html
+                type: 'runner_pickup',
+                store: 'Line End',
+                qty: 1
+            }]);
+            if (error) throw error;
+            alert(lang.alert_success);
             loadActiveRequests();
         } catch (e) { alert(e.message); }
     }
@@ -710,6 +851,7 @@
         } catch (e) { alert(e.message); }
     }
 
+    // ОБНОВЛЕННАЯ ФУНКЦИЯ: Отрисовка "живой" таблицы (Включает логистику Ранеров)
     async function loadActiveRequests() {
         try {
             const activeId = document.activeElement ? document.activeElement.id : null;
@@ -740,12 +882,22 @@
                     ? `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>` 
                     : `<span style="color:var(--text-muted); font-size:11px;">${lang.progress}</span>`;
 
+                // Определение, кто выполняет задачу: Водитель или Ранер
+                const driverDisplay = o.is_runner 
+                    ? (o.driver_name ? '🏃‍♂️ ' + o.driver_name : `<span class="runner-badge">Runner Waiting</span>`)
+                    : (o.driver_name ? '🚚 ' + o.driver_name : lang.waiting);
+
+                // Подсветка текста описания для Ранеров
+                const descriptionDisplay = o.is_runner 
+                    ? `<span style="color:var(--runner-accent); font-weight:700;">${o.description}</span>`
+                    : `<strong>${o.description || '-'}</strong>`;
+
                 return `
                 <tr>
                     <td>#${o.id}</td>
                     <td>⏱ ${formatTime(o.created_at)}</td>
                     <td><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
-                    <td><strong>${o.description || '-'}</strong></td>
+                    <td>${descriptionDisplay}</td>
                     <td>${o.grower || '-'}</td>
                     <td>${o.consignment || o.Consignment || '-'}</td>
                     <td>${o.origin || '-'} / ${o.size || '-'} / ${o.available || '-'}</td>
@@ -756,7 +908,7 @@
                             <button class="btn-save-comment" onclick="updateOrderComment(${o.id})">💾</button>
                         </div>
                     </td>
-                    <td>${o.driver_name ? '🚚 ' + o.driver_name : lang.waiting}</td>
+                    <td>${driverDisplay}</td>
                     <td>${o.delivered_at ? formatTime(o.delivered_at) : '-'}</td>
                     <td><span class="status-badge ${statusLwr}">${o.status || 'new'}</span></td>
                     <td>${actionHtml}</td>
@@ -769,21 +921,27 @@
                     ? `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>` 
                     : `<span style="color:var(--text-muted); font-size:12px;">${lang.progress}</span>`;
 
+                const driverDisplay = o.is_runner 
+                    ? (o.driver_name ? o.driver_name : 'Runner Waiting...')
+                    : (o.driver_name ? o.driver_name : lang.waiting);
+
+                const badgeOrRunner = o.is_runner ? `<span class="runner-badge" style="margin-left:5px;">Runner</span>` : '';
+
                 return `
-                <div class="request-card">
+                <div class="request-card" style="${o.is_runner ? 'border-left: 4px solid var(--runner-accent);' : ''}">
                     <div class="card-row">
-                        <div><span style="font-weight:700; color:var(--accent);">#${o.id}</span> <span style="color:var(--text-muted); font-size:12px; margin-left:5px;">⏱ ${formatTime(o.created_at)}</span></div>
+                        <div><span style="font-weight:700; color:var(--accent);">#${o.id}</span> ${badgeOrRunner} <span style="color:var(--text-muted); font-size:12px; margin-left:5px;">⏱ ${formatTime(o.created_at)}</span></div>
                         <span class="status-badge ${statusLwr}">${o.status || 'new'}</span>
                     </div>
                     <div class="card-row">
                         <div>
-                            <span><strong>${o.description || '-'}</strong></span><br>
+                            <span><strong style="${o.is_runner ? 'color:var(--runner-accent);' : ''}">${o.description || '-'}</strong></span><br>
                             <span style="font-size:12px; color:var(--text-muted);">Cons: ${o.consignment || '-'} | Store: ${o.store || '-'}</span>
                         </div>
                         <div style="text-align:right;"><span style="font-size:18px; color:var(--accent); font-weight:800;">${o.qty || '1'}</span></div>
                     </div>
                     <div class="card-row" style="font-size:12px; border-top:1px dashed #e2e8f0; padding-top:8px;">
-                        <div>Driver: <strong>${o.driver_name ? o.driver_name : lang.waiting}</strong></div>
+                        <div>Assignee: <strong>${driverDisplay}</strong></div>
                         <div>${actionButton}</div>
                     </div>
                     <div class="mobile-comment-wrapper">
