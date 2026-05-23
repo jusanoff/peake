@@ -43,22 +43,44 @@
         .dashboard-card { background: var(--card-bg); padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #edf2f7; }
         .dashboard-card h3 { margin-top: 0; margin-bottom: 10px; font-size: 15px; color: #334155; }
 
-        .table-responsive { overflow-x: auto; margin-top: 5px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; }
-        table { width: 100%; border-collapse: collapse; min-width: 850px; }
-        th { background: #f8fafc; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 14px 10px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+        /* Полная адаптация таблицы через CSS-сетку для мобильных */
+        .table-responsive { background: #fff; border-radius: 6px; overflow: hidden; }
+        
+        @media (max-width: 767px) {
+            table, thead, tbody, th, td, tr { display: block; }
+            thead { display: none; } /* Скрываем заголовки на смартфонах */
+            tr { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px; padding: 10px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+            td { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #f1f5f9; font-size: 13px; text-align: right; }
+            td::before { content: attr(data-label); font-weight: 700; color: var(--text-muted); font-size: 11px; text-transform: uppercase; float: left; text-align: left; margin-right: 10px; }
+            td:last-child { border-bottom: none; display: block; text-align: center; margin-top: 10px; }
+            .btn-action { width: 100% !important; margin-bottom: 6px; }
+            .cancel-box { width: 100% !important; flex-direction: column; }
+            .select-cancel-reason { width: 100% !important; }
+        }
 
-        .btn-action { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; color: white; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; min-height: 34px; }
+        @media (min-width: 768px) {
+            .table-responsive { overflow-x: auto; border: 1px solid #e2e8f0; }
+            table { width: 100%; border-collapse: collapse; min-width: 950px; }
+            th { background: #f8fafc; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+            td { padding: 14px 10px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+        }
+
+        .btn-action { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; color: white; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; min-height: 34px; box-sizing: border-box; }
         .btn-accept { background: #0288d1; width: 100%; }
-        .btn-complete { background: #16a34a; width: 100%; }
+        .btn-complete { background: #16a34a; width: 100%; margin-bottom: 4px; }
+        .btn-cancel { background: #dc2626; width: 100%; }
 
         .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
         .status-badge.new { background: #fef3c7; color: #d97706; }
+        .status-badge.delivered { background: #dcfce7; color: #15803d; }
+        .status-badge.cancelled { background: #fee2e2; color: #b91c1c; }
 
-        /* Стили для блока ответа на комментарий внутри таблицы */
         .reply-box { display: flex; gap: 4px; margin-top: 4px; }
         .reply-box input { border: 1px solid var(--border); padding: 4px; font-size: 12px; border-radius: 4px; flex: 1; }
         .btn-reply { background: #475569; color: #fff; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        .cancel-box { display: flex; gap: 4px; margin-top: 4px; width: 100%; }
+        .select-cancel-reason { border: 1px solid #fca5a5; padding: 6px; font-size: 12px; border-radius: 4px; background: #fff; flex: 1; font-weight: 600; color: #991b1b; }
 
         @media (min-width: 768px) {
             body { padding: 15px; }
@@ -67,6 +89,10 @@
             .header-right { width: auto; }
             .driver-badge { flex-grow: 0; min-width: 180px; }
             .btn-action { width: auto; }
+            .btn-complete { width: auto; margin-bottom: 0; margin-right: 4px; }
+            .btn-cancel { width: auto; }
+            .cancel-box { width: auto; }
+            .select-cancel-reason { width: 160px; }
         }
     </style>
 </head>
@@ -82,7 +108,7 @@
     </div>
 
     <div class="dashboard-card">
-        <h3>Active Line Pallet Requests</h3>
+        <h3>Active Line Pallet Requests & Today's History</h3>
         <div class="table-responsive">
             <table>
                 <thead>
@@ -144,31 +170,73 @@
     }
 
     async function loadAllOrders() {
-        // Если водитель сейчас пишет в инпут, полностью отменяем шаг обновления структуры
+        // Если водитель сейчас пишет в инпут или выбирает причину отмены, полностью отменяем шаг обновления
         if (isUserTyping) return;
 
         try {
+            // Загружаем заказы
             const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
-                .not('status', 'eq', 'delivered')
                 .order('id', { ascending: false });
 
             if (error) throw error;
 
             if (!orders || orders.length === 0) {
-                document.getElementById('driver_orders_body').innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-muted);">No active orders.</td></tr>`;
+                document.getElementById('driver_orders_body').innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-muted);">No orders found.</td></tr>`;
                 return;
             }
 
-            const html = orders.map(o => {
+            // Получаем начало сегодняшнего дня (00:00:00) локального времени для фильтрации истории
+            const todayStart = new Date();
+            todayStart.setHours(0,0,0,0);
+
+            const filteredOrders = orders.filter(o => {
+                // Показывать все "недоставленные" и "неотмененные" заказы
+                if (o.status !== 'delivered' && o.status !== 'cancelled') {
+                    return true;
+                }
+                
+                // Для доставленных или отмененных — показывать только если их взял этот водитель И это было сделано СЕГОДНЯ
+                if (o.driver_name === cachedDriverFullName) {
+                    const actionTimeStr = o.delivered_at || o.cancelled_at;
+                    if (actionTimeStr) {
+                        const actionTime = new Date(actionTimeStr);
+                        return actionTime >= todayStart;
+                    }
+                }
+                return false;
+            });
+
+            if (filteredOrders.length === 0) {
+                document.getElementById('driver_orders_body').innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-muted);">No active orders or history for today.</td></tr>`;
+                return;
+            }
+
+            const html = filteredOrders.map(o => {
                 let actionBtn = '';
+                
                 if (o.status === 'new') {
                     actionBtn = `<button class="btn-action btn-accept" onclick="acceptOrder(${o.id})">✅ Accept</button>`;
                 } else if (o.status === 'accepted' && o.driver_name === cachedDriverFullName) {
-                    actionBtn = `<button class="btn-action btn-complete" onclick="completeOrder(${o.id})">📦 Complete Order</button>`;
+                    actionBtn = `
+                        <button class="btn-action btn-complete" onclick="completeOrder(${o.id})">📦 Complete</button>
+                        <button class="btn-action btn-cancel" onclick="showCancelInterface(${o.id})">❌ Cancel</button>
+                        <div class="cancel-box" id="cancel_box_${o.id}" style="display:none;">
+                            <select class="select-cancel-reason" id="cancel_reason_${o.id}" onfocus="pauseUpdate()" onblur="resumeUpdateDelayed()">
+                                <option value="Cannot find fruit">Cannot find fruit</option>
+                                <option value="Cancelled by line">Cancelled by line</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <button class="btn-reply" style="background:#dc2626;" onclick="confirmCancelOrder(${o.id})">Submit</button>
+                        </div>
+                    `;
                 } else if (o.status === 'accepted') {
                     actionBtn = `<span style="color:var(--text-muted); font-size:11px;">Locked</span>`;
+                } else if (o.status === 'delivered') {
+                    actionBtn = `<span class="status-badge delivered">Delivered</span>`;
+                } else if (o.status === 'cancelled') {
+                    actionBtn = `<span class="status-badge cancelled">Cancelled</span>`;
                 }
 
                 // Логика вывода логов комментариев (Line, Office, Driver)
@@ -179,8 +247,16 @@
                 if (o.driver_comment) {
                     logsHtml += `<div style="color:#16a34a; font-size:11px; margin-top:2px; font-weight:600;">Driver: ${o.driver_comment}</div>`;
                 }
+                
+                // Вывод времени завершения или отмены
+                if (o.status === 'delivered' && o.delivered_at) {
+                    logsHtml += `<div style="color:#16a34a; font-size:11px; margin-top:2px; font-weight:600;">Delivered at: ${formatTime(o.delivered_at)}</div>`;
+                }
+                if (o.status === 'cancelled' && o.cancelled_at) {
+                    logsHtml += `<div style="color:#dc2626; font-size:11px; margin-top:2px; font-weight:600;">Cancelled at: ${formatTime(o.cancelled_at)}</div>`;
+                }
 
-                // Поле ввода показывается только для заказов, которые взял этот водитель и где он еще не ответил
+                // Поле ввода показывается только для активных принятых заказов
                 if (o.status === 'accepted' && o.driver_name === cachedDriverFullName && !o.driver_comment) {
                     logsHtml += `
                         <div class="reply-box">
@@ -192,20 +268,29 @@
                     `;
                 }
 
+                let driverDisplay = '';
+                if (o.driver_name) {
+                    driverDisplay = '🚚 ' + o.driver_name;
+                } else if (o.status === 'cancelled') {
+                    driverDisplay = '<span class="status-badge cancelled">Cancelled</span>';
+                } else {
+                    driverDisplay = '<span class="status-badge new">Free</span>';
+                }
+
                 return `
                     <tr>
-                        <td>#${o.id}</td>
-                        <td><strong>${o.line || '-'}</strong></td>
-                        <td><span style="color:#4a5568;">⏱ ${formatTime(o.created_at)}</span></td>
-                        <td><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
-                        <td><strong>${o.description || '-'}</strong></td>
-                        <td>${o.grower || '-'}</td>
-                        <td><span style="font-family:monospace; background:#f1f3f5; padding:4px 6px; border-radius:4px; font-weight:600;">${o.consignment || '-'}</span></td>
-                        <td><strong>${o.size || '-'}</strong></td>
-                        <td><strong style="color:#0288d1; font-size:14px;">${o.qty || '1'}</strong></td>
-                        <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span class="status-badge new">Free</span>'}</td>
-                        <td>${logsHtml}</td>
-                        <td>${actionBtn}</td>
+                        <td data-label="ID">#${o.id}</td>
+                        <td data-label="Line Name"><strong>${o.line || '-'}</strong></td>
+                        <td data-label="Ordered At"><span style="color:#4a5568;">⏱ ${formatTime(o.created_at)}</span></td>
+                        <td data-label="Store"><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
+                        <td data-label="Variety"><strong>${o.description || '-'}</strong></td>
+                        <td data-label="Grower">${o.grower || '-'}</td>
+                        <td data-label="Consignment"><span style="font-family:monospace; background:#f1f3f5; padding:4px 6px; border-radius:4px; font-weight:600;">${o.consignment || '-'}</span></td>
+                        <td data-label="Size"><strong>${o.size || '-'}</strong></td>
+                        <td data-label="Qty"><strong style="color:#0288d1; font-size:14px;">${o.qty || '1'}</strong></td>
+                        <td data-label="Driver Assigned">${driverDisplay}</td>
+                        <td data-label="Comments & Logs">${logsHtml}</td>
+                        <td data-label="Action">${actionBtn}</td>
                     </tr>
                 `;
             }).join('');
@@ -221,7 +306,6 @@
     }
 
     function resumeUpdateDelayed() {
-        // Небольшая задержка, чтобы клик по кнопке "Reply" успел сработать до перезапуска интервала
         setTimeout(() => {
             isUserTyping = false;
             startAutoUpdate();
@@ -268,7 +352,41 @@
         }
     }
 
-    // Функция отправки ответа водителя в базу данных
+    // Показ блока выбора причины отмены
+    function showCancelInterface(orderId) {
+        pauseUpdate();
+        const box = document.getElementById(`cancel_box_${orderId}`);
+        if(box) {
+            box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+        }
+    }
+
+    // Подтверждение отмены заказа с записью причины и времени отмены
+    async function confirmCancelOrder(orderId) {
+        const reasonSelect = document.getElementById(`cancel_reason_${orderId}`);
+        const selectedReason = reasonSelect ? reasonSelect.value : "Other";
+
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .update({ 
+                    status: 'cancelled', 
+                    driver_comment: "Reason for cancellation: " + selectedReason,
+                    cancelled_at: new Date().toISOString()
+                })
+                .eq('id', orderId);
+
+            if (error) throw error;
+            
+            alert(`❌ Заказ #${orderId} отменен.`);
+            isUserTyping = false;
+            loadAllOrders();
+            startAutoUpdate();
+        } catch (e) {
+            alert("Error cancelling order: " + e.message);
+        }
+    }
+
     async function sendDriverReply(orderId) {
         const replyInput = document.getElementById(`driver_reply_to_${orderId}`);
         const replyText = replyInput ? replyInput.value.trim() : "";
@@ -288,7 +406,7 @@
         } catch (e) { alert("Error sending driver reply: " + e.message); }
     }
 
-    // Первоначальная загрузка и старт интервала обновления (4 секунды)
+    // Первоначальная загрузка и старт интервала обновления
     loadAllOrders();
     startAutoUpdate();
 </script>
