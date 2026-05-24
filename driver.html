@@ -179,8 +179,7 @@
                 .from('orders')
                 .select('*')
                 .order('id', { ascending: false });
-            .eq('status', 'new')
-    .eq('target_role', 'driver');
+            
 
             if (error) throw error;
 
