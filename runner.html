@@ -6,330 +6,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --bg: #f4f6f9;
-            --card-bg: #ffffff;
-            --text: #1a1a2e;
-            --text-muted: #6c757d;
-            --runner-accent: #6b46c1;
-            --border: #e2e8f0;
-        }
-
-        body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 10px;
-        }
-
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-        }
-        
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--card-bg);
-            padding: 12px 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-            gap: 10px;
-        }
-        .header-title h1 { margin: 0; font-size: 18px; color: var(--runner-accent); font-weight: 700; }
-        .header-title p { margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted); }
-        
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .runner-badge {
-            background: #f3e8ff;
-            color: #6b46c1;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 13px;
-            white-space: nowrap;
-        }
-
-        .btn-logout { 
-            background: transparent; 
-            color: var(--text-muted); 
-            border: 1px solid var(--border); 
-            padding: 6px 12px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-size: 13px; 
-            white-space: nowrap; 
-        }
-
-        .dashboard-card {
-            background: var(--card-bg);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-            border: 1px solid var(--border);
-        }
-
-        .table-responsive {
-            display: block;
-            width: 100%;
-            overflow-x: auto;
-            margin-top: 15px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-        }
-
+        :root { --bg: #f4f6f9; --card-bg: #ffffff; --text: #1a1a2e; --text-muted: #6c757d; --runner-accent: #6b46c1; --border: #e2e8f0; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
+        .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 12px 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+        .dashboard-card { background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
         table { width: 100%; border-collapse: collapse; }
-        th { background: #f8f9fa; color: var(--text-muted); padding: 10px; text-align: left; font-size: 12px; border-bottom: 2px solid var(--border); white-space: nowrap; }
-        td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #edf2f7; white-space: nowrap; }
-
-        .mobile-requests-list {
-            display: none;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 15px;
-        }
-
-        .request-card {
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-            border-left: 4px solid var(--runner-accent);
-        }
-
-        .card-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 8px;
-            gap: 10px;
-        }
-        .card-row:last-child { margin-bottom: 0; }
-
-        .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
-        .status-badge.new { background: #e0f2fe; color: #0369a1; }
-        .status-badge.process, .status-badge.accepted { background: #fff3e0; color: #e65100; }
-        .status-badge.delivered, .status-badge.done { background: #e2f0d9; color: #385723; }
-        .status-badge.canceled { background: #ffeeee; color: #e53e3e; }
-
-        .btn-action {
-            padding: 8px 14px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 12px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
+        th { background: #f8f9fa; color: var(--text-muted); padding: 10px; text-align: left; font-size: 12px; border-bottom: 2px solid var(--border); }
+        td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #edf2f7; }
+        .btn-action { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; }
         .btn-accept { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
-        .btn-accept:hover { background: #ffe0b2; }
         .btn-done { background: #e2f0d9; color: #385723; border: 1px solid #c8e6c9; }
-        .btn-done:hover { background: #c8e6c9; }
-
-        .comment-display {
-            background: #f8fafc;
-            padding: 6px;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #475569;
-            margin-top: 4px;
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .mobile-comment-display {
-            background: #f8fafc;
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 12px;
-            color: #475569;
-            width: 100%;
-            margin-top: 5px;
-        }
-
-        @media (max-width: 768px) {
-            .table-responsive { display: none; }
-            .mobile-requests-list { display: flex; }
-            .header { flex-direction: column; align-items: flex-start; gap: 12px; }
-            .header-right { width: 100%; justify-content: space-between; }
-        }
+        .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        @media (max-width: 768px) { .table-responsive { display: none; } }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <div class="header-title">
-            <h1 id="txt_main_title">Peake Fruit — Runner Control Desk</h1>
-            <p id="txt_sub_title">Material & Packaging Tasks Control</p>
-        </div>
-        <div class="header-right">
-            <div class="runner-badge" id="runner_name_display">Runner: Loading...</div>
-            <button class="btn-logout" id="btn_logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
-        </div>
+        <h1>Runner Control Desk</h1>
+        <div id="runner_name_display">Runner: Loading...</div>
+        <button onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
     </div>
 
     <div class="dashboard-card">
-        <h3 id="txt_active_requests" style="margin-top:0; font-size:16px;">Active Material Requests (Live)</h3>
-        
+        <h3>Active Tasks</h3>
         <div class="table-responsive">
             <table>
                 <thead>
-                    <tr>
-                        <th id="th_id">ID</th>
-                        <th id="th_time">Time</th>
-                        <th id="th_line">From Line</th>
-                        <th id="th_task">Task Description</th>
-                        <th id="th_qty">Qty</th>
-                        <th id="th_store">Target Store</th>
-                        <th id="th_comment">Comment</th>
-                        <th id="th_status">Status</th>
-                        <th id="th_action">Action</th>
-                    </tr>
+                    <tr><th>ID</th><th>Time</th><th>Line</th><th>Task</th><th>Qty</th><th>Target</th><th>Status</th><th>Action</th></tr>
                 </thead>
-                <tbody id="runner_requests_body">
-                    <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Loading...</td></tr>
-                </tbody>
+                <tbody id="runner_requests_body"></tbody>
             </table>
-        </div>
-
-        <div class="mobile-requests-list" id="runner_requests_mobile">
-            <div style="text-align:center; color:var(--text-muted); padding: 20px;">Loading...</div>
         </div>
     </div>
 </div>
 
 <script>
-    // Полный словарь для полной русско-английской локализации интерфейса Ранера
-    const i18n = {
-        en: {
-            main_title: "Peake Fruit — Runner Control Desk",
-            sub_title: "Material & Packaging Tasks Control",
-            runner_badge: "Runner",
-            logout: "Log Out",
-            active_requests: "Active Material Requests (Live)",
-            th_id: "ID", th_time: "Time", th_line: "From Line", th_task: "Task Description",
-            th_qty: "Qty", th_store: "Target Store", th_comment: "Comment", th_status: "Status", th_action: "Action",
-            loading: "Loading tasks...", no_requests: "No active tasks for runners.",
-            btn_accept: "⚡ ACCEPT", btn_done: "✅ DONE",
-            status_new: "new", status_process: "in progress", status_done: "done", status_canceled: "canceled"
-        },
-        ru: {
-            main_title: "Peake Fruit — Экран Ранера",
-            sub_title: "Управление задачами по таре и вывозу продукции",
-            runner_badge: "Ранер",
-            logout: "Выйти",
-            active_requests: "Активные задачи по обеспечению (Live)",
-            th_id: "ID", th_time: "Время", th_line: "С Линии", th_task: "Описание задачи",
-            th_qty: "Кол-во", th_store: "Куда доставить", th_comment: "Комментарий", th_status: "Статус", th_action: "Действие",
-            loading: "Загрузка задач...", no_requests: "Нет активных задач для ранеров.",
-            btn_accept: "⚡ В РАБОТУ", btn_done: "✅ ГОТОВО",
-            status_new: "новая", status_process: "в работе", status_done: "выполнено", status_canceled: "отменена"
-        }
-    };
-
-    const currentLang = localStorage.getItem('lang') === 'ru' ? 'ru' : 'en';
-    const lang = i18n[currentLang];
-
-    function applyLocalization() {
-        document.getElementById('txt_main_title').innerText = lang.main_title;
-        document.getElementById('txt_sub_title').innerText = lang.sub_title;
-        document.getElementById('btn_logout').innerText = lang.logout;
-        document.getElementById('txt_active_requests').innerText = lang.active_requests;
-
-        document.getElementById('th_id').innerText = lang.th_id;
-        document.getElementById('th_time').innerText = lang.th_time;
-        document.getElementById('th_line').innerText = lang.th_line;
-        document.getElementById('th_task').innerText = lang.th_task;
-        document.getElementById('th_qty').innerText = lang.th_qty;
-        document.getElementById('th_store').innerText = lang.th_store;
-        document.getElementById('th_comment').innerText = lang.th_comment;
-        document.getElementById('th_status').innerText = lang.th_status;
-        document.getElementById('th_action').innerText = lang.th_action;
-    }
-
-    const currentUser = localStorage.getItem('user');
-    const currentRole = localStorage.getItem('role');
-
-    if (!currentUser || currentRole !== 'runner') {
-        alert("Access denied!");
-        localStorage.clear();
-        window.location.href = 'login.html';
-    }
-
-    applyLocalization();
-    document.getElementById('runner_name_display').innerText = `${lang.runner_badge}: ${currentUser}`;
-
-    const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
-    const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
-    const k3 = 'LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
-
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
-    const supabaseKey = k1 + k2 + k3;
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
-
+    const currentUser = localStorage.getItem('user');
     let cachedRunnerFullName = currentUser;
-
-    function formatTime(isoString) {
-        if (!isoString) return '-';
-        const date = new Date(isoString);
-        if (isNaN(date.getTime())) return '-';
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-
-    async function fetchRunnerFullName() {
-        try {
-            const { data, error } = await clientDb.from('users_table').select('*').eq('u', currentUser);
-            if (!error && data && data.length > 0) {
-                const realName = data[0].name;
-                if (realName) {
-                    cachedRunnerFullName = realName; 
-                    document.getElementById('runner_name_display').innerText = `${lang.runner_badge}: ${realName}`;
-                }
-            }
-        } catch (err) {}
-        loadRunnerTasks();
-    }
-
-    async function updateStatus(orderId, nextStatus) {
-        try {
-            const updatePayload = { status: nextStatus };
-            if (nextStatus === 'process') {
-                updatePayload.driver_name = cachedRunnerFullName;
-            } else if (nextStatus === 'done') {
-                updatePayload.delivered_at = new Date().toISOString();
-            }
-
-            const { error } = await clientDb
-                .from('orders')
-                .update(updatePayload)
-                .eq('id', orderId);
-
-            if (error) throw error;
-            loadRunnerTasks();
-        } catch (e) { alert(e.message); }
-    }
-
-    function getStatusLabel(status) {
-        const s = (status || 'new').toLowerCase();
-        if (s === 'new') return lang.status_new;
-        if (s === 'process' || s === 'accepted') return lang.status_process;
-        if (s === 'done' || s === 'delivered') return lang.status_done;
-        if (s === 'canceled') return lang.status_canceled;
-        return s;
-    }
 
     async function loadRunnerTasks() {
         try {
@@ -342,78 +61,42 @@
 
             if (error) throw error;
 
-            if (!orders || orders.length === 0) {
-                document.getElementById('runner_requests_body').innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">${lang.no_requests}</td></tr>`;
-                document.getElementById('runner_requests_mobile').innerHTML = `<div style="text-align:center; color:var(--text-muted); padding: 20px;">${lang.no_requests}</div>`;
-                return;
-            }
+            // ФИЛЬТРАЦИЯ
+            const filtered = orders.filter(o => {
+                if (o.status === 'new') return true;
+                // Показываем только свои активные задачи
+                if ((o.status === 'process' || o.status === 'accepted') && o.driver_name === cachedRunnerFullName) return true;
+                return false;
+            });
 
-            // Добавь .eq('target_role', 'runner')
-const { data, error } = await clientDb
-    .from('orders')
-    .select('*')
-    
-            const tableHtml = orders.map(o => {
-                const statusLwr = (o.status || 'new').toLowerCase();
-                let actionHtml = '';
-
-                if (statusLwr === 'new') {
-                    actionHtml = `<button class="btn-action btn-accept" onclick="updateStatus(${o.id}, 'process')">${lang.btn_accept}</button>`;
-                } else if (statusLwr === 'process' || statusLwr === 'accepted') {
-                    actionHtml = `<button class="btn-action btn-done" onclick="updateStatus(${o.id}, 'done')">${lang.btn_done}</button>`;
-                }
-
-                return `
+            document.getElementById('runner_requests_body').innerHTML = filtered.map(o => `
                 <tr>
-                    <td><strong>#${o.id}</strong></td>
-                    <td>⏱ ${formatTime(o.created_at)}</td>
-                    <td><span style="font-weight:700; color:#0369a1;">${o.line || '-'}</span></td>
-                    <td><span style="color:var(--runner-accent); font-weight:700;">${o.description || '-'}</span></td>
-                    <td><strong style="font-size:15px;">${o.qty || '1'}</strong></td>
-                    <td><span style="color:#2e7d32; font-weight:600;">${o.store || '-'}</span></td>
-                    <td>${o.comment ? `<div class="comment-display">${o.comment}</div>` : '-'}</td>
-                    <td><span class="status-badge ${statusLwr}">${getStatusLabel(o.status)}</span></td>
-                    <td>${actionHtml}</td>
-                </tr>`;
-            }).join('');
-
-            const mobileHtml = orders.map(o => {
-                const statusLwr = (o.status || 'new').toLowerCase();
-                let actionHtml = '';
-
-                if (statusLwr === 'new') {
-                    actionHtml = `<button class="btn-action btn-accept" style="width:100%; margin-top:5px;" onclick="updateStatus(${o.id}, 'process')">${lang.btn_accept}</button>`;
-                } else if (statusLwr === 'process' || statusLwr === 'accepted') {
-                    actionHtml = `<button class="btn-action btn-done" style="width:100%; margin-top:5px;" onclick="updateStatus(${o.id}, 'done')">${lang.btn_done}</button>`;
-                }
-
-                return `
-                <div class="request-card">
-                    <div class="card-row">
-                        <div><span style="font-weight:700; color:var(--runner-accent);">#${o.id}</span> <span style="color:var(--text-muted); font-size:12px; margin-left:5px;">⏱ ${formatTime(o.created_at)}</span></div>
-                        <span class="status-badge ${statusLwr}">${getStatusLabel(o.status)}</span>
-                    </div>
-                    <div class="card-row">
-                        <div>
-                            <span style="font-size:12px; uppercase; color:var(--text-muted);">${currentLang === 'ru' ? 'Линия' : 'Line'}: <strong>${o.line || '-'}</strong></span><br>
-                            <span style="font-size:15px; color:var(--text-muted);"><strong style="color:var(--text);">${o.description || '-'}</strong></span><br>
-                            <span style="font-size:13px; color:#2e7d32; font-weight:600;">Target: ${o.store || '-'}</span>
-                        </div>
-                        <div style="text-align:right;"><span style="font-size:20px; color:var(--runner-accent); font-weight:800;">${o.qty || '1'}</span></div>
-                    </div>
-                    ${o.comment ? `<div class="mobile-comment-display">💬 ${o.comment}</div>` : ''}
-                    <div style="margin-top:8px; border-top:1px dashed #e2e8f0; padding-top:8px;">
-                        ${actionHtml}
-                    </div>
-                </div>`;
-            }).join('');
-
-            document.getElementById('runner_requests_body').innerHTML = tableHtml;
-            document.getElementById('runner_requests_mobile').innerHTML = mobileHtml;
+                    <td>#${o.id}</td>
+                    <td>${new Date(o.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
+                    <td>${o.line || '-'}</td>
+                    <td>${o.description || '-'}</td>
+                    <td>${o.qty || '1'}</td>
+                    <td>${o.store || '-'}</td>
+                    <td><span class="status-badge">${o.status}</span></td>
+                    <td>
+                        ${o.status === 'new' ? `<button class="btn-action btn-accept" onclick="updateStatus(${o.id}, 'process')">⚡ ACCEPT</button>` : ''}
+                        ${(o.status === 'process' || o.status === 'accepted') && o.driver_name === cachedRunnerFullName ? `<button class="btn-action btn-done" onclick="updateStatus(${o.id}, 'done')">✅ DONE</button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
         } catch (e) { console.error(e); }
     }
 
-    fetchRunnerFullName();
+    async function updateStatus(orderId, nextStatus) {
+        const payload = { status: nextStatus };
+        if (nextStatus === 'process') payload.driver_name = cachedRunnerFullName;
+        if (nextStatus === 'done') payload.delivered_at = new Date().toISOString();
+        
+        await clientDb.from('orders').update(payload).eq('id', orderId);
+        loadRunnerTasks();
+    }
+
+    loadRunnerTasks();
     setInterval(loadRunnerTasks, 5000);
 </script>
 </body>
