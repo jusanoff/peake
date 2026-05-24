@@ -438,59 +438,46 @@
         <button class="btn-send" id="btn_send" onclick="sendRequestToDriver()">🚀 SEND REQUEST TO DRIVER</button>
     </div>
 
-   <div id="content_runner" class="dashboard-card tab-content">
-    <div class="input-group">
-        <label style="font-weight:700; color:var(--runner-accent);">Select Task</label>
-        <select id="runner_task_type" onchange="toggleRunnerFields()">
-            <option value="bins">Order Bins</option>
-            <option value="boxes">Order Boxes</option>
-            <option value="trays">Order Trays</option>
-        </select>
-    </div>
-
-    <div class="qty-section runner-qty-section" style="margin-top: 15px;">
+    <div id="content_runner" class="dashboard-card tab-content">
         <div class="input-group">
-            <label style="color: var(--runner-accent); font-weight:700;">Quantity Needed</label>
-            <input type="number" id="runner_qty" value="1" min="1">
+            <label style="font-weight:700; color:var(--runner-accent);" id="lbl_runner_task_type">Select Task</label>
+            <select id="runner_task_type" onchange="toggleRunnerFields()"></select>
         </div>
-    </div>
 
-    <div class="input-group" id="runner_bin_color_block" style="margin-top: 15px;">
-        <label>Bin Color</label>
-        <select id="runner_bin_color">
-            <option>Juice bin (Green Bin)</option>
-            <option>General waste (Red Bin)</option>
-            <option>Fruit waste (Blue Bin)</option>
-            <option>White Bin</option>
-        </select>
-    </div>
+        <div class="qty-section runner-qty-section" style="margin-top: 15px;">
+            <div class="input-group">
+                <label id="lbl_runner_qty" style="color: var(--runner-accent); font-weight:700;">Quantity Needed</label>
+                <input type="number" id="runner_qty" value="1" min="1">
+            </div>
+        </div>
 
-    <div class="input-group" id="runner_box_type_block" style="display:none; margin-top: 15px;">
-        <label>Box Type</label>
-        <select id="runner_box_type">
-            <option>Lidl strawberry</option>
-            <option>Costco Gourmet</option>
-            <option>Costco Pink Lady</option>
-            <option>Reusable</option>
-            <option>Morrison</option>
-            <option>IFCO</option>
-            <option>EPS</option>
-            <option>Sainsbury black</option>
-        </select>
-    </div>
+        <div class="input-group" id="runner_bin_color_block" style="margin-top: 15px;">
+            <label id="lbl_bin_color">Bin Color</label>
+            <select id="runner_bin_color"></select>
+        </div>
 
-    <div class="input-group" id="runner_tray_number_block" style="display:none; margin-top: 15px;">
-        <label style="color:var(--runner-accent); font-weight:700;">Tray Number *</label>
-        <input type="text" id="runner_tray_number" placeholder="Enter tray number">
-    </div>
+        <div class="input-group" id="runner_box_type_block" style="display:none; margin-top: 15px;">
+            <label id="lbl_box_type">Box Type</label>
+            <select id="runner_box_type"></select>
+        </div>
 
-    <div class="input-group" style="margin-top: 15px;">
-        <label style="color: #4a5568; font-weight:600;">Comment (Optional)</label>
-        <input type="text" id="runner_comment" placeholder="...">
-    </div>
+        <div class="input-group" id="runner_tray_number_block" style="display:none; margin-top: 15px;">
+            <label style="color:var(--runner-accent); font-weight:700;" id="lbl_tray_number">Tray Number *</label>
+            <input type="text" id="runner_tray_number" placeholder="">
+        </div>
 
-    <button class="btn-send-runner" id="btn_send_runner" onclick="sendRequestToRunner()">📦 SEND REQUEST TO RUNNER</button>
-</div>
+        <div class="input-group" id="runner_store_block" style="display:none; margin-top: 15px;">
+            <label style="color: red; font-weight:700;" id="lbl_target_store">Target Store *</label>
+            <input type="text" id="runner_target_store" placeholder="">
+        </div>
+
+        <div class="input-group" style="margin-top: 15px;">
+            <label id="lbl_runner_comment" style="color: #4a5568; font-weight:600;">Comment (Optional)</label>
+            <input type="text" id="runner_comment" placeholder="...">
+        </div>
+
+        <button class="btn-send-runner" id="btn_send_runner" onclick="sendRequestToRunner()">📦 SEND REQUEST TO RUNNER</button>
+    </div>
 
     <div class="dashboard-card">
         <h3 id="txt_active_requests" style="margin-top:0; font-size:16px;">Your Active Line Requests (Live)</h3>
