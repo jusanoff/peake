@@ -352,8 +352,7 @@
 const { data, error } = await clientDb
     .from('orders')
     .select('*')
-    .eq('status', 'new')
-    .eq('target_role', 'runner'); // <-- РАНЕР ВИДИТ ТОЛЬКО РАНЕРОВ
+    
             const tableHtml = orders.map(o => {
                 const statusLwr = (o.status || 'new').toLowerCase();
                 let actionHtml = '';
