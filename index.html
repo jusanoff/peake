@@ -6,16 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --bg: #f4f6f9; --card-bg: #ffffff; --text: #1a1a2e; --text-muted: #6c757d; --accent: #0288d1; --runner-accent: #6b46c1; --border: #e2e8f0; }
+        :root {
+            --bg: #f4f6f9; --card-bg: #ffffff; --text: #1a1a2e; --text-muted: #6c757d;
+            --accent: #0288d1; --runner-accent: #6b46c1; --border: #e2e8f0;
+            --status-new: #ef6c00; --status-done: #2e7d32;
+        }
         body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
         .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 12px 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
-        .tab-btn { padding: 12px; cursor: pointer; border: none; border-radius: 6px; font-weight: 700; background: #e2e8f0; }
-        .tab-btn.active { background: var(--accent); color: white; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
         .dashboard-card { background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
-        .input-group { margin-top: 15px; }
-        select, input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; }
-        .btn-send-runner { width: 100%; background: var(--runner-accent); color: white; border: none; padding: 14px; border-radius: 6px; cursor: pointer; margin-top: 15px; }
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th { padding: 10px; text-align: left; border-bottom: 2px solid var(--border); font-size: 12px; color: var(--text-muted); }
+        td { padding: 12px 10px; border-bottom: 1px solid #edf2f7; font-size: 13px; }
+        .table-comment-box { display: flex; gap: 5px; }
+        .btn-save-comment { cursor: pointer; border: none; background: #eee; padding: 5px; border-radius: 4px; }
+        @media (max-width: 768px) { .table-responsive { display: none; } }
     </style>
 </head>
 <body>
@@ -23,92 +29,88 @@
 <div class="container">
     <div class="header">
         <h1>Production Line Control</h1>
-        <div id="line_name_display">Line: Loading...</div>
+        <div id="line_name_display">Loading...</div>
+        <button onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
     </div>
 
     <div class="dashboard-card">
-        <div class="input-group">
-            <label>Select Task</label>
-            <select id="runner_task_type" onchange="toggleRunnerFields()"></select>
+        <h3>Active Requests</h3>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr><th>ID</th><th>Time</th><th>Task</th><th>Qty</th><th>Store</th><th>Comment</th></tr>
+                </thead>
+                <tbody id="line_requests_body"><tr><td colspan="6">Loading...</td></tr></tbody>
+            </table>
         </div>
-
-        <div class="input-group" id="runner_bin_color_block" style="display:none;">
-            <label>Bin Type</label>
-            <select id="runner_bin_color"></select>
-        </div>
-
-        <div class="input-group" id="runner_box_type_block" style="display:none;">
-            <label>Box Type</label>
-            <select id="runner_box_type"></select>
-        </div>
-
-        <div class="input-group" id="runner_tray_type_block" style="display:none;">
-            <label>Tray Type</label>
-            <select id="runner_tray_type"></select>
-        </div>
-
-        <button class="btn-send-runner" onclick="sendRequestToRunner()">SEND REQUEST</button>
+        <div id="line_requests_mobile"></div>
     </div>
 </div>
 
 <script>
-    const i18n = {
-        en: {
-            task_bins: "Order Bins",
-            task_boxes: "Order Boxes",
-            task_trays: "Order Trays",
-            bin_red: "General waste (red)",
-            bin_blue: "Fruit waste (blue)",
-            bin_green: "Juice bin (green)",
-            bin_white: "White bin",
-            box_1: "Costco Pink Lady",
-            box_2: "Costco Gourmet",
-            box_3: "Reusable",
-            box_4: "Lidl Strawberry",
-            tray_1: "Morrison",
-            tray_2: "IFCO",
-            tray_3: "EPS",
-            tray_4: "Sainsbury black"
-        }
-    };
+    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+    const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
+    
+    let activeId = null;
+    let currentTypingValue = null;
 
-    const lang = i18n.en; // Язык по умолчанию
-
-    function initMenus() {
-        document.getElementById('runner_task_type').innerHTML = `
-            <option value="bins">${lang.task_bins}</option>
-            <option value="boxes">${lang.task_boxes}</option>
-            <option value="trays">${lang.task_trays}</option>
-        `;
-        document.getElementById('runner_bin_color').innerHTML = `
-            <option value="General waste (red)">${lang.bin_red}</option>
-            <option value="Fruit waste (blue)">${lang.bin_blue}</option>
-            <option value="Juice bin (green)">${lang.bin_green}</option>
-            <option value="White bin">${lang.bin_white}</option>
-        `;
-        document.getElementById('runner_box_type').innerHTML = `
-            <option value="Costco Pink Lady">${lang.box_1}</option>
-            <option value="Costco Gourmet">${lang.box_2}</option>
-            <option value="Reusable">${lang.box_3}</option>
-            <option value="Lidl Strawberry">${lang.box_4}</option>
-        `;
-        document.getElementById('runner_tray_type').innerHTML = `
-            <option value="Morrison">${lang.tray_1}</option>
-            <option value="IFCO">${lang.tray_2}</option>
-            <option value="EPS">${lang.tray_3}</option>
-            <option value="Sainsbury black">${lang.tray_4}</option>
-        `;
+    async function fetchLineFullName() {
+        const user = localStorage.getItem('user');
+        if (user) document.getElementById('line_name_display').innerText = "Line: " + user;
     }
 
-    function toggleRunnerFields() {
-        const type = document.getElementById('runner_task_type').value;
-        document.getElementById('runner_bin_color_block').style.display = type === 'bins' ? 'block' : 'none';
-        document.getElementById('runner_box_type_block').style.display = type === 'boxes' ? 'block' : 'none';
-        document.getElementById('runner_tray_type_block').style.display = type === 'trays' ? 'block' : 'none';
+    async function updateOrderComment(id) {
+        const input = document.getElementById(`inline_comment_${id}`) || document.getElementById(`inline_comment_mob_${id}`);
+        const val = input.value;
+        activeId = input.id;
+        currentTypingValue = val;
+        
+        await clientDb.from('orders').update({ comment: val }).eq('id', id);
+        loadActiveRequests();
     }
 
-    initMenus();
-    toggleRunnerFields();
+    async function loadActiveRequests() {
+        try {
+            const { data: orders, error } = await clientDb
+                .from('orders')
+                .select('*')
+                .in('status', ['new', 'process', 'accepted'])
+                .order('id', { ascending: false });
+
+            if (error) throw error;
+
+            const tableHtml = orders.map(o => `
+                <tr>
+                    <td>#${o.id}</td>
+                    <td>${new Date(o.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
+                    <td>${o.description || '-'}</td>
+                    <td>${o.qty || '1'}</td>
+                    <td>${o.store || '-'}</td>
+                    <td>
+                        <div class="table-comment-box">
+                            <input type="text" id="inline_comment_${o.id}" value="${(o.comment || '').replace(/"/g, '&quot;')}" placeholder="...">
+                            <button class="btn-save-comment" onclick="updateOrderComment(${o.id})">💾</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('line_requests_body').innerHTML = tableHtml;
+            
+            if (activeId) {
+                let targetInput = document.getElementById(activeId);
+                if (targetInput) {
+                    targetInput.focus();
+                    if (currentTypingValue !== null) targetInput.value = currentTypingValue;
+                }
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    fetchLineFullName();
+    setInterval(loadActiveRequests, 5000);
+    loadActiveRequests();
 </script>
 </body>
 </html>
