@@ -3,21 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>Peake Fruit — Driver Terminal</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --bg: #f8fafc; --card-bg: #ffffff; --text: #0f172a; --accent: #0288d1; }
-        body { font-family: sans-serif; background: var(--bg); padding: 8px; }
-        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
-        .header { background: var(--card-bg); padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .dashboard-card { background: var(--card-bg); padding: 12px; border-radius: 8px; border: 1px solid #edf2f7; }
-        .btn-action { padding: 8px 14px; border: none; border-radius: 6px; color: white; font-weight: 700; cursor: pointer; width: 100%; }
-        .btn-accept { background: #0288d1; }
-        .btn-complete { background: #16a34a; }
-        .btn-cancel { background: #dc2626; }
+        :root { --bg: #f8fafc; --card-bg: #ffffff; --text: #0f172a; --accent: #0288d1; --border: #e2e8f0; }
+        body { font-family: sans-serif; background: var(--bg); padding: 10px; color: var(--text); }
+        .container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+        .header { background: var(--card-bg); padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
+        .dashboard-card { background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 10px; border-bottom: 2px solid #e2e8f0; font-size: 12px; text-transform: uppercase; }
-        td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+        th { text-align: left; padding: 10px; border-bottom: 2px solid var(--border); font-size: 12px; color: #6c757d; }
+        td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        .btn-action { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; width: 100%; }
+        .btn-accept { background: #0288d1; color: white; }
+        .btn-complete { background: #16a34a; color: white; }
     </style>
 </head>
 <body>
@@ -29,16 +28,12 @@
     </div>
 
     <div class="dashboard-card">
-        <h3>Active Orders</h3>
+        <h3>My Active Orders</h3>
         <table>
             <thead>
-                <tr>
-                    <th>ID</th><th>Line</th><th>Store</th><th>Description</th><th>Action</th>
-                </tr>
+                <tr><th>ID</th><th>Line</th><th>Task</th><th>Status</th><th>Action</th></tr>
             </thead>
-            <tbody id="driver_orders_body">
-                <tr><td colspan="5">Loading...</td></tr>
-            </tbody>
+            <tbody id="driver_orders_body"><tr><td colspan="5">Loading...</td></tr></tbody>
         </table>
     </div>
 </div>
@@ -47,60 +42,56 @@
     const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
-    const cachedDriverFullName = localStorage.getItem('name');
+    
+    // Получаем имя водителя из локального хранилища
+    const cachedDriverFullName = localStorage.getItem('name') || localStorage.getItem('user');
 
-    async function loadAllOrders() {
+    async function loadDriverOrders() {
         try {
-            // 1. Загружаем заказы, исключая 'runner_request'
+            // Загружаем все активные заказы
             const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
-                .neq('order_type', 'runner_request') 
+                .neq('order_type', 'runner_request') // Исключаем задачи ранеров
+                .in('status', ['new', 'accepted'])
                 .order('id', { ascending: false });
 
             if (error) throw error;
 
-            // 2. Фильтруем: только новые ИЛИ свои активные ИЛИ свои завершенные сегодня
-            const today = new Date().setHours(0,0,0,0);
+            // ФИЛЬТРАЦИЯ:
+            // Водитель видит "new" (общие) + свои "accepted"
             const filtered = orders.filter(o => {
                 if (o.status === 'new') return true;
-                if (o.driver_name === cachedDriverFullName) {
-                    if (o.status === 'accepted') return true;
-                    if (['delivered', 'cancelled'].includes(o.status)) {
-                        return new Date(o.delivered_at || o.cancelled_at) >= today;
-                    }
-                }
-                return false;
+                return o.status === 'accepted' && o.driver_name === cachedDriverFullName;
             });
 
-            // 3. Вывод в таблицу
             document.getElementById('driver_orders_body').innerHTML = filtered.map(o => `
                 <tr>
                     <td>#${o.id}</td>
                     <td>${o.line || '-'}</td>
-                    <td>${o.store || '-'}</td>
                     <td>${o.description || '-'}</td>
+                    <td>${o.status}</td>
                     <td>
                         ${o.status === 'new' ? `<button class="btn-action btn-accept" onclick="acceptOrder(${o.id})">Accept</button>` : ''}
-                        ${o.status === 'accepted' ? `<button class="btn-action btn-complete" onclick="completeOrder(${o.id})">Complete</button>` : ''}
+                        ${o.status === 'accepted' && o.driver_name === cachedDriverFullName ? `<button class="btn-action btn-complete" onclick="completeOrder(${o.id})">Complete</button>` : ''}
                     </td>
                 </tr>
-            `).join('');
+            `).join('') || '<tr><td colspan="5">No active orders</td></tr>';
         } catch (e) { console.error(e); }
     }
 
     async function acceptOrder(id) {
         await clientDb.from('orders').update({ status: 'accepted', driver_name: cachedDriverFullName }).eq('id', id);
-        loadAllOrders();
+        loadDriverOrders();
     }
 
     async function completeOrder(id) {
         await clientDb.from('orders').update({ status: 'delivered', delivered_at: new Date().toISOString() }).eq('id', id);
-        loadAllOrders();
+        loadDriverOrders();
     }
 
-    loadAllOrders();
-    setInterval(loadAllOrders, 5000);
+    loadDriverOrders();
+    setInterval(loadDriverOrders, 5000);
 </script>
 </body>
 </html>
