@@ -648,10 +648,76 @@
             tray_eps: "EPS",
             tray_sainsbury: "Sainsbury Black",
             task_txt_bins: "БИНЫ ЗАКАЗ", task_txt_boxes: "КОРОБКИ ЗАКАЗ", task_txt_trays: "ТРЕИ ЗАКАЗ", task_txt_pickup: "ВЫВОЗ: Готовый паллет"
+        },
+        lt: {
+            main_title: "Peake Fruit — Gamybos Linijos Valdymas",
+            sub_title: "Padėklų užsakymas iš sandėlio",
+            line_badge: "Linija",
+            logout: "Atsijungti",
+            quick_select: "⚡ Greitas pasirinkimas iš likučių (Stock)",
+            search_placeholder: "🔍 Spustelėkite arba įveskite padėklo paieškai...",
+            lbl_desc: "Aprašymas / Vaisiai",
+            lbl_cons: "Konsignacija (Cons)",
+            lbl_store: "Sandėlis / Vieta",
+            lbl_grower: "Augintojas (Grower)",
+            lbl_origin: "Kilmė (Origin)",
+            lbl_size: "Dydis (Size)",
+            lbl_count: "Likutis (Count)",
+            lbl_comment: "Komentaras",
+            lbl_qty: "Reikalingas kiekis (QTY)",
+            lbl_urgent: "⚠️ SKUBUS UŽSAKYMAS",
+            btn_send: "🚀 SIŲSTI UŽKLAUSĄ VAIRUOTOJUI",
+            active_requests: "Jūsų aktyvios linijos užklausos (Live)",
+            th_id: "ID", th_time: "Laikas", th_store: "Sandėlis", th_fruit: "Vaisių aprašymas",
+            th_grower: "Augintojas", th_cons: "Konsignacija", th_specs: "Specif. (O/S/C)", th_qty: "Kiekis",
+            th_comment: "Komentaras", th_driver: "Vairuotojas", th_delivered: "Pristatyta", th_status: "Būsena", th_action: "Veiksmas",
+            loading: "Kraunamos užklausos...", no_requests: "Aktyvių užklausų nėra.",
+            waiting: "Laukiama...", progress: "Vykdoma", btn_cancel: "Atšaukti",
+            alert_fields: "Prašome užpildyti Aprašymo ir Konsignacijos laukus!",
+            alert_success: "Užklausa sėkmingai išsiųsta!",
+            cancel_title: "Užklausos atšaukimas",
+            cancel_menu: "Pasirinkite atšaukimo priežastį (įveskite skaičių 1-4):\n1. Nebereikia\n2. Pasikeitė planai\n3. Pasirinktas netinkamas produktas\n4. Kita / Klaida",
+            cancel_r1: "Nebereikia", cancel_r2: "Pasikeitė planai", cancel_r3: "Pasirinktas netinkamas produktas", cancel_r4: "Kita / Klaida",
+            alert_canceled: "Užklausa sėkmingai atšaukta.",
+            alert_comm_updated: "Komentaras atnaujintas!",
+            alert_store_req: "Prašome nurodyti tikslinį sandėlį (Target Store)!",
+            alert_tray_req: "Prašome nurodyti dėklo numerį!",
+            btn_tab_driver: "🚚 Užklausa Vairuotojui",
+            btn_tab_runner: "🏃‍♂️ Užklausa Raneriui",
+            lbl_runner_task_type: "Ranerio užduoties tipas",
+            lbl_runner_qty: "Reikalingas kiekis",
+            lbl_bin_color: "Konteinerio spalva (Bin Color)",
+            lbl_box_type: "Dėžučių tipas (Box Type)",
+            lbl_tray_number: "Dėklo numeris (Tray Number) *",
+            lbl_target_store: "Kur nuvežti padėklą? Target Store (Privaloma) *",
+            lbl_runner_comment: "Užduoties komentaras (Optional)",
+            btn_send_runner: "📦 SIŲSTI UŽKLAUSĄ RANERIUI",
+            task_bins: "🪵 Užsakyti konteinerius (Bins)",
+            task_boxes: "📦 Užsakyti dėžutes",
+            task_trays: "📥 Užsakyti dėklus / padėkliukus",
+            task_pickup: "🚛 Išvežti paruoštą produkciją",
+            color_red: "Bendrosios atliekos (raudonas bin)",
+            color_blue: "Vaisių atliekos (mėlynas bin)",
+            color_green: "Sulčių konteineris (žalias bin)",
+            color_white: "Baltas konteineris",
+            box_lidl: "Lidl strawberry",
+            box_costco_pink: "Costco Pink Lady",
+            box_costco_gourmet: "Costco Gourmet",
+            box_costco_lady: "Costco Lady Bird",
+            box_reusable: "Daugkartinio naudojimo (Reusable)",
+            tray_morrison: "Morrison",
+            tray_ifco: "IFCO",
+            tray_eps: "EPS",
+            tray_sainsbury: "Sainsbury Black",
+            task_txt_bins: "DEŽIŲ UŽSAKYMAS", task_txt_boxes: "DĖŽUČIŲ UŽSAKYMAS", task_txt_trays: "PADĖKLIUKŲ UŽSAKYMAS", task_txt_pickup: "IŠVEŽIMAS: Paruoštas padėklas"
         }
     };
 
-    const currentLang = localStorage.getItem('lang') === 'ru' ? 'ru' : 'en';
+    // ОПРЕДЕЛЯЕМ ЯЗЫК НА ОСНОВЕ LOCALSTORAGE
+    let currentLang = localStorage.getItem('lang');
+    if (currentLang !== 'ru' && currentLang !== 'lt') {
+        currentLang = 'en'; // если пусто или english — ставим en по умолчанию
+    }
     const lang = i18n[currentLang];
 
     function setText(id, text) {
@@ -659,80 +725,72 @@
         if (el) el.innerText = text;
     }
 
+    // ДИНАМИЧЕСКАЯ ФУНКЦИЯ ЛОКАЛИЗАЦИИ ИНТЕРФЕЙСА
     function applyLocalization() {
-        const langKey = localStorage.getItem('lang') === 'ru' ? 'ru' : 'en';
-        const l = i18n[langKey];
+        setText('txt_main_title', lang.main_title);
+        setText('txt_sub_title', lang.sub_title);
+        setText('btn_logout', lang.logout);
+        setText('txt_quick_select', lang.quick_select);
         
-        const elements = ['txt_main_title', 'lbl_tray_number', 'lbl_runner_task_type'];
-        elements.forEach(id => {
-            const el = document.getElementById(id);
-            if (el && l[id]) el.innerText = l[id];
-        });
-    }
+        const stockInput = document.getElementById('stock_input');
+        if (stockInput) stockInput.placeholder = lang.search_placeholder;
 
-    setText('txt_main_title', lang.main_title);
-    setText('txt_sub_title', lang.sub_title);
-    setText('btn_logout', lang.logout);
-    setText('txt_quick_select', lang.quick_select);
-    
-    const stockInput = document.getElementById('stock_input');
-    if (stockInput) stockInput.placeholder = lang.search_placeholder;
+        setText('lbl_desc', lang.lbl_desc);
+        setText('lbl_cons', lang.lbl_cons);
+        setText('lbl_store', lang.lbl_store);
+        setText('lbl_grower', lang.lbl_grower);
+        setText('lbl_origin', lang.lbl_origin);
+        setText('lbl_size', lang.lbl_size);
+        setText('lbl_count', lang.lbl_count);
+        setText('lbl_comment', lang.lbl_comment);
+        setText('lbl_qty', lang.lbl_qty);
+        setText('lbl_urgent', lang.lbl_urgent);
+        setText('btn_send', lang.btn_send);
+        setText('txt_active_requests', lang.active_requests);
 
-    setText('lbl_desc', lang.lbl_desc);
-    setText('lbl_cons', lang.lbl_cons);
-    setText('lbl_store', lang.lbl_store);
-    setText('lbl_grower', lang.lbl_grower);
-    setText('lbl_origin', lang.lbl_origin);
-    setText('lbl_size', lang.lbl_size);
-    setText('lbl_count', lang.lbl_count);
-    setText('lbl_comment', lang.lbl_comment);
-    setText('lbl_qty', lang.lbl_qty);
-    setText('lbl_urgent', lang.lbl_urgent);
-    setText('btn_send', lang.btn_send);
-    setText('txt_active_requests', lang.active_requests);
+        ['th_id', 'th_time', 'th_store', 'th_fruit', 'th_grower', 'th_cons', 'th_specs', 'th_qty', 'th_comment', 'th_driver', 'th_delivered', 'th_status', 'th_action'].forEach(id => setText(id, lang[id]));
 
-    ['th_id', 'th_time', 'th_store', 'th_fruit', 'th_grower', 'th_cons', 'th_specs', 'th_qty', 'th_comment', 'th_driver', 'th_delivered', 'th_status', 'th_action'].forEach(id => setText(id, lang[id]));
+        setText('btn_tab_driver', lang.btn_tab_driver);
+        setText('btn_tab_runner', lang.btn_tab_runner);
+        setText('lbl_runner_task_type', lang.lbl_runner_task_type);
+        setText('lbl_runner_qty', lang.lbl_runner_qty);
+        setText('lbl_bin_color', lang.lbl_bin_color);
+        setText('lbl_box_type', lang.lbl_box_type);
+        setText('lbl_tray_number', lang.lbl_tray_number);
+        setText('lbl_target_store', lang.lbl_target_store);
+        setText('lbl_runner_comment', lang.lbl_runner_comment);
+        setText('btn_send_runner', lang.btn_send_runner);
 
-    setText('btn_tab_driver', lang.btn_tab_driver);
-    setText('btn_tab_runner', lang.btn_tab_runner);
-    setText('lbl_runner_task_type', lang.lbl_runner_task_type);
-    setText('lbl_runner_qty', lang.lbl_runner_qty);
-    setText('lbl_bin_color', lang.lbl_bin_color);
-    setText('lbl_box_type', lang.lbl_box_type);
-    setText('lbl_tray_number', lang.lbl_tray_number);
-    setText('lbl_target_store', lang.lbl_target_store);
-    setText('lbl_runner_comment', lang.lbl_runner_comment);
-    setText('btn_send_runner', lang.btn_send_runner);
+        const taskType = document.getElementById('runner_task_type');
+        if (taskType) {
+            taskType.innerHTML = `
+                <option value="bins">${lang.task_bins}</option>
+                <option value="boxes">${lang.task_boxes}</option>
+                <option value="trays">${lang.task_trays}</option>
+                <option value="pickup">${lang.task_pickup}</option>
+            `;
+        }
 
-    const taskType = document.getElementById('runner_task_type');
-    if (taskType) {
-        taskType.innerHTML = `
-            <option value="bins">${lang.task_bins}</option>
-            <option value="boxes">${lang.task_boxes}</option>
-            <option value="trays">${lang.task_trays}</option>
-            <option value="pickup">${lang.task_pickup}</option>
-        `;
-    }
+        const binColor = document.getElementById('runner_bin_color');
+        if (binColor) {
+            binColor.innerHTML = `
+                <option value="${lang.color_red}">${lang.color_red}</option>
+                <option value="${lang.color_blue}">${lang.color_blue}</option>
+                <option value="${lang.color_green}">${lang.color_green}</option>
+                <option value="${lang.color_white}">${lang.color_white}</option>
+            `;
+        }
 
-    const binColor = document.getElementById('runner_bin_color');
-    if (binColor) {
-        binColor.innerHTML = `
-            <option value="${lang.color_red}">${lang.color_red}</option>
-            <option value="${lang.color_blue}">${lang.color_blue}</option>
-            <option value="${lang.color_green}">${lang.color_green}</option>
-            <option value="${lang.color_white}">${lang.color_white}</option>
-        `;
-    }
-
-    const boxType = document.getElementById('runner_box_type');
-    if (boxType) {
-        boxType.innerHTML = `
-            <option value="${lang.box_lidl}">${lang.box_lidl}</option>
-            <option value="${lang.box_costco_pink}">${lang.box_costco_pink}</option>
-            <option value="${lang.box_costco_gourmet}">${lang.box_costco_gourmet}</option>
-            <option value="${lang.box_costco_lady}">${lang.box_costco_lady}</option>
-            <option value="${lang.box_reusable}">${lang.box_reusable}</option>
-        `;
+        const boxType = document.getElementById('runner_box_type');
+        if (boxType) {
+            boxType.innerHTML = `
+                <option value="${lang.box_lidl}">${lang.box_lidl}</option>
+                <option value="${lang.box_costco_pink}">${lang.box_costco_pink}</option>
+                <option value="${lang.box_costco_gourmet}">${lang.box_costco_gourmet}</option>
+                <option value="${lang.box_costco_lady}">${lang.box_costco_lady}</option>
+                <option value="${lang.box_reusable}">${lang.box_reusable}</option>
+            `;
+        }
     }
 
     const currentUser = localStorage.getItem('user');
@@ -744,6 +802,7 @@
         window.location.href = 'login.html';
     }
 
+    // Запускаем локализацию при загрузке страницы!
     applyLocalization();
     
     document.getElementById('line_name_display').innerText = `${lang.line_badge}: ${currentUser}`;
