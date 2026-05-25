@@ -413,7 +413,7 @@
             const displayQty = o.return_qty ? o.return_qty : (o.qty || 1);
             actionButtonsHtml = `
                 <div class="card-row" style="margin-top:6px; width: 100%;">
-                    <button class="btn-action btn-return-confirm" onclick="confirmReturnAndDelete(${o.id})">
+                    <button class="btn-action btn-return-confirm" onclick="confirmReturn(${o.id})">
                         🔄 ${lang.btn_return_confirm} (${displayQty} ${lang.label_pcs})
                     </button>
                 </div>
@@ -432,13 +432,13 @@
                         <option value="${lang.reason_3}">${lang.reason_3}</option>
                         <option value="${lang.reason_4}">${lang.reason_4}</option>
                     </select>
-                    <button class="btn-cancel-confirm" onclick="cancelAndStrictDelete(${o.id})">${lang.btn_cancel_conf}</button>
+                    <button class="btn-cancel-confirm" onclick="cancelOrder(${o.id})">${lang.btn_cancel_conf}</button>
                 </div>
             `;
         } else if (type === 'progress') {
             cardStyleClass += ' accepted';
             actionButtonsHtml = `
-                <button class="btn-action btn-deliver" style="margin-top:6px;" onclick="completeAndStrictDelete(${o.id})">${lang.btn_deliver}</button>
+                <<button class="btn-cancel-confirm" onclick="cancelOrder(${o.id})">${lang.btn_cancel_conf}</button>
                 <div class="reply-wrapper">
                     <input type="text" id="driver_reply_to_${o.id}" placeholder="${lang.placeholder_reply}" onfocus="setTyping(true)" onblur="setTyping(false)">
                     <button class="btn-reply-send" onclick="sendDriverReply(${o.id})">${lang.btn_send}</button>
