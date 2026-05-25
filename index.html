@@ -562,7 +562,10 @@
             task_boxes: "📦 Order Boxes",
             task_trays: "📥 Order Trays",
             task_pickup: "🚛 Pallet Pickup (Ready Product)",
-            color_red: "Red", color_yellow: "Yellow", color_blue: "Blue", color_green: "Green", color_white: "White",
+            color_red: "General waste (red bin)",
+            color_blue: "Fruit waste (blue bin)",
+            color_green: "Juice bin (green bin)",
+            color_white: "White bin",
             box_empty: "Empty", box_reusable: "Reusable", box_printed: "Pre-printed",
             task_txt_bins: "BINS ORDER", task_txt_boxes: "BOXES ORDER", task_txt_trays: "TRAYS ORDER", task_txt_pickup: "PICKUP: Ready Pallet removal"
         },
@@ -613,7 +616,10 @@
             task_boxes: "📦 Заказать Коробки",
             task_trays: "📥 Заказать Треи / Лотки",
             task_pickup: "🚛 Вывезти готовую продукцию",
-            color_red: "Красный", color_yellow: "Желтый", color_blue: "Синий", color_green: "Зеленый", color_white: "Белый",
+            color_red: "Общие отходы (красный бин)",
+            color_blue: "Фруктовые отходы (синий бин)",
+            color_green: "Бин для сока (зеленый бин)",
+            color_white: "Белый бин",
             box_empty: "Пустые", box_reusable: "Многоразовые", box_printed: "С принтом",
             task_txt_bins: "БИНЫ ЗАКАЗ", task_txt_boxes: "КОРОБКИ ЗАКАЗ", task_txt_trays: "ТРЕИ ЗАКАЗ", task_txt_pickup: "ВЫВОЗ: Готовый паллет"
         }
@@ -674,12 +680,11 @@
             <option value="pickup">${lang.task_pickup}</option>
         `;
         document.getElementById('runner_bin_color').innerHTML = `
-            <option value="${i18n.en.color_red}">${lang.color_red}</option>
-            <option value="${i18n.en.color_yellow}">${lang.color_yellow}</option>
-            <option value="${i18n.en.color_blue}">${lang.color_blue}</option>
-            <option value="${i18n.en.color_green}">${lang.color_green}</option>
-            <option value="${i18n.en.color_white}">${lang.color_white}</option>
-        `;
+        <option value="${i18n.en.color_red}">${lang.color_red}</option>
+        <option value="${i18n.en.color_blue}">${lang.color_blue}</option>
+        <option value="${i18n.en.color_green}">${lang.color_green}</option>
+        <option value="${i18n.en.color_white}">${lang.color_white}</option>
+    `;
         document.getElementById('runner_box_type').innerHTML = `
             <option value="${i18n.en.box_empty}">${lang.box_empty}</option>
             <option value="${i18n.en.box_reusable}">${lang.box_reusable}</option>
