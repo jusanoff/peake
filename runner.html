@@ -3,24 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <title>Peake Fruit — Runner Control Desk</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg: #f4f6f9;
+            --bg: #f8fafc;
             --card-bg: #ffffff;
-            --text: #1a1a2e;
-            --text-muted: #6c757d;
+            --text: #0f172a;
+            --text-muted: #64748b;
             --runner-accent: #6b46c1;
-            --border: #e2e8f0;
+            --border: #cbd5e1;
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--bg);
             color: var(--text);
             margin: 0;
-            padding: 10px;
+            padding: 12px;
+            -webkit-text-size-adjust: 100%;
         }
 
         .container { 
@@ -28,36 +29,29 @@
             margin: 0 auto; 
             display: flex; 
             flex-direction: column; 
-            gap: 15px; 
+            gap: 16px; 
         }
         
         .header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 12px;
             background: var(--card-bg);
-            padding: 12px 15px;
+            padding: 16px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-            gap: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        .header-title h1 { margin: 0; font-size: 18px; color: var(--runner-accent); font-weight: 700; }
-        .header-title p { margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .header-top h1 { margin: 0; font-size: 22px; font-weight: 700; color: var(--runner-accent); }
+        .header-top p { margin: 2px 0 0 0; font-size: 13px; color: var(--text-muted); }
         
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
         .runner-badge {
             background: #f3e8ff;
             color: #6b46c1;
             padding: 6px 12px;
-            border-radius: 6px;
+            border-radius: 4px;
             font-weight: 700;
-            font-size: 13px;
-            white-space: nowrap;
+            font-size: 14px;
         }
 
         .btn-logout { 
@@ -65,19 +59,25 @@
             color: var(--text-muted); 
             border: 1px solid var(--border); 
             padding: 6px 12px; 
-            border-radius: 6px; 
+            border-radius: 4px; 
             cursor: pointer; 
             font-size: 13px; 
-            white-space: nowrap; 
+            font-weight: 600; 
         }
+
+        .nav-languages { display: flex; gap: 8px; margin-top: 4px; }
+        .lang-span { font-size: 13px; cursor: pointer; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 4px; background: white; color: #475569; font-weight: 600; }
+        .lang-span.active { background: var(--runner-accent); color: white; border-color: var(--runner-accent); font-weight: bold; }
 
         .dashboard-card {
             background: var(--card-bg);
-            padding: 15px;
+            padding: 16px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
             border: 1px solid var(--border);
         }
+
+        .section-title { font-size: 15px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; margin: 10px 0 5px 0; }
 
         .table-responsive {
             display: block;
@@ -103,19 +103,21 @@
             background: #fff;
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 12px;
+            padding: 16px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-            border-left: 4px solid var(--runner-accent);
+            border-left: 5px solid var(--runner-accent);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-sizing: border-box;
         }
 
         .card-row {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 8px;
-            gap: 10px;
+            gap: 8px;
         }
-        .card-row:last-child { margin-bottom: 0; }
 
         .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
         .status-badge.new { background: #e0f2fe; color: #0369a1; }
@@ -124,13 +126,17 @@
         .status-badge.canceled { background: #ffeeee; color: #e53e3e; }
 
         .btn-action {
-            padding: 8px 14px;
+            width: 100%;
+            padding: 12px;
             border: none;
             border-radius: 6px;
+            font-size: 15px;
             font-weight: 700;
-            font-size: 12px;
             cursor: pointer;
-            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
         .btn-accept { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
         .btn-accept:hover { background: #ffe0b2; }
@@ -151,19 +157,34 @@
         
         .mobile-comment-display {
             background: #f8fafc;
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 12px;
+            border: 1px dashed var(--border);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 13px;
             color: #475569;
+            line-height: 1.4;
             width: 100%;
-            margin-top: 5px;
+            box-sizing: border-box;
         }
 
+        .empty-msg { text-align: center; color: var(--text-muted); font-size: 14px; padding: 20px; background: white; border-radius: 8px; border: 1px dashed var(--border); width: 100%; box-sizing: border-box; }
+
+        /* Адаптация для планшетов */
+        @media (max-width: 1024px) {
+            .header-top h1 { font-size: 20px; }
+        }
+
+        /* Адаптация для смартфонов */
         @media (max-width: 768px) {
             .table-responsive { display: none; }
             .mobile-requests-list { display: flex; }
-            .header { flex-direction: column; align-items: flex-start; gap: 12px; }
-            .header-right { width: 100%; justify-content: space-between; }
+            body { padding: 8px; }
+            .container { gap: 12px; }
+            .header { padding: 12px; gap: 10px; }
+            .header-top h1 { font-size: 18px; width: 100%; text-align: center; }
+            .header-top p { width: 100%; text-align: center; }
+            .header-top { justify-content: center; text-align: center; }
+            .nav-languages { justify-content: center; width: 100%; }
         }
     </style>
 </head>
@@ -171,13 +192,20 @@
 
 <div class="container">
     <div class="header">
-        <div class="header-title">
-            <h1 id="txt_main_title">Peake Fruit — Runner Control Desk</h1>
-            <p id="txt_sub_title">Material & Packaging Tasks Control</p>
+        <div class="header-top">
+            <div class="header-title">
+                <h1 id="txt_main_title">Peake Fruit — Runner Control Desk</h1>
+                <p id="txt_sub_title">Material & Packaging Tasks Control</p>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap: wrap; justify-content: center;">
+                <div class="runner-badge" id="runner_name_display">Runner: Loading...</div>
+                <button class="btn-logout" id="btn_logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
+            </div>
         </div>
-        <div class="header-right">
-            <div class="runner-badge" id="runner_name_display">Runner: Loading...</div>
-            <button class="btn-logout" id="btn_logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
+        <div class="nav-languages">
+            <span class="lang-span" id="lang_en" onclick="changeLang('en')">EN</span>
+            <span class="lang-span" id="lang_ru" onclick="changeLang('ru')">RU</span>
+            <span class="lang-span" id="lang_lt" onclick="changeLang('lt')">LT</span>
         </div>
     </div>
 
@@ -206,13 +234,13 @@
         </div>
 
         <div class="mobile-requests-list" id="runner_requests_mobile">
-            <div style="text-align:center; color:var(--text-muted); padding: 20px;">Loading...</div>
+            <div class="empty-msg">Loading...</div>
         </div>
     </div>
 </div>
 
 <script>
-    // Полный словарь для полной русско-английской локализации интерфейса Ранера
+    // Полный словарь локализации интерфейса Ранера (EN / RU / LT)
     const i18n = {
         en: {
             main_title: "Peake Fruit — Runner Control Desk",
@@ -224,7 +252,8 @@
             th_qty: "Qty", th_store: "Target Store", th_comment: "Comment", th_status: "Status", th_action: "Action",
             loading: "Loading tasks...", no_requests: "No active tasks for runners.",
             btn_accept: "⚡ ACCEPT", btn_done: "✅ DONE",
-            status_new: "new", status_process: "in progress", status_done: "done", status_canceled: "canceled"
+            status_new: "new", status_process: "in progress", status_done: "done", status_canceled: "canceled",
+            label_line: "Line", label_target: "Target", label_qty: "Qty", label_pcs: "pcs", label_comment: "Comment"
         },
         ru: {
             main_title: "Peake Fruit — Экран Ранера",
@@ -236,12 +265,26 @@
             th_qty: "Кол-во", th_store: "Куда доставить", th_comment: "Комментарий", th_status: "Статус", th_action: "Действие",
             loading: "Загрузка задач...", no_requests: "Нет активных задач для ранеров.",
             btn_accept: "⚡ В РАБОТУ", btn_done: "✅ ГОТОВО",
-            status_new: "новая", status_process: "в работе", status_done: "выполнено", status_canceled: "отменена"
+            status_new: "новая", status_process: "в работе", status_done: "выполнено", status_canceled: "отменена",
+            label_line: "Линия", label_target: "Куда", label_qty: "Кол-во", label_pcs: "шт", label_comment: "Комментарий"
+        },
+        lt: {
+            main_title: "Peake Fruit — Runnerio Ekranas",
+            sub_title: "Taros ir produkcijos užduočių valdymas",
+            runner_badge: "Runneris",
+            logout: "Atsijungti",
+            active_requests: "Aktyvios tiekimo užduotys (Live)",
+            th_id: "ID", th_time: "Laikas", th_line: "Iš Linijos", th_task: "Užduoties aprašymas",
+            th_qty: "Kiekis", th_store: "Kur pristatyti", th_comment: "Komentaras", th_status: "Statusas", th_action: "Veiksmas",
+            loading: "Kraunamos užduotys...", no_requests: "Aktyvių užduočių runneriams nėra.",
+            btn_accept: "⚡ Į DARBĄ", btn_done: "✅ ATLIKTA",
+            status_new: "nauja", status_process: "vykdoma", status_done: "atlikta", status_canceled: "atšaukta",
+            label_line: "Linija", label_target: "Kur", label_qty: "Kiekis", label_pcs: "vnt", label_comment: "Komentaras"
         }
     };
 
-    const currentLang = localStorage.getItem('lang') === 'ru' ? 'ru' : 'en';
-    const lang = i18n[currentLang];
+    let currentLang = localStorage.getItem('lang') || 'en';
+    let lang = i18n[currentLang];
 
     function applyLocalization() {
         document.getElementById('txt_main_title').innerText = lang.main_title;
@@ -258,6 +301,21 @@
         document.getElementById('th_comment').innerText = lang.th_comment;
         document.getElementById('th_status').innerText = lang.th_status;
         document.getElementById('th_action').innerText = lang.th_action;
+
+        document.querySelectorAll('.lang-span').forEach(s => s.classList.remove('active'));
+        const activeLangSpan = document.getElementById(`lang_${currentLang}`);
+        if(activeLangSpan) activeLangSpan.classList.add('active');
+    }
+
+    function changeLang(target) {
+        currentLang = target;
+        localStorage.setItem('lang', target);
+        lang = i18n[target];
+        applyLocalization();
+        if(currentUser) {
+            document.getElementById('runner_name_display').innerText = `${lang.runner_badge}: ${cachedRunnerFullName}`;
+        }
+        loadRunnerTasks();
     }
 
     const currentUser = localStorage.getItem('user');
@@ -270,7 +328,6 @@
     }
 
     applyLocalization();
-    document.getElementById('runner_name_display').innerText = `${lang.runner_badge}: ${currentUser}`;
 
     const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
     const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
@@ -344,7 +401,7 @@
 
             if (!orders || orders.length === 0) {
                 document.getElementById('runner_requests_body').innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">${lang.no_requests}</td></tr>`;
-                document.getElementById('runner_requests_mobile').innerHTML = `<div style="text-align:center; color:var(--text-muted); padding: 20px;">${lang.no_requests}</div>`;
+                document.getElementById('runner_requests_mobile').innerHTML = `<div class="empty-msg">${lang.no_requests}</div>`;
                 return;
             }
 
@@ -377,9 +434,9 @@
                 let actionHtml = '';
 
                 if (statusLwr === 'new') {
-                    actionHtml = `<button class="btn-action btn-accept" style="width:100%; margin-top:5px;" onclick="updateStatus(${o.id}, 'process')">${lang.btn_accept}</button>`;
+                    actionHtml = `<button class="btn-action btn-accept" style="width:100%;" onclick="updateStatus(${o.id}, 'process')">${lang.btn_accept}</button>`;
                 } else if (statusLwr === 'process' || statusLwr === 'accepted') {
-                    actionHtml = `<button class="btn-action btn-done" style="width:100%; margin-top:5px;" onclick="updateStatus(${o.id}, 'done')">${lang.btn_done}</button>`;
+                    actionHtml = `<button class="btn-action btn-done" style="width:100%;" onclick="updateStatus(${o.id}, 'done')">${lang.btn_done}</button>`;
                 }
 
                 return `
@@ -390,14 +447,14 @@
                     </div>
                     <div class="card-row">
                         <div>
-                            <span style="font-size:12px; uppercase; color:var(--text-muted);">${currentLang === 'ru' ? 'Линия' : 'Line'}: <strong>${o.line || '-'}</strong></span><br>
-                            <span style="font-size:15px; color:var(--text-muted);"><strong style="color:var(--text);">${o.description || '-'}</strong></span><br>
-                            <span style="font-size:13px; color:#2e7d32; font-weight:600;">Target: ${o.store || '-'}</span>
+                            <span style="font-size:13px; color:var(--text-muted);">${lang.label_line}: <strong style="color: #0f172a;">${o.line || '-'}</strong></span><br>
+                            <span style="font-size:16px; font-weight: 700; color: #1e293b; display: inline-block; margin-top: 4px;">${o.description || '-'}</span><br>
+                            <span style="font-size:13px; color:#2e7d32; font-weight:600; display: inline-block; margin-top: 4px;">${lang.label_target}: ${o.store || '-'}</span>
                         </div>
-                        <div style="text-align:right;"><span style="font-size:20px; color:var(--runner-accent); font-weight:800;">${o.qty || '1'}</span></div>
+                        <div style="text-align:right;"><span style="font-size:22px; color:var(--runner-accent); font-weight:800;">${o.qty || '1'}</span> <span style="font-size:12px; color:var(--text-muted); font-weight:600;">${lang.label_pcs}</span></div>
                     </div>
-                    ${o.comment ? `<div class="mobile-comment-display">💬 ${o.comment}</div>` : ''}
-                    <div style="margin-top:8px; border-top:1px dashed #e2e8f0; padding-top:8px;">
+                    ${o.comment ? `<div class="mobile-comment-display">💬 <strong>${lang.label_comment}:</strong> ${o.comment}</div>` : ''}
+                    <div style="margin-top:4px;">
                         ${actionHtml}
                     </div>
                 </div>`;
