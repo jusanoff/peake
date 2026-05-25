@@ -535,38 +535,40 @@
         }
     }
 
-    async function completeAndStrictDelete(orderId) {
+    // --- 1. Завершение заказа ---
+    async function completeOrder(orderId) { // Переименовали, чтобы не путаться
         stopAutoUpdate();
         try {
             const { error } = await clientDb
                 .from('orders')
-                .delete()
+                .update({ 
+                    status: 'done', 
+                    delivered_at: new Date().toISOString() // Сохраняем время
+                })
                 .eq('id', orderId);
 
             if (error) throw error;
             
             isUserTyping = false;
-            loadAllOrders();
+            loadAllOrders(); // Заказ обновится в базе и исчезнет из списка водителя (см. п.2)
             startAutoUpdate();
         } catch (e) {
-            alert("Error processing: " + e.message);
+            alert("Error: " + e.message);
             startAutoUpdate();
         }
     }
 
-    async function cancelAndStrictDelete(orderId) {
+    // --- 2. Отмена заказа ---
+    async function cancelOrder(orderId) {
         const reasonSelect = document.getElementById(`reason_select_${orderId}`);
         const selectedReason = reasonSelect ? reasonSelect.value : "";
-        if (!selectedReason) {
-            alert(lang.alert_reason);
-            return;
-        }
+        if (!selectedReason) { alert(lang.alert_reason); return; }
 
         stopAutoUpdate();
         try {
             const { error } = await clientDb
                 .from('orders')
-                .delete()
+                .update({ status: 'canceled' })
                 .eq('id', orderId);
 
             if (error) throw error;
@@ -575,17 +577,18 @@
             loadAllOrders();
             startAutoUpdate();
         } catch (e) {
-            alert("Error cancelling order: " + e.message);
+            alert("Error: " + e.message);
             startAutoUpdate();
         }
     }
 
-    async function confirmReturnAndDelete(orderId) {
+    // --- 3. Подтверждение возврата ---
+    async function confirmReturn(orderId) {
         stopAutoUpdate();
         try {
             const { error } = await clientDb
                 .from('orders')
-                .delete()
+                .update({ status: 'returned' })
                 .eq('id', orderId);
 
             if (error) throw error;
@@ -593,7 +596,7 @@
             loadAllOrders();
             startAutoUpdate();
         } catch (e) {
-            alert("Error confirming return: " + e.message);
+            alert("Error: " + e.message);
             startAutoUpdate();
         }
     }
