@@ -764,45 +764,70 @@ tray_sainsbury: "Sainsbury Black",
     document.getElementById(`content_${tabName}`).classList.add('active');
 }
 
-   function toggleRunnerFields() {
+   // Функция отображения полей
+function toggleRunnerFields() {
     const type = document.getElementById('runner_task_type').value;
     
-    // Функция-помощник для безопасного скрытия/показа
-    const setDisplay = (id, condition) => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.style.display = condition ? 'flex' : 'none';
-        }
-    };
-
-    setDisplay('runner_bin_color_block', type === 'bins');
-    setDisplay('runner_box_type_block', type === 'boxes');
-    setDisplay('runner_tray_number_block', type === 'trays');
-    setDisplay('runner_tray_type_block', type === 'trays'); // Теперь ошибки не будет, если элемента нет
-    setDisplay('runner_store_block', type === 'pickup');
+    document.getElementById('runner_bin_color_block').style.display = type === 'bins' ? 'flex' : 'none';
+    document.getElementById('runner_box_type_block').style.display = type === 'boxes' ? 'flex' : 'none';
+    document.getElementById('runner_tray_number_block').style.display = type === 'trays' ? 'flex' : 'none';
+    document.getElementById('runner_tray_type_block').style.display = type === 'trays' ? 'flex' : 'none';
+    document.getElementById('runner_store_block').style.display = type === 'pickup' ? 'flex' : 'none';
 }
-    function formatTime(isoString) {
-        if (!isoString) return '-';
-        const date = new Date(isoString);
-        if (isNaN(date.getTime())) return '-';
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+// Функция отправки (исправленная)
+async function sendRequestToRunner() {
+    const type = document.getElementById('runner_task_type').value;
+    const qty = parseInt(document.getElementById('runner_qty').value) || 1;
+    const comment = document.getElementById('runner_comment').value.trim();
+    
+    let finalDescription = "";
+    let finalStore = "Packaging";
+    let dbType = "runner_materials";
+
+    if (type === 'bins') {
+        const colorLabel = document.getElementById('runner_bin_color').value;
+        finalDescription = `🪵 ${lang.task_txt_bins} (${colorLabel}) x${qty}`;
+    } else if (type === 'boxes') {
+        const boxLabel = document.getElementById('runner_box_type').value;
+        finalDescription = `📦 ${lang.task_txt_boxes} (${boxLabel}) x${qty}`;
+    } else if (type === 'trays') {
+        const trayNum = document.getElementById('runner_tray_number').value.trim();
+        const trayType = document.getElementById('runner_tray_type').value;
+        if (!trayNum) { alert(lang.alert_tray_req || "Enter Tray Number"); return; }
+        finalDescription = `📥 ${lang.task_txt_trays} (${trayType} № ${trayNum}) x${qty}`;
+    } else if (type === 'pickup') {
+        const targetStore = document.getElementById('runner_target_store').value.trim();
+        if (!targetStore) { alert(lang.alert_store_req || "Enter Store"); return; }
+        finalDescription = `🚛 ${lang.task_txt_pickup} x${qty}`;
+        finalStore = targetStore;
+        dbType = "runner_pickup";
     }
 
-    async function fetchLineFullName() {
-        try {
-            const { data, error } = await clientDb.from('users_table').select('*').eq('u', currentUser);
-            if (error) return;
-            if (data && data.length > 0) {
-                const userRow = data[0];
-                const realName = userRow.name;
-                if (realName) {
-                    cachedLineFullName = realName; 
-                    document.getElementById('line_name_display').innerText = `${lang.line_badge}: ${realName}`;
-                }
-            }
-        } catch (err) {}
+    try {
+        const { error } = await clientDb.from('orders').insert([{
+            line: cachedLineFullName,
+            description: finalDescription,
+            store: finalStore,
+            qty: qty,
+            status: 'new',
+            is_runner: true,
+            type: dbType,
+            comment: comment,
+            target_role: 'runner'
+        }]);
+        if (error) throw error;
+        alert(lang.alert_success || "Success!");
+        
+        // Безопасная очистка
+        ['runner_target_store', 'runner_tray_number', 'runner_comment'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        document.getElementById('runner_qty').value = '1';
         loadActiveRequests();
-    }
+    } catch (e) { alert(e.message); }
+}
 
     async function loadStockDropdown() {
         try {
