@@ -650,70 +650,84 @@ tray_sainsbury: "Sainsbury Black",
     const lang = i18n[currentLang];
 
     function applyLocalization() {
-        document.getElementById('txt_main_title').innerText = lang.main_title;
-        document.getElementById('txt_sub_title').innerText = lang.sub_title;
-        document.getElementById('btn_logout').innerText = lang.logout;
-        document.getElementById('txt_quick_select').innerText = lang.quick_select;
-        document.getElementById('stock_input').placeholder = lang.search_placeholder;
-        
-        document.getElementById('lbl_desc').innerText = lang.lbl_desc;
-        document.getElementById('lbl_cons').innerText = lang.lbl_cons;
-        document.getElementById('lbl_store').innerText = lang.lbl_store;
-        document.getElementById('lbl_grower').innerText = lang.lbl_grower;
-        document.getElementById('lbl_origin').innerText = lang.lbl_origin;
-        document.getElementById('lbl_size').innerText = lang.lbl_size;
-        document.getElementById('lbl_count').innerText = lang.lbl_count;
-        document.getElementById('lbl_comment').innerText = lang.lbl_comment;
-        document.getElementById('lbl_qty').innerText = lang.lbl_qty;
-        document.getElementById('lbl_urgent').innerText = lang.lbl_urgent;
-        document.getElementById('btn_send').innerText = lang.btn_send;
-        document.getElementById('txt_active_requests').innerText = lang.active_requests;
+    const currentLang = localStorage.getItem('lang') === 'ru' ? 'ru' : 'en';
+    const lang = i18n[currentLang];
 
-        document.getElementById('th_id').innerText = lang.th_id;
-        document.getElementById('th_time').innerText = lang.th_time;
-        document.getElementById('th_store').innerText = lang.th_store;
-        document.getElementById('th_fruit').innerText = lang.th_fruit;
-        document.getElementById('th_grower').innerText = lang.th_grower;
-        document.getElementById('th_cons').innerText = lang.th_cons;
-        document.getElementById('th_specs').innerText = lang.th_specs;
-        document.getElementById('th_qty').innerText = lang.th_qty;
-        document.getElementById('th_comment').innerText = lang.th_comment;
-        document.getElementById('th_driver').innerText = lang.th_driver;
-        document.getElementById('th_delivered').innerText = lang.th_delivered;
-        document.getElementById('th_status').innerText = lang.th_status;
-        document.getElementById('th_action').innerText = lang.th_action;
+    // Функция-помощник для безопасной установки текста
+    const setText = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = text;
+    };
 
-        document.getElementById('btn_tab_driver').innerText = lang.btn_tab_driver;
-        document.getElementById('btn_tab_runner').innerText = lang.btn_tab_runner;
-        document.getElementById('lbl_runner_task_type').innerText = lang.lbl_runner_task_type;
-        document.getElementById('lbl_runner_qty').innerText = lang.lbl_runner_qty;
-        document.getElementById('lbl_bin_color').innerText = lang.lbl_bin_color;
-        document.getElementById('lbl_box_type').innerText = lang.lbl_box_type;
-        document.getElementById('lbl_tray_number').innerText = lang.lbl_tray_number;
-        document.getElementById('lbl_target_store').innerText = lang.lbl_target_store;
-        document.getElementById('lbl_runner_comment').innerText = lang.lbl_runner_comment;
-        document.getElementById('btn_send_runner').innerText = lang.btn_send_runner;
+    // Обновляем все текстовые поля
+    setText('txt_main_title', lang.main_title);
+    setText('txt_sub_title', lang.sub_title);
+    setText('btn_logout', lang.logout);
+    setText('txt_quick_select', lang.quick_select);
+    
+    // Поля ввода (placeholder)
+    const stockInput = document.getElementById('stock_input');
+    if (stockInput) stockInput.placeholder = lang.search_placeholder;
 
-        document.getElementById('runner_task_type').innerHTML = `
+    setText('lbl_desc', lang.lbl_desc);
+    setText('lbl_cons', lang.lbl_cons);
+    setText('lbl_store', lang.lbl_store);
+    setText('lbl_grower', lang.lbl_grower);
+    setText('lbl_origin', lang.lbl_origin);
+    setText('lbl_size', lang.lbl_size);
+    setText('lbl_count', lang.lbl_count);
+    setText('lbl_comment', lang.lbl_comment);
+    setText('lbl_qty', lang.lbl_qty);
+    setText('lbl_urgent', lang.lbl_urgent);
+    setText('btn_send', lang.btn_send);
+    setText('txt_active_requests', lang.active_requests);
+
+    // Заголовки таблицы (проверяем, чтобы они были на странице)
+    ['th_id', 'th_time', 'th_store', 'th_fruit', 'th_grower', 'th_cons', 'th_specs', 'th_qty', 'th_comment', 'th_driver', 'th_delivered', 'th_status', 'th_action'].forEach(id => setText(id, lang[id]));
+
+    setText('btn_tab_driver', lang.btn_tab_driver);
+    setText('btn_tab_runner', lang.btn_tab_runner);
+    setText('lbl_runner_task_type', lang.lbl_runner_task_type);
+    setText('lbl_runner_qty', lang.lbl_runner_qty);
+    setText('lbl_bin_color', lang.lbl_bin_color);
+    setText('lbl_box_type', lang.lbl_box_type);
+    setText('lbl_tray_number', lang.lbl_tray_number);
+    setText('lbl_target_store', lang.lbl_target_store);
+    setText('lbl_runner_comment', lang.lbl_runner_comment);
+    setText('btn_send_runner', lang.btn_send_runner);
+
+    // Селекты
+    const taskType = document.getElementById('runner_task_type');
+    if (taskType) {
+        taskType.innerHTML = `
             <option value="bins">${lang.task_bins}</option>
             <option value="boxes">${lang.task_boxes}</option>
             <option value="trays">${lang.task_trays}</option>
             <option value="pickup">${lang.task_pickup}</option>
         `;
-        document.getElementById('runner_bin_color').innerHTML = `
-        <option value="${i18n.en.color_red}">${lang.color_red}</option>
-        <option value="${i18n.en.color_blue}">${lang.color_blue}</option>
-        <option value="${i18n.en.color_green}">${lang.color_green}</option>
-        <option value="${i18n.en.color_white}">${lang.color_white}</option>
-    `;
-        document.getElementById('runner_box_type').innerHTML = `
-    <option value="${lang.box_lidl}">${lang.box_lidl}</option>
-    <option value="${lang.box_costco_pink}">${lang.box_costco_pink}</option>
-    <option value="${lang.box_costco_gourmet}">${lang.box_costco_gourmet}</option>
-    <option value="${lang.box_costco_lady}">${lang.box_costco_lady}</option>
-    <option value="${lang.box_reusable}">${lang.box_reusable}</option>
-`;
     }
+
+    const binColor = document.getElementById('runner_bin_color');
+    if (binColor) {
+        binColor.innerHTML = `
+            <option value="${lang.color_red}">${lang.color_red}</option>
+            <option value="${lang.color_blue}">${lang.color_blue}</option>
+            <option value="${lang.color_green}">${lang.color_green}</option>
+            <option value="${lang.color_white}">${lang.color_white}</option>
+        `;
+    }
+
+    const boxType = document.getElementById('runner_box_type');
+    if (boxType) {
+        boxType.innerHTML = `
+            <option value="${lang.box_lidl}">${lang.box_lidl}</option>
+            <option value="${lang.box_costco_pink}">${lang.box_costco_pink}</option>
+            <option value="${lang.box_costco_gourmet}">${lang.box_costco_gourmet}</option>
+            <option value="${lang.box_costco_lady}">${lang.box_costco_lady}</option>
+            <option value="${lang.box_reusable}">${lang.box_reusable}</option>
+        `;
+    }
+}
 
     const currentUser = localStorage.getItem('user');
     const currentRole = localStorage.getItem('role');
