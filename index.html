@@ -775,35 +775,46 @@ function toggleRunnerFields() {
     document.getElementById('runner_store_block').style.display = type === 'pickup' ? 'flex' : 'none';
 }
 
-// Функция отправки (исправленная)
 async function sendRequestToRunner() {
-    const type = document.getElementById('runner_task_type').value;
-    const qty = parseInt(document.getElementById('runner_qty').value) || 1;
-    const comment = document.getElementById('runner_comment').value.trim();
+    const typeSelect = document.getElementById('runner_task_type');
+    const qtyInput = document.getElementById('runner_qty');
+    const commentInput = document.getElementById('runner_comment');
+    
+    if (!typeSelect || !qtyInput) return; // Базовая защита
+
+    const type = typeSelect.value;
+    const qty = parseInt(qtyInput.value) || 1;
+    const comment = commentInput ? commentInput.value.trim() : "";
     
     let finalDescription = "";
     let finalStore = "Packaging";
     let dbType = "runner_materials";
 
+    // 1. Формирование описания с безопасным поиском элементов
     if (type === 'bins') {
-        const colorLabel = document.getElementById('runner_bin_color').value;
-        finalDescription = `🪵 ${lang.task_txt_bins} (${colorLabel}) x${qty}`;
+        const el = document.getElementById('runner_bin_color');
+        finalDescription = `🪵 ${lang.task_txt_bins} (${el ? el.value : ''}) x${qty}`;
     } else if (type === 'boxes') {
-        const boxLabel = document.getElementById('runner_box_type').value;
-        finalDescription = `📦 ${lang.task_txt_boxes} (${boxLabel}) x${qty}`;
+        const el = document.getElementById('runner_box_type');
+        finalDescription = `📦 ${lang.task_txt_boxes} (${el ? el.value : ''}) x${qty}`;
     } else if (type === 'trays') {
-        const trayNum = document.getElementById('runner_tray_number').value.trim();
-        const trayType = document.getElementById('runner_tray_type').value;
+        const trayNumEl = document.getElementById('runner_tray_number');
+        const trayTypeEl = document.getElementById('runner_tray_type');
+        const trayNum = trayNumEl ? trayNumEl.value.trim() : "";
+        const trayType = trayTypeEl ? trayTypeEl.value : "";
+        
         if (!trayNum) { alert(lang.alert_tray_req || "Enter Tray Number"); return; }
         finalDescription = `📥 ${lang.task_txt_trays} (${trayType} № ${trayNum}) x${qty}`;
     } else if (type === 'pickup') {
-        const targetStore = document.getElementById('runner_target_store').value.trim();
+        const storeEl = document.getElementById('runner_target_store');
+        const targetStore = storeEl ? storeEl.value.trim() : "";
         if (!targetStore) { alert(lang.alert_store_req || "Enter Store"); return; }
         finalDescription = `🚛 ${lang.task_txt_pickup} x${qty}`;
         finalStore = targetStore;
         dbType = "runner_pickup";
     }
 
+    // 2. Отправка в базу
     try {
         const { error } = await clientDb.from('orders').insert([{
             line: cachedLineFullName,
@@ -819,16 +830,17 @@ async function sendRequestToRunner() {
         if (error) throw error;
         alert(lang.alert_success || "Success!");
         
-        // Безопасная очистка
-        ['runner_target_store', 'runner_tray_number', 'runner_comment'].forEach(id => {
+        // 3. БЕЗОПАСНАЯ очистка полей
+        const fieldsToClear = ['runner_target_store', 'runner_tray_number', 'runner_comment'];
+        fieldsToClear.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
         });
-        document.getElementById('runner_qty').value = '1';
+        if (qtyInput) qtyInput.value = '1';
+        
         loadActiveRequests();
     } catch (e) { alert(e.message); }
 }
-
     async function loadStockDropdown() {
         try {
             const { data: stock, error } = await clientDb.from('stock').select('*').gt('count', 0);
