@@ -278,6 +278,7 @@
         .status-badge.process, .status-badge.accepted { background: #fff3e0; color: #e65100; }
         .status-badge.delivered, .status-badge.done { background: #e2f0d9; color: #385723; }
         .status-badge.canceled { background: #ffeeee; color: #e53e3e; }
+        .status-badge.return_requested { background: #ffedd5; color: #ea580c; }
         
         .runner-badge {
             background: #f3e8ff;
@@ -821,13 +822,13 @@
     async function fetchLineFullName() {
         try {
             const { data, error } = await clientDb
-                .from('users') 
-                .select('full_name') 
-                .eq('username', currentUser)
+                .from('users_table') 
+                .select('name') 
+                .eq('u', currentUser)
                 .single();
                 
-            if (!error && data && data.full_name) {
-                cachedLineFullName = data.full_name;
+            if (!error && data && data.name) {
+                cachedLineFullName = data.name;
             } else {
                 if (currentUser === 'hl1') cachedLineFullName = "Hand Line1";
             }
@@ -1087,31 +1088,32 @@
             return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         } catch (e) { return "-"; }
     }
+
     // Функция для инициации возврата
-async function initiateReturn(orderId, maxQty) {
-    const qtyToReturn = prompt(`Линия заказала ${maxQty} паллет. Сколько хотите вернуть?`, maxQty);
-    
-    if (!qtyToReturn || isNaN(qtyToReturn) || qtyToReturn > maxQty) {
-        alert("Некорректное количество!");
-        return;
-    }
+    async function initiateReturn(orderId, maxQty) {
+        const qtyToReturn = prompt(`Линия заказала ${maxQty} паллет. Сколько хотите вернуть?`, maxQty);
+        
+        if (!qtyToReturn || isNaN(qtyToReturn) || qtyToReturn > maxQty || qtyToReturn <= 0) {
+            alert("Некорректное количество!");
+            return;
+        }
 
-    try {
-        const { error } = await clientDb
-            .from('orders')
-            .update({ 
-                status: 'return_requested', 
-                return_qty: parseInt(qtyToReturn) 
-            })
-            .eq('id', orderId);
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .update({ 
+                    status: 'return_requested', 
+                    return_qty: parseInt(qtyToReturn) 
+                })
+                .eq('id', orderId);
 
-        if (error) throw error;
-        alert("Запрос на возврат отправлен водителю.");
-        loadActiveRequests(); // Обновляем список
-    } catch (e) {
-        alert("Ошибка: " + e.message);
+            if (error) throw error;
+            alert("Запрос на возврат отправлен водителю.");
+            loadActiveRequests(); // Обновляем список
+        } catch (e) {
+            alert("Ошибка: " + e.message);
+        }
     }
-}
 
     async function loadActiveRequests() {
         try {
@@ -1139,9 +1141,17 @@ async function initiateReturn(orderId, maxQty) {
 
             const tableHtml = orders.map(o => {
                 const statusLwr = (o.status || 'new').toLowerCase();
-                const actionHtml = statusLwr === 'new' 
-                    ? `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>` 
-                    : `<span style="color:var(--text-muted); font-size:11px;">${lang.progress}</span>`;
+                
+                let actionHtml = '';
+                if (statusLwr === 'new') {
+                    actionHtml = `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>`;
+                } else if (statusLwr === 'delivered' || statusLwr === 'done') {
+                    actionHtml = `<button class="btn-cancel" style="background:#fff7ed; color:#ea580c; border-color:#ffedd5;" onclick="initiateReturn(${o.id}, ${o.qty || 1})">${currentLang === 'ru' ? 'Возврат' : 'Return'}</button>`;
+                } else if (statusLwr === 'return_requested') {
+                    actionHtml = `<span style="color:#ea580c; font-size:11px; font-weight:bold;">${currentLang === 'ru' ? 'Запрошен возврат' : 'Return Requested'}</span>`;
+                } else {
+                    actionHtml = `<span style="color:var(--text-muted); font-size:11px;">${lang.progress}</span>`;
+                }
 
                 const assigneeDisplay = o.is_runner 
                     ? (o.driver_name ? '🏃‍♂️ ' + o.driver_name : `<span class="runner-badge">${currentLang === 'ru' ? 'Ранер' : 'Runner Task'}</span>`)
@@ -1172,9 +1182,17 @@ async function initiateReturn(orderId, maxQty) {
 
             const mobileHtml = orders.map(o => {
                 const statusLwr = (o.status || 'new').toLowerCase();
-                const actionButton = statusLwr === 'new' 
-                    ? `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>` 
-                    : `<span style="color:var(--text-muted); font-size:12px;">${lang.progress}</span>`;
+                
+                let actionButton = '';
+                if (statusLwr === 'new') {
+                    actionButton = `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>`;
+                } else if (statusLwr === 'delivered' || statusLwr === 'done') {
+                    actionButton = `<button class="btn-cancel" style="background:#fff7ed; color:#ea580c; border-color:#ffedd5;" onclick="initiateReturn(${o.id}, ${o.qty || 1})">${currentLang === 'ru' ? 'Возврат' : 'Return'}</button>`;
+                } else if (statusLwr === 'return_requested') {
+                    actionButton = `<span style="color:#ea580c; font-size:12px; font-weight:bold;">${currentLang === 'ru' ? 'Запрошен возврат' : 'Return Requested'}</span>`;
+                } else {
+                    actionButton = `<span style="color:var(--text-muted); font-size:12px;">${lang.progress}</span>`;
+                }
 
                 const driverDisplay = o.is_runner 
                     ? (o.driver_name ? o.driver_name : (currentLang === 'ru' ? 'Ожидание ранера...' : 'Runner Waiting...'))
