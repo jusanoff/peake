@@ -175,10 +175,11 @@
 
         try {
             // Загружаем заказы
-           const { data: orders, error } = await clientDb
+           // В файле driver.html внутри функции loadActiveRequests:
+const { data: orders, error } = await clientDb
     .from('orders')
     .select('*')
-    .eq('target_role', 'driver') // Ограничение: только драйвер
+    .eq('is_runner', false) // Только заказы для водителей
     .order('id', { ascending: false });
             
 
