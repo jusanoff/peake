@@ -357,6 +357,7 @@
                 .from('orders')
                 .select('*')
                 .eq('target_role', 'driver')
+                .in('status', ['new', 'accepted', 'progress', 'return_requested'])
                 .order('urgent', { ascending: false })
                 .order('id', { ascending: false });
 
