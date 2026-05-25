@@ -650,14 +650,15 @@ tray_sainsbury: "Sainsbury Black",
     const lang = i18n[currentLang];
 
     function applyLocalization() {
-    const currentLang = localStorage.getItem('lang') === 'ru' ? 'ru' : 'en';
-    const lang = i18n[currentLang];
-
-    // Функция-помощник для безопасной установки текста
-    const setText = (id, text) => {
+    const langKey = localStorage.getItem('lang') === 'ru' ? 'ru' : 'en';
+    const l = i18n[langKey];
+    
+    const elements = ['txt_main_title', 'lbl_tray_number', 'lbl_runner_task_type']; // добавьте сюда нужные ID
+    elements.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.innerText = text;
-    };
+        if (el && l[id]) el.innerText = l[id];
+    });
+}
 
     // Обновляем все текстовые поля
     setText('txt_main_title', lang.main_title);
