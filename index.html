@@ -461,10 +461,15 @@
             <select id="runner_box_type"></select>
         </div>
 
-        <div class="input-group" id="runner_tray_number_block" style="display:none; margin-top: 15px;">
-            <label style="color:var(--runner-accent); font-weight:700;" id="lbl_tray_number">Tray Number *</label>
-            <input type="text" id="runner_tray_number" placeholder="">
-        </div>
+        <div id="tray_selection_wrapper" style="display: none; margin-bottom: 10px;">
+    <label>Select Tray Type:</label>
+    <select id="runner_tray_type" class="form-control">
+        <option value="Morrison">Morrison</option>
+        <option value="IFCO">IFCO</option>
+        <option value="EPS">EPS</option>
+        <option value="Sainsbury Black">Sainsbury Black</option>
+    </select>
+</div>
 
         <div class="input-group" id="runner_store_block" style="display:none; margin-top: 15px;">
             <label style="color: red; font-weight:700;" id="lbl_target_store">Target Store *</label>
@@ -571,6 +576,10 @@
             box_costco_gourmet: "Costco Gourmet",
             box_costco_lady: "Costco Lady Bird",
             box_reusable: "Reusable",
+            tray_morrison: "Morrison",
+tray_ifco: "IFCO",
+tray_eps: "EPS",
+tray_sainsbury: "Sainsbury Black",
             task_txt_bins: "BINS ORDER", task_txt_boxes: "BOXES ORDER", task_txt_trays: "TRAYS ORDER", task_txt_pickup: "PICKUP: Ready Pallet removal"
         },
         ru: {
@@ -629,6 +638,10 @@
             box_costco_gourmet: "Costco Gourmet",
             box_costco_lady: "Costco Lady Bird",
             box_reusable: "Многоразовые (Reusable)",
+            tray_morrison: "Morrison",
+tray_ifco: "IFCO",
+tray_eps: "EPS",
+tray_sainsbury: "Sainsbury Black",
             task_txt_bins: "БИНЫ ЗАКАЗ", task_txt_boxes: "КОРОБКИ ЗАКАЗ", task_txt_trays: "ТРЕИ ЗАКАЗ", task_txt_pickup: "ВЫВОЗ: Готовый паллет"
         }
     };
