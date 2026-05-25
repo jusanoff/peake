@@ -358,6 +358,7 @@
                 .select('*')
                 .eq('target_role', 'driver')
                 .in('status', ['new', 'accepted', 'progress', 'return_requested'])
+                .not('status', 'in', '("done", "canceled", "returned")')
                 .order('urgent', { ascending: false })
                 .order('id', { ascending: false });
 
