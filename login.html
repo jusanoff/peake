@@ -13,17 +13,39 @@
         input, button { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; box-sizing: border-box; }
         button { background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background: #b71c1c; }
+        
         .lang-select { text-align: center; margin-bottom: 15px; }
-        .lang-select button { width: auto; display: inline-block; padding: 5px 10px; margin: 0 3px; background: #eee; color: #333; font-size: 12px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; }
+        /* Базовые стили для кнопок выбора языка */
+        .lang-select button { 
+            width: auto; 
+            display: inline-block; 
+            padding: 6px 12px; 
+            margin: 0 3px; 
+            background: #eee; 
+            color: #333; 
+            font-size: 12px; 
+            cursor: pointer; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        /* Стиль для ВЫДЕЛЕННОЙ кнопки языка */
+        .lang-select button.active {
+            background: var(--p);
+            color: white;
+            border-color: var(--p);
+            box-shadow: 0 2px 5px rgba(211, 47, 47, 0.3);
+        }
     </style>
 </head>
 <body>
 
     <div class="login-card">
         <div class="lang-select">
-            <button onclick="changeLang('ru')">RU</button>
-            <button onclick="changeLang('en')">EN</button>
-            <button onclick="changeLang('lt')">LT</button>
+            <button id="lang_ru" onclick="changeLang('ru')">RU</button>
+            <button id="lang_en" onclick="changeLang('en')">EN</button>
+            <button id="lang_lt" onclick="changeLang('lt')">LT</button>
         </div>
         
         <h2 id="log_title">Авторизация</h2>
@@ -46,11 +68,11 @@
         lt: { title: "Prisijungimas", u_ph: "Prisijungimo vardas", p_ph: "Slaptažodis", btn: "PRISIJUNGTI", err: "Neteisingas vardas arba slaptažodis!" }
     };
 
-    let curL = localStorage.getItem('dash_lang') || 'ru';
+    let curL = localStorage.getItem('lang') || 'ru';
 
     function changeLang(l) {
         curL = l;
-        localStorage.setItem('dash_lang', l);
+        localStorage.setItem('lang', l);
         updateUI();
     }
 
@@ -60,6 +82,18 @@
         document.getElementById('username').placeholder = t.u_ph;
         document.getElementById('password').placeholder = t.p_ph;
         document.getElementById('btn_enter').innerText = t.btn;
+
+        // КРАСИВОЕ ВЫДЕЛЕНИЕ КНОПОК ЯЗЫКА:
+        // Сначала убираем класс active у всех трех кнопок
+        document.getElementById('lang_ru').classList.remove('active');
+        document.getElementById('lang_en').classList.remove('active');
+        document.getElementById('lang_lt').classList.remove('active');
+
+        // Добавляем класс active только выбранной кнопке
+        const activeBtn = document.getElementById(`lang_${curL}`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
     }
 
     document.getElementById('loginForm').onsubmit = async (e) => {
@@ -80,15 +114,13 @@
                 return;
             }
 
-            // 1. ВОТ ЭТА СТРОЧКА ОБЯЗАТЕЛЬНО ДОЛЖНА БЫТЬ ТУТ:
             const userRole = String(data.t || '').toLowerCase().trim();
 
             localStorage.setItem('user', data.u);
             localStorage.setItem('role', userRole); 
             localStorage.setItem('name', data.name || data.u); 
-            localStorage.setItem('dash_lang', curL);
+            localStorage.setItem('lang', curL);
 
-            // 2. Все проверки ролей должны быть ВНУТРИ блока try:
             if (userRole === 'admin') {
                 window.location.href = 'superadmin.html';
             } else if (userRole === 'office') {
@@ -98,16 +130,15 @@
             } else if (userRole === 'runner') {
                 window.location.href = 'runner.html';
             } else {
-                // Если это линия (line) или любой другой аккаунт — пускаем на главную панель
                 window.location.href = 'index.html';
             }
 
         } catch (err) {
-            // Теперь сюда код попадет только если реально упал интернет
             console.error("Критическая ошибка:", err);
             alert("Connection error / Ошибка соединения");
         }
     };
+    
     updateUI();
 </script>
 </body>
