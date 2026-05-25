@@ -766,13 +766,19 @@ tray_sainsbury: "Sainsbury Black",
 
    // Функция отображения полей
 function toggleRunnerFields() {
-    const type = document.getElementById('runner_task_type').value;
-    
-    document.getElementById('runner_bin_color_block').style.display = type === 'bins' ? 'flex' : 'none';
-    document.getElementById('runner_box_type_block').style.display = type === 'boxes' ? 'flex' : 'none';
-    document.getElementById('runner_tray_number_block').style.display = type === 'trays' ? 'flex' : 'none';
-    document.getElementById('runner_tray_type_block').style.display = type === 'trays' ? 'flex' : 'none';
-    document.getElementById('runner_store_block').style.display = type === 'pickup' ? 'flex' : 'none';
+    const type = document.getElementById('runner_task_type')?.value;
+    const blocks = {
+        'runner_bin_color_block': type === 'bins',
+        'runner_box_type_block': type === 'boxes',
+        'runner_tray_number_block': type === 'trays',
+        'runner_tray_type_block': type === 'trays',
+        'runner_store_block': type === 'pickup'
+    };
+
+    for (const [id, isVisible] of Object.entries(blocks)) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = isVisible ? 'flex' : 'none';
+    }
 }
 
 async function sendRequestToRunner() {
