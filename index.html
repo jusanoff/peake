@@ -1210,7 +1210,9 @@
                 document.getElementById('line_requests_mobile').innerHTML = `<div style="text-align:center; color:var(--text-muted); padding: 20px;">${lang.no_requests}</div>`;
                 return;
             }
-
+// Внутри loadActiveRequests, после const { data: orders, error } = ...
+console.log("Всего загружено заказов:", orders.length);
+console.log("Заказы в списке:", orders.map(o => `${o.id}: ${o.status}`)); // Выведет ID и статус
             // Отрисовка таблицы
             const tableHtml = orders.map(o => {
                 const statusLwr = (o.status || 'new').toLowerCase();
