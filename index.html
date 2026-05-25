@@ -753,12 +753,19 @@ tray_sainsbury: "Sainsbury Black",
    function toggleRunnerFields() {
     const type = document.getElementById('runner_task_type').value;
     
-    // Проверьте, чтобы каждая строка заканчивалась точкой с запятой
-    document.getElementById('runner_bin_color_block').style.display = type === 'bins' ? 'flex' : 'none';
-    document.getElementById('runner_box_type_block').style.display = type === 'boxes' ? 'flex' : 'none';
-    document.getElementById('runner_tray_number_block').style.display = type === 'trays' ? 'flex' : 'none';
-    document.getElementById('runner_tray_type_block').style.display = type === 'trays' ? 'flex' : 'none'; // Добавили
-    document.getElementById('runner_store_block').style.display = type === 'pickup' ? 'flex' : 'none';
+    // Функция-помощник для безопасного скрытия/показа
+    const setDisplay = (id, condition) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.style.display = condition ? 'flex' : 'none';
+        }
+    };
+
+    setDisplay('runner_bin_color_block', type === 'bins');
+    setDisplay('runner_box_type_block', type === 'boxes');
+    setDisplay('runner_tray_number_block', type === 'trays');
+    setDisplay('runner_tray_type_block', type === 'trays'); // Теперь ошибки не будет, если элемента нет
+    setDisplay('runner_store_block', type === 'pickup');
 }
     function formatTime(isoString) {
         if (!isoString) return '-';
