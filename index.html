@@ -1188,18 +1188,20 @@
             const activeId = document.activeElement ? document.activeElement.id : null;
             let currentTypingValue = null;
             
+            // Сохраняем состояние поля, если пользователь сейчас что-то пишет
             if (activeId && (activeId.startsWith('inline_comment_') || activeId === 'stock_input')) {
                 const el = document.getElementById(activeId);
                 if(el) currentTypingValue = el.value;
             }
 
-            // Загружаем заказы с учетом всех статусов, включая завершенные и отмененные
+            // ЗАГРУЗКА: Убрали ограничение .in('status', [...]), 
+            // теперь загружаем всё, чтобы история была видна.
             const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
                 .or(`line.eq."${currentUser}",line.eq."${cachedLineFullName}"`)
                 .order('id', { ascending: false })
-                .limit(50); // Берем последние 50 записей
+                .limit(50); 
 
             if (error) throw error;
 
@@ -1209,11 +1211,12 @@
                 return;
             }
 
+            // Отрисовка таблицы
             const tableHtml = orders.map(o => {
                 const statusLwr = (o.status || 'new').toLowerCase();
                 
                 let actionHtml = '';
-                // Показываем кнопку возврата, если заказ "done" или "delivered"
+                // Логика кнопок в зависимости от статуса
                 if (statusLwr === 'new') {
                     actionHtml = `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>`;
                 } else if (statusLwr === 'delivered' || statusLwr === 'done') {
@@ -1221,9 +1224,9 @@
                 } else if (statusLwr === 'return_requested') {
                     actionHtml = `<span style="color:#ea580c; font-size:11px; font-weight:bold;">${lang.btn_return_req}</span>`;
                 } else if (statusLwr === 'returned') {
-                    actionHtml = `<span style="color:#2e7d32; font-size:11px; font-weight:bold;">✅ ${lang.btn_return}</span>`;
+                    actionHtml = `<span style="color:#2e7d32; font-size:11px; font-weight:bold;">✅ Возвращено</span>`;
                 } else {
-                    actionHtml = `<span style="color:var(--text-muted); font-size:11px;">${lang.progress}</span>`;
+                    actionHtml = `<span style="color:var(--text-muted); font-size:11px;">${lang.progress || 'In Progress'}</span>`;
                 }
 
                 const assigneeDisplay = o.is_runner 
@@ -1231,7 +1234,7 @@
                     : (o.driver_name ? '🚚 ' + o.driver_name : lang.waiting);
 
                 return `
-                <tr style="${statusLwr === 'canceled' ? 'opacity: 0.6; text-decoration: line-through;' : ''}">
+                <tr>
                     <td>#${o.id}</td>
                     <td>⏱ ${formatTime(o.created_at)}</td>
                     <td><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
@@ -1253,6 +1256,7 @@
                 </tr>`;
             }).join('');
 
+            // Отрисовка мобильных карточек
             const mobileHtml = orders.map(o => {
                 const statusLwr = (o.status || 'new').toLowerCase();
                 let actionButton = '';
@@ -1264,13 +1268,15 @@
                 } else if (statusLwr === 'return_requested') {
                     actionButton = `<span style="color:#ea580c; font-size:12px; font-weight:bold;">${lang.btn_return_req}</span>`;
                 } else if (statusLwr === 'returned') {
-                    actionButton = `<span style="color:#2e7d32; font-size:12px; font-weight:bold;">✅</span>`;
+                    actionButton = `<span style="color:#2e7d32; font-size:12px; font-weight:bold;">✅ Возвращено</span>`;
+                } else {
+                    actionButton = `<span style="color:var(--text-muted); font-size:12px;">${lang.progress || 'In Progress'}</span>`;
                 }
 
                 return `
-                <div class="request-card" style="${o.is_runner ? 'border-left: 4px solid var(--runner-accent);' : ''} ${statusLwr === 'canceled' ? 'opacity: 0.6;' : ''}">
+                <div class="request-card" style="${o.is_runner ? 'border-left: 4px solid var(--runner-accent);' : ''}">
                     <div class="card-row">
-                        <div><span style="font-weight:700; color:var(--accent);">#${o.id}</span> <span style="color:var(--text-muted); font-size:12px; margin-left:5px;">⏱ ${formatTime(o.created_at)}</span></div>
+                        <div><span style="font-weight:700; color:var(--accent);">#${o.id}</span></div>
                         <span class="status-badge ${statusLwr}">${translateDynamicText(o.status) || 'new'}</span>
                     </div>
                     <div class="card-row">
@@ -1288,17 +1294,20 @@
             document.getElementById('line_requests_body').innerHTML = tableHtml;
             document.getElementById('line_requests_mobile').innerHTML = mobileHtml;
 
-            // Восстановление фокуса после обновления
+            // Восстановление фокуса
             if (activeId) {
                 let targetInput = document.getElementById(activeId);
+                if (!targetInput && activeId.startsWith('inline_comment_')) {
+                    const rawId = activeId.replace('inline_comment_mob_', '').replace('inline_comment_', '');
+                    targetInput = document.getElementById(`inline_comment_${rawId}`) || document.getElementById(`inline_comment_mob_${rawId}`);
+                }
                 if (targetInput) {
                     targetInput.focus();
                     if (currentTypingValue !== null) targetInput.value = currentTypingValue;
                 }
             }
-        } catch (e) { console.error("Error loading requests:", e); }
+        } catch (e) { console.error("Error in loadActiveRequests:", e); }
     }
-
     fetchLineFullName();
     loadStockDropdown();
     setInterval(loadActiveRequests, 5000);
