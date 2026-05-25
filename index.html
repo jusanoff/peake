@@ -1087,6 +1087,31 @@
             return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         } catch (e) { return "-"; }
     }
+    // Функция для инициации возврата
+async function initiateReturn(orderId, maxQty) {
+    const qtyToReturn = prompt(`Линия заказала ${maxQty} паллет. Сколько хотите вернуть?`, maxQty);
+    
+    if (!qtyToReturn || isNaN(qtyToReturn) || qtyToReturn > maxQty) {
+        alert("Некорректное количество!");
+        return;
+    }
+
+    try {
+        const { error } = await clientDb
+            .from('orders')
+            .update({ 
+                status: 'return_requested', 
+                return_qty: parseInt(qtyToReturn) 
+            })
+            .eq('id', orderId);
+
+        if (error) throw error;
+        alert("Запрос на возврат отправлен водителю.");
+        loadActiveRequests(); // Обновляем список
+    } catch (e) {
+        alert("Ошибка: " + e.message);
+    }
+}
 
     async function loadActiveRequests() {
         try {
