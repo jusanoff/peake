@@ -1237,6 +1237,31 @@ if (statusLwr === 'new') {
             }
         } catch (e) {}
     }
+    async function initiateReturn(orderId, maxQty) {
+    const qtyToReturn = prompt(`Заказано: ${maxQty} паллет. Сколько возвращаем?`, maxQty);
+    
+    if (qtyToReturn === null) return; // Отмена
+    if (isNaN(qtyToReturn) || qtyToReturn <= 0 || qtyToReturn > maxQty) {
+        alert("Введите корректное число от 1 до " + maxQty);
+        return;
+    }
+
+    try {
+        const { error } = await clientDb
+            .from('orders')
+            .update({ 
+                status: 'return_requested', 
+                return_qty: parseInt(qtyToReturn) 
+            })
+            .eq('id', orderId);
+
+        if (error) throw error;
+        alert("Запрос на возврат отправлен водителю.");
+        loadActiveRequests(); // Обновляем таблицу
+    } catch (e) {
+        alert("Ошибка: " + e.message);
+    }
+}
 
     fetchLineFullName();
     loadStockDropdown();
