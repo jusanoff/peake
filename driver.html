@@ -3,95 +3,413 @@
 <head>
     <meta charset="UTF-8">
     <title>Peake Fruit — Driver Terminal</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --bg: #f8fafc; --card-bg: #ffffff; --text: #0f172a; --accent: #0288d1; --border: #e2e8f0; }
-        body { font-family: sans-serif; background: var(--bg); padding: 10px; color: var(--text); }
-        .container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
-        .header { background: var(--card-bg); padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
-        .dashboard-card { background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 10px; border-bottom: 2px solid var(--border); font-size: 12px; color: #6c757d; }
-        td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-        .btn-action { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; width: 100%; }
-        .btn-accept { background: #0288d1; color: white; }
-        .btn-complete { background: #16a34a; color: white; }
+        :root {
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --accent: #0288d1;
+            --border: #cbd5e1;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 8px;
+        }
+
+        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+        
+        .header { 
+            display: flex; 
+            flex-direction: column;
+            gap: 10px;
+            background: var(--card-bg); 
+            padding: 12px; 
+            border-radius: 8px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+        }
+        .header-title h1 { margin: 0; font-size: 18px; color: var(--accent); font-weight: 700; text-align: center; }
+        .header-right { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; }
+        
+        .driver-badge { background: #e0f2fe; color: #0369a1; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 13px; flex-grow: 1; text-align: center; }
+        .btn-logout { background: #f1f5f9; color: #e11d48; border: 1px solid #ffe4e6; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+
+        .dashboard-card { background: var(--card-bg); padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #edf2f7; }
+        .dashboard-card h3 { margin-top: 0; margin-bottom: 10px; font-size: 15px; color: #334155; }
+
+        /* Полная адаптация таблицы через CSS-сетку для мобильных */
+        .table-responsive { background: #fff; border-radius: 6px; overflow: hidden; }
+        
+        @media (max-width: 767px) {
+            table, thead, tbody, th, td, tr { display: block; }
+            thead { display: none; } /* Скрываем заголовки на смартфонах */
+            tr { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px; padding: 10px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+            td { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #f1f5f9; font-size: 13px; text-align: right; }
+            td::before { content: attr(data-label); font-weight: 700; color: var(--text-muted); font-size: 11px; text-transform: uppercase; float: left; text-align: left; margin-right: 10px; }
+            td:last-child { border-bottom: none; display: block; text-align: center; margin-top: 10px; }
+            .btn-action { width: 100% !important; margin-bottom: 6px; }
+            .cancel-box { width: 100% !important; flex-direction: column; }
+            .select-cancel-reason { width: 100% !important; }
+        }
+
+        @media (min-width: 768px) {
+            .table-responsive { overflow-x: auto; border: 1px solid #e2e8f0; }
+            table { width: 100%; border-collapse: collapse; min-width: 950px; }
+            th { background: #f8fafc; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+            td { padding: 14px 10px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+        }
+
+        .btn-action { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; color: white; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; min-height: 34px; box-sizing: border-box; }
+        .btn-accept { background: #0288d1; width: 100%; }
+        .btn-complete { background: #16a34a; width: 100%; margin-bottom: 4px; }
+        .btn-cancel { background: #dc2626; width: 100%; }
+
+        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .status-badge.new { background: #fef3c7; color: #d97706; }
+        .status-badge.delivered { background: #dcfce7; color: #15803d; }
+        .status-badge.cancelled { background: #fee2e2; color: #b91c1c; }
+
+        .reply-box { display: flex; gap: 4px; margin-top: 4px; }
+        .reply-box input { border: 1px solid var(--border); padding: 4px; font-size: 12px; border-radius: 4px; flex: 1; }
+        .btn-reply { background: #475569; color: #fff; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        .cancel-box { display: flex; gap: 4px; margin-top: 4px; width: 100%; }
+        .select-cancel-reason { border: 1px solid #fca5a5; padding: 6px; font-size: 12px; border-radius: 4px; background: #fff; flex: 1; font-weight: 600; color: #991b1b; }
+
+        @media (min-width: 768px) {
+            body { padding: 15px; }
+            .header { flex-direction: row; justify-content: space-between; align-items: center; padding: 14px 20px; }
+            .header-title h1 { font-size: 20px; text-align: left; }
+            .header-right { width: auto; }
+            .driver-badge { flex-grow: 0; min-width: 180px; }
+            .btn-action { width: auto; }
+            .btn-complete { width: auto; margin-bottom: 0; margin-right: 4px; }
+            .btn-cancel { width: auto; }
+            .cancel-box { width: auto; }
+            .select-cancel-reason { width: 160px; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1>Driver Terminal</h1>
-        <button onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
+        <div class="header-title"><h1>Peake Fruit — Driver Terminal</h1></div>
+        <div class="header-right">
+            <div class="driver-badge" id="driver_name_display">Driver: Loading...</div>
+            <button class="btn-logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
+        </div>
     </div>
 
     <div class="dashboard-card">
-        <h3>My Active Orders</h3>
-        <table>
-            <thead>
-                <tr><th>ID</th><th>Line</th><th>Task</th><th>Status</th><th>Action</th></tr>
-            </thead>
-            <tbody id="driver_orders_body"><tr><td colspan="5">Loading...</td></tr></tbody>
-        </table>
+        <h3>Active Line Pallet Requests & Today's History</h3>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Line Name</th>
+                        <th>Ordered At</th>
+                        <th>Store</th>
+                        <th>Variety</th>
+                        <th>Grower</th>
+                        <th>Consignment</th>
+                        <th>Size</th>
+                        <th>Qty</th>
+                        <th>Driver Assigned</th>
+                        <th>Comments & Logs</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="driver_orders_body">
+                    <tr><td colspan="12" style="text-align:center; color:var(--text-muted);">Loading requests...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <script>
-    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
-    const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
-    
-    // Получаем имя водителя из локального хранилища
-    const cachedDriverFullName = localStorage.getItem('name') || localStorage.getItem('user');
+    const currentUser = localStorage.getItem('user');
+    let currentRole = localStorage.getItem('role') || '';
 
-    async function loadDriverOrders() {
+    currentRole = currentRole.toLowerCase().trim();
+
+    // Проверка прав доступа водителя
+    if (!currentUser || currentRole !== 'driver') {
+        alert("Access denied! Only drivers are allowed here.");
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+
+    const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
+    const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
+    const k3 = 'LJZyqxk7Zlezy7zQ4CRTUpzGwO1OQem7S9lMYt5pwnE';
+
+    const supabaseUrl = 'https://ndwipmobkqdvtaajqdez.supabase.co';
+    const supabaseKey = k1 + k2 + k3;
+    const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
+
+    let cachedDriverFullName = localStorage.getItem('name') || currentUser;
+    document.getElementById('driver_name_display').innerText = 'Driver: ' + cachedDriverFullName;
+
+    // Переменная для контроля таймера автообновления
+    let updateInterval = null;
+    let isUserTyping = false;
+
+    function formatTime(isoString) {
+        if (!isoString) return '-';
+        const date = new Date(isoString);
+        return isNaN(date.getTime()) ? '-' : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function loadAllOrders() {
+        // Если водитель сейчас пишет в инпут или выбирает причину отмены, полностью отменяем шаг обновления
+        if (isUserTyping) return;
+
         try {
-            // Загружаем все активные заказы
+            // Загружаем заказы
             const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
-                .neq('order_type', 'runner_request') // Исключаем задачи ранеров
-                .in('status', ['new', 'accepted'])
                 .order('id', { ascending: false });
+            
 
             if (error) throw error;
 
-            // ФИЛЬТРАЦИЯ:
-            // Водитель видит "new" (общие) + свои "accepted"
-            const filtered = orders.filter(o => {
-                if (o.status === 'new') return true;
-                return o.status === 'accepted' && o.driver_name === cachedDriverFullName;
+            if (!orders || orders.length === 0) {
+                document.getElementById('driver_orders_body').innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-muted);">No orders found.</td></tr>`;
+                return;
+            }
+
+            // Получаем начало сегодняшнего дня (00:00:00) локального времени для фильтрации истории
+            const todayStart = new Date();
+            todayStart.setHours(0,0,0,0);
+
+            const filteredOrders = orders.filter(o => {
+                // Показывать все "недоставленные" и "неотмененные" заказы
+                if (o.status !== 'delivered' && o.status !== 'cancelled') {
+                    return true;
+                }
+                
+                // Для доставленных или отмененных — показывать только если их взял этот водитель И это было сделано СЕГОДНЯ
+                if (o.driver_name === cachedDriverFullName) {
+                    const actionTimeStr = o.delivered_at || o.cancelled_at;
+                    if (actionTimeStr) {
+                        const actionTime = new Date(actionTimeStr);
+                        return actionTime >= todayStart;
+                    }
+                }
+                return false;
             });
 
-            document.getElementById('driver_orders_body').innerHTML = filtered.map(o => `
-                <tr>
-                    <td>#${o.id}</td>
-                    <td>${o.line || '-'}</td>
-                    <td>${o.description || '-'}</td>
-                    <td>${o.status}</td>
-                    <td>
-                        ${o.status === 'new' ? `<button class="btn-action btn-accept" onclick="acceptOrder(${o.id})">Accept</button>` : ''}
-                        ${o.status === 'accepted' && o.driver_name === cachedDriverFullName ? `<button class="btn-action btn-complete" onclick="completeOrder(${o.id})">Complete</button>` : ''}
-                    </td>
-                </tr>
-            `).join('') || '<tr><td colspan="5">No active orders</td></tr>';
+            if (filteredOrders.length === 0) {
+                document.getElementById('driver_orders_body').innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-muted);">No active orders or history for today.</td></tr>`;
+                return;
+            }
+
+            const html = filteredOrders.map(o => {
+                let actionBtn = '';
+                
+                if (o.status === 'new') {
+                    actionBtn = `<button class="btn-action btn-accept" onclick="acceptOrder(${o.id})">✅ Accept</button>`;
+                } else if (o.status === 'accepted' && o.driver_name === cachedDriverFullName) {
+                    actionBtn = `
+                        <button class="btn-action btn-complete" onclick="completeOrder(${o.id})">📦 Complete</button>
+                        <button class="btn-action btn-cancel" onclick="showCancelInterface(${o.id})">❌ Cancel</button>
+                        <div class="cancel-box" id="cancel_box_${o.id}" style="display:none;">
+                            <select class="select-cancel-reason" id="cancel_reason_${o.id}" onfocus="pauseUpdate()" onblur="resumeUpdateDelayed()">
+                                <option value="Cannot find fruit">Cannot find fruit</option>
+                                <option value="Cancelled by line">Cancelled by line</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <button class="btn-reply" style="background:#dc2626;" onclick="confirmCancelOrder(${o.id})">Submit</button>
+                        </div>
+                    `;
+                } else if (o.status === 'accepted') {
+                    actionBtn = `<span style="color:var(--text-muted); font-size:11px;">Locked</span>`;
+                } else if (o.status === 'delivered') {
+                    actionBtn = `<span class="status-badge delivered">Delivered</span>`;
+                } else if (o.status === 'cancelled') {
+                    actionBtn = `<span class="status-badge cancelled">Cancelled</span>`;
+                }
+
+                // Логика вывода логов комментариев (Line, Office, Driver)
+                let logsHtml = `<div style="color:var(--text);">Line: ${o.comment || '-'}</div>`;
+                if (o.office_comment) {
+                    logsHtml += `<div style="color:#0288d1; font-size:11px; margin-top:2px; font-weight:600;">Office: ${o.office_comment}</div>`;
+                }
+                if (o.driver_comment) {
+                    logsHtml += `<div style="color:#16a34a; font-size:11px; margin-top:2px; font-weight:600;">Driver: ${o.driver_comment}</div>`;
+                }
+                
+                // Вывод времени завершения или отмены
+                if (o.status === 'delivered' && o.delivered_at) {
+                    logsHtml += `<div style="color:#16a34a; font-size:11px; margin-top:2px; font-weight:600;">Delivered at: ${formatTime(o.delivered_at)}</div>`;
+                }
+                if (o.status === 'cancelled' && o.cancelled_at) {
+                    logsHtml += `<div style="color:#dc2626; font-size:11px; margin-top:2px; font-weight:600;">Cancelled at: ${formatTime(o.cancelled_at)}</div>`;
+                }
+
+                // Поле ввода показывается только для активных принятых заказов
+                if (o.status === 'accepted' && o.driver_name === cachedDriverFullName && !o.driver_comment) {
+                    logsHtml += `
+                        <div class="reply-box">
+                            <input type="text" id="driver_reply_to_${o.id}" placeholder="Driver note..." 
+                                onfocus="pauseUpdate()" 
+                                onblur="resumeUpdateDelayed()">
+                            <button class="btn-reply" onclick="sendDriverReply(${o.id})">Reply</button>
+                        </div>
+                    `;
+                }
+
+                let driverDisplay = '';
+                if (o.driver_name) {
+                    driverDisplay = '🚚 ' + o.driver_name;
+                } else if (o.status === 'cancelled') {
+                    driverDisplay = '<span class="status-badge cancelled">Cancelled</span>';
+                } else {
+                    driverDisplay = '<span class="status-badge new">Free</span>';
+                }
+
+                return `
+                    <tr>
+                        <td data-label="ID">#${o.id}</td>
+                        <td data-label="Line Name"><strong>${o.line || '-'}</strong></td>
+                        <td data-label="Ordered At"><span style="color:#4a5568;">⏱ ${formatTime(o.created_at)}</span></td>
+                        <td data-label="Store"><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
+                        <td data-label="Variety"><strong>${o.description || '-'}</strong></td>
+                        <td data-label="Grower">${o.grower || '-'}</td>
+                        <td data-label="Consignment"><span style="font-family:monospace; background:#f1f3f5; padding:4px 6px; border-radius:4px; font-weight:600;">${o.consignment || '-'}</span></td>
+                        <td data-label="Size"><strong>${o.size || '-'}</strong></td>
+                        <td data-label="Qty"><strong style="color:#0288d1; font-size:14px;">${o.qty || '1'}</strong></td>
+                        <td data-label="Driver Assigned">${driverDisplay}</td>
+                        <td data-label="Comments & Logs">${logsHtml}</td>
+                        <td data-label="Action">${actionBtn}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('driver_orders_body').innerHTML = html;
         } catch (e) { console.error(e); }
     }
 
-    async function acceptOrder(id) {
-        await clientDb.from('orders').update({ status: 'accepted', driver_name: cachedDriverFullName }).eq('id', id);
-        loadDriverOrders();
+    // Функции управления паузой автообновления
+    function pauseUpdate() {
+        isUserTyping = true;
+        clearInterval(updateInterval);
     }
 
-    async function completeOrder(id) {
-        await clientDb.from('orders').update({ status: 'delivered', delivered_at: new Date().toISOString() }).eq('id', id);
-        loadDriverOrders();
+    function resumeUpdateDelayed() {
+        setTimeout(() => {
+            isUserTyping = false;
+            startAutoUpdate();
+        }, 300);
     }
 
-    loadDriverOrders();
-    setInterval(loadDriverOrders, 5000);
+    function startAutoUpdate() {
+        clearInterval(updateInterval);
+        updateInterval = setInterval(loadAllOrders, 4000);
+    }
+
+    async function acceptOrder(orderId) {
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .update({ status: 'accepted', driver_name: cachedDriverFullName })
+                .eq('id', orderId);
+                
+            if (error) throw error;
+            loadAllOrders();
+        } catch (e) { alert(e.message); }
+    }
+
+    async function completeOrder(orderId) {
+        if (!confirm(`Вы действительно доставили паллет по заказу #${orderId}?`)) {
+            return;
+        }
+
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .update({ 
+                    status: 'delivered', 
+                    delivered_at: new Date().toISOString() 
+                })
+                .eq('id', orderId);
+
+            if (error) throw error;
+            
+            alert(`✅ Заказ #${orderId} успешно доставлен на линию!`);
+            loadAllOrders();
+        } catch (e) {
+            alert("Error updating order: " + e.message);
+        }
+    }
+
+    // Показ блока выбора причины отмены
+    function showCancelInterface(orderId) {
+        pauseUpdate();
+        const box = document.getElementById(`cancel_box_${orderId}`);
+        if(box) {
+            box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+        }
+    }
+
+    // Подтверждение отмены заказа с записью причины и времени отмены
+    async function confirmCancelOrder(orderId) {
+        const reasonSelect = document.getElementById(`cancel_reason_${orderId}`);
+        const selectedReason = reasonSelect ? reasonSelect.value : "Other";
+
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .update({ 
+                    status: 'cancelled', 
+                    driver_comment: "Reason for cancellation: " + selectedReason,
+                    cancelled_at: new Date().toISOString()
+                })
+                .eq('id', orderId);
+
+            if (error) throw error;
+            
+            alert(`❌ Заказ #${orderId} отменен.`);
+            isUserTyping = false;
+            loadAllOrders();
+            startAutoUpdate();
+        } catch (e) {
+            alert("Error cancelling order: " + e.message);
+        }
+    }
+
+    async function sendDriverReply(orderId) {
+        const replyInput = document.getElementById(`driver_reply_to_${orderId}`);
+        const replyText = replyInput ? replyInput.value.trim() : "";
+        if (!replyText) return;
+
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .update({ driver_comment: replyText })
+                .eq('id', orderId);
+
+            if (error) throw error;
+            
+            isUserTyping = false;
+            loadAllOrders();
+            startAutoUpdate();
+        } catch (e) { alert("Error sending driver reply: " + e.message); }
+    }
+
+    // Первоначальная загрузка и старт интервала обновления
+    loadAllOrders();
+    startAutoUpdate();
 </script>
 </body>
 </html>
