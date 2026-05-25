@@ -175,10 +175,11 @@
 
         try {
             // Загружаем заказы
-            const { data: orders, error } = await clientDb
-                .from('orders')
-                .select('*')
-                .order('id', { ascending: false });
+           const { data: orders, error } = await clientDb
+    .from('orders')
+    .select('*')
+    .eq('target_role', 'driver') // Ограничение: только драйвер
+    .order('id', { ascending: false });
             
 
             if (error) throw error;
