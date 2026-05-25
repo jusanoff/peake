@@ -16,6 +16,7 @@
             --border: #e2e8f0;
             --status-new: #ef6c00;
             --status-done: #2e7d32;
+            --p: #d32f2f; /* Переменная для подсветки кнопок языка */
         }
 
         body {
@@ -46,6 +47,30 @@
         }
         .header h1 { margin: 0; font-size: 18px; color: var(--accent); font-weight: 700; }
         
+        /* Стили для кнопок переключения языков */
+        .lang-select { text-align: center; display: flex; gap: 5px; }
+        .lang-select button { 
+            width: auto; 
+            display: inline-block; 
+            padding: 6px 12px; 
+            background: #eee; 
+            color: #333; 
+            font-size: 12px; 
+            cursor: pointer; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        .lang-select button.active {
+            background: var(--p);
+            color: white;
+            border-color: var(--p);
+            box-shadow: 0 2px 5px rgba(211, 47, 47, 0.3);
+        }
+
+        .header-right { display: flex; align-items: center; gap: 15px; }
+
         .office-ctrl-panel {
             display: flex;
             gap: 15px;
@@ -182,74 +207,82 @@
 
 <div class="container">
     <div class="header">
-        <h1>Peake Fruit — Office Control Tower</h1>
-        <button class="btn-logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
+        <h1 id="main_title">Peake Fruit — Office Control Tower</h1>
+        <div class="header-right">
+            <div class="lang-select">
+                <button id="lang_ru" onclick="changeLang('ru')">RU</button>
+                <button id="lang_en" onclick="changeLang('en')">EN</button>
+                <button id="lang_lt" onclick="changeLang('lt')">LT</button>
+            </div>
+            <button class="btn-logout" id="btn_logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
+        </div>
     </div>
 
     <div class="office-ctrl-panel">
-        <h3>Morning Stock Excel Upload:</h3>
+        <h3 id="label_upload">Morning Stock Excel Upload:</h3>
         <div class="excel-upload-box">
             <div class="file-custom-label">
-                <span class="file-custom-btn">Choose File</span>
+                <span class="file-custom-btn" id="btn_choose_file">Choose File</span>
                 <span class="file-custom-text" id="file_name_text">No file chosen</span>
             </div>
-            <input type="file" id="excel_file" accept=".xlsx, .xls, .csv" onchange="document.getElementById('file_name_text').innerText = this.files[0] ? this.files[0].name : 'No file chosen'">
+            <input type="file" id="excel_file" accept=".xlsx, .xls, .csv" onchange="document.getElementById('file_name_text').innerText = this.files[0] ? this.files[0].name : (localStorage.getItem('lang') === 'ru' ? 'Файл не выбран' : (localStorage.getItem('lang') === 'lt' ? 'Nepasirinktas failas' : 'No file chosen'))">
         </div>
-        <button class="btn-excel" onclick="uploadMorningExcel()">Clear & Upload Excel</button>
+        <button class="btn-excel" id="btn_upload_action" onclick="uploadMorningExcel()">Clear & Upload Excel</button>
         <div id="upload_status"></div>
     </div>
 
     <div class="dashboard-card">
         <div class="pipeline-header">
-            <h2>Live Production Orders Pipeline</h2>
-            <button class="btn-excel" onclick="exportOrdersToExcel()">📊 Export Logs to Excel</button>
+            <h2 id="title_pipeline">Live Production Orders Pipeline</h2>
+            <button class="btn-excel" id="btn_export" onclick="exportOrdersToExcel()">规格 Export Logs to Excel</button>
         </div>
         <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Ordered At</th>
-                        <th>Line Name</th>
-                        <th>Item Description</th>
-                        <th>Grower / Supplier</th>
-                        <th>Consignment</th>
-                        <th>Origin</th>
-                        <th>Size</th>
-                        <th>Available</th>
-                        <th>Store</th>
-                        <th>Qty</th>
-                        <th>Comments & Logs</th>
-                        <th>Driver</th>
-                        <th>Delivered At</th>
-                        <th>Status</th>
+                        <th id="th_ordered_at">Ordered At</th>
+                        <th id="th_line_name">Line Name</th>
+                        <th id="th_item_desc">Item Description</th>
+                        <th id="th_grower">Grower / Supplier</th>
+                        <th id="th_consignment">Consignment</th>
+                        <th id="th_origin">Origin</th>
+                        <th id="th_size">Size</th>
+                        <th id="th_available">Available</th>
+                        <th id="th_store">Store</th>
+                        <th id="th_qty">Qty</th>
+                        <th id="th_comments">Comments & Logs</th>
+                        <th id="th_driver">Driver</th>
+                        <th id="th_delivered_at">Delivered At</th>
+                        <th id="th_status">Status</th>
                     </tr>
                 </thead>
                 <tbody id="office_orders_body">
-                    <tr><td colspan="15" style="text-align:center; color:var(--text-muted);">Loading live orders...</td></tr>
+                    <tr><td colspan="15" style="text-align:center; color:var(--text-muted);" id="td_loading_orders">Loading live orders...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
     <div class="dashboard-card">
-        <h2>Current Morning Stock Base (Live Table)</h2>
+        <h2 id="title_stock_base">Current Morning Stock Base (Live Table)</h2>
         <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
-                        <th>Consignment (A)</th>
-                        <th>GrowerPro Ref (B)</th>
-                        <th>Variety (J)</th> <th>Grower / Supplier (C)</th>
-                        <th>Country of Origin (D)</th>
-                        <th>Size (E)</th>
-                        <th>Count (F)</th>
-                        <th>Store (H)</th>
-                        <th>Available Stock (O)</th>
+                        <th id="th_s_cons">Consignment (A)</th>
+                        <th id="th_s_ref">GrowerPro Ref (B)</th>
+                        <th id="th_s_var">Variety (J)</th> 
+                        <th id="th_s_grower">Grower / Supplier (C)</th>
+                        <th id="th_s_origin">Country of Origin (D)</th>
+                        <th id="th_s_size">Size (E)</th>
+                        <th id="th_s_count">Count (F)</th>
+                        <th id="th_s_store">Store (H)</th>
+                        <th id="th_s_avail">Available Stock (O)</th>
                     </tr>
                 </thead>
                 <tbody id="stock_base_body">
-                    <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Loading stock data...</td></tr>
+                    <tr><td colspan="9" style="text-align:center; color:var(--text-muted);" id="td_loading_stock">Loading stock data...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -276,6 +309,141 @@
 
     let currentOrdersData = [];
 
+    // ОБЪЕКТ ПЕРЕВОДОВ ИНТЕРФЕЙСА ОФИСА
+    const i18n = {
+        ru: {
+            main_title: "Peake Fruit — Диспетчерская Офиса",
+            btn_logout: "Выйти",
+            label_upload: "Загрузка Excel с утренним стоком:",
+            btn_choose_file: "Выбрать файл",
+            no_file: "Файл не выбран",
+            btn_upload_action: "Очистить и загрузить Excel",
+            title_pipeline: "Текущий поток производственных заявок",
+            btn_export: "📊 Экспорт логов в Excel",
+            title_stock_base: "Актуальная база утреннего стока (Живая таблица)",
+            loading_orders: "Загрузка живых заявок...",
+            loading_stock: "Загрузка данных стока...",
+            empty_stock: "База данных стока пуста.",
+            waiting: "Ожидание...",
+            th_ordered_at: "Заказано в", th_line_name: "Линия", th_item_desc: "Описание товара", th_grower: "Производитель / Поставщик",
+            th_consignment: "Консигнация", th_origin: "Происхождение", th_size: "Размер", th_available: "Доступно",
+            th_store: "Склад", th_qty: "Кол-во", th_comments: "Комментарии и логи", th_driver: "Водитель",
+            th_delivered_at: "Доставлено в", th_status: "Статус",
+            th_s_cons: "Консигнация (A)", th_s_ref: "GrowerPro Ref (B)", th_s_var: "Сорт (J)", th_s_grower: "Поставщик (C)",
+            th_s_origin: "Страна (D)", th_s_size: "Размер (E)", th_s_count: "Кол-во (F)", th_s_store: "Склад (H)", th_s_avail: "Доступный Сток (O)",
+            office_note_ph: "Заметка офиса...", reply_btn: "Ответить"
+        },
+        en: {
+            main_title: "Peake Fruit — Office Control Tower",
+            btn_logout: "Log Out",
+            label_upload: "Morning Stock Excel Upload:",
+            btn_choose_file: "Choose File",
+            no_file: "No file chosen",
+            btn_upload_action: "Clear & Upload Excel",
+            title_pipeline: "Live Production Orders Pipeline",
+            btn_export: "📊 Export Logs to Excel",
+            title_stock_base: "Current Morning Stock Base (Live Table)",
+            loading_orders: "Loading live orders...",
+            loading_stock: "Loading stock data...",
+            empty_stock: "Stock database is empty.",
+            waiting: "Waiting...",
+            th_ordered_at: "Ordered At", th_line_name: "Line Name", th_item_desc: "Item Description", th_grower: "Grower / Supplier",
+            th_consignment: "Consignment", th_origin: "Origin", th_size: "Size", th_available: "Available",
+            th_store: "Store", th_qty: "Qty", th_comments: "Comments & Logs", th_driver: "Driver",
+            th_delivered_at: "Delivered At", th_status: "Status",
+            th_s_cons: "Consignment (A)", th_s_ref: "GrowerPro Ref (B)", th_s_var: "Variety (J)", th_s_grower: "Grower / Supplier (C)",
+            th_s_origin: "Country of Origin (D)", th_s_size: "Size (E)", th_s_count: "Count (F)", th_s_store: "Store (H)", th_s_avail: "Available Stock (O)",
+            office_note_ph: "Office note...", reply_btn: "Reply"
+        },
+        lt: {
+            main_title: "Peake Fruit — Biuro Valdymo Bokštas",
+            btn_logout: "Atsijungti",
+            label_upload: "Rytinio likučio Excel įkėlimas:",
+            btn_choose_file: "Pasirinkti failą",
+            no_file: "Nepasirinktas failas",
+            btn_upload_action: "Išvalyti ir įkelti Excel",
+            title_pipeline: "Gamybos užsakymų srautas gyvai",
+            btn_export: "📊 Eksportuoti logus į Excel",
+            title_stock_base: "Aktuali rytinio likučio bazė (Gyva lentelė)",
+            loading_orders: "Kraunami užsakymai...",
+            loading_stock: "Kraunami atsargų duomenys...",
+            empty_stock: "Atsargų duomenų bazė tuščia.",
+            waiting: "Laukiama...",
+            th_ordered_at: "Užsakyta", th_line_name: "Linijos pavadinimas", th_item_desc: "Prekės aprašymas", th_grower: "Augintojas / Tiekėjas",
+            th_consignment: "Konsignacija", th_origin: "Kilmė", th_size: "Dydis", th_available: "Prieinama",
+            th_store: "Sandėlis", th_qty: "Kiekis", th_comments: "Komentarai ir logai", th_driver: "Vairuotojas",
+            th_delivered_at: "Pristatyta", th_status: "Statusas",
+            th_s_cons: "Konsignacija (A)", th_s_ref: "GrowerPro Ref (B)", th_s_var: "Veislė (J)", th_s_grower: "Tiekėjas (C)",
+            th_s_origin: "Kilmės šalis (D)", th_s_size: "Dydis (E)", th_s_count: "Kiekis (F)", th_s_store: "Sandėlis (H)", th_s_avail: "Turimas likutis (O)",
+            office_note_ph: "Biuro pastaba...", reply_btn: "Atsakyti"
+        }
+    };
+
+    let curL = localStorage.getItem('lang') || 'ru';
+
+    function changeLang(l) {
+        curL = l;
+        localStorage.setItem('lang', l);
+        updateUI();
+    }
+
+    function updateUI() {
+        const t = i18n[curL] || i18n.en;
+        
+        // Текстовые элементы шапки и панели загрузки
+        document.getElementById('main_title').innerText = t.main_title;
+        document.getElementById('btn_logout').innerText = t.btn_logout;
+        document.getElementById('label_upload').innerText = t.label_upload;
+        document.getElementById('btn_choose_file').innerText = t.btn_choose_file;
+        if (document.getElementById('excel_file').files.length === 0) {
+            document.getElementById('file_name_text').innerText = t.no_file;
+        }
+        document.getElementById('btn_upload_action').innerText = t.btn_upload_action;
+        document.getElementById('title_pipeline').innerText = t.title_pipeline;
+        document.getElementById('btn_export').innerText = t.btn_export;
+        document.getElementById('title_stock_base').innerText = t.title_stock_base;
+
+        // Заголовки таблицы заявок
+        document.getElementById('th_ordered_at').innerText = t.th_ordered_at;
+        document.getElementById('th_line_name').innerText = t.th_line_name;
+        document.getElementById('th_item_desc').innerText = t.th_item_desc;
+        document.getElementById('th_grower').innerText = t.th_grower;
+        document.getElementById('th_consignment').innerText = t.th_consignment;
+        document.getElementById('th_origin').innerText = t.th_origin;
+        document.getElementById('th_size').innerText = t.th_size;
+        document.getElementById('th_available').innerText = t.th_available;
+        document.getElementById('th_store').innerText = t.th_store;
+        document.getElementById('th_qty').innerText = t.th_qty;
+        document.getElementById('th_comments').innerText = t.th_comments;
+        document.getElementById('th_driver').innerText = t.th_driver;
+        document.getElementById('th_delivered_at').innerText = t.th_delivered_at;
+        document.getElementById('th_status').innerText = t.th_status;
+
+        // Заголовки таблицы стока
+        document.getElementById('th_s_cons').innerText = t.th_s_cons;
+        document.getElementById('th_s_ref').innerText = t.th_s_ref;
+        document.getElementById('th_s_var').innerText = t.th_s_var;
+        document.getElementById('th_s_grower').innerText = t.th_s_grower;
+        document.getElementById('th_s_origin').innerText = t.th_s_origin;
+        document.getElementById('th_s_size').innerText = t.th_s_size;
+        document.getElementById('th_s_count').innerText = t.th_s_count;
+        document.getElementById('th_s_store').innerText = t.th_s_store;
+        document.getElementById('th_s_avail').innerText = t.th_s_avail;
+
+        // Плейсхолдеры загрузки в пустых таблицах
+        const tOrders = document.getElementById('td_loading_orders');
+        if (tOrders) tOrders.innerText = t.loading_orders;
+        const tStock = document.getElementById('td_loading_stock');
+        if (tStock) tStock.innerText = t.loading_stock;
+
+        // Подсветка кнопок выбора языков
+        document.getElementById('lang_ru').classList.remove('active');
+        document.getElementById('lang_en').classList.remove('active');
+        document.getElementById('lang_lt').classList.remove('active');
+        const activeBtn = document.getElementById(`lang_${curL}`);
+        if (activeBtn) activeBtn.classList.add('active');
+    }
+
     function formatTime(isoString) {
         if (!isoString) return '-';
         const date = new Date(isoString);
@@ -287,12 +455,12 @@
         const statusDiv = document.getElementById('upload_status');
         
         if (!fileInput.files || !fileInput.files[0]) {
-            alert("Please select an Excel file first!");
+            alert(curL === 'ru' ? "Пожалуйста, сначала выберите файл Excel!" : (curL === 'lt' ? "Prašome pirmiausia pasirinkti Excel failą!" : "Please select an Excel file first!"));
             return;
         }
 
         statusDiv.style.color = "#ef6c00"; 
-        statusDiv.innerHTML = "⏳ Reading exact columns from Daily Stock Sheet...";
+        statusDiv.innerHTML = curL === 'ru' ? "⏳ Чтение столбцов из Daily Stock Sheet..." : (curL === 'lt' ? "⏳ Skaitomi stulpeliai iš Daily Stock Sheet..." : "⏳ Reading exact columns from Daily Stock Sheet...");
 
         const file = fileInput.files[0];
         const reader = new FileReader();
@@ -313,7 +481,7 @@
                 const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
                 
                 if (!rawRows || rawRows.length === 0) {
-                    throw new Error("Excel sheet is empty.");
+                    throw new Error(curL === 'ru' ? "Файл Excel пуст." : (curL === 'lt' ? "Excel failas tuščias." : "Excel sheet is empty."));
                 }
 
                 const stockRows = [];
@@ -361,10 +529,10 @@
                 }
 
                 if (stockRows.length === 0) {
-                    throw new Error("No data rows matched.");
+                    throw new Error(curL === 'ru' ? "Нет строк, подходящих по критериям." : (curL === 'lt' ? "Nerasta atitinkančių eilučių duomenų." : "No data rows matched."));
                 }
 
-                statusDiv.innerHTML = `⚙️ Processing ${stockRows.length} rows. Saving to Supabase...`;
+                statusDiv.innerHTML = curL === 'ru' ? `⚙️ Обработка ${stockRows.length} строк. Сохранение в Supabase...` : (curL === 'lt' ? `⚙️ Apdorojama ${stockRows.length} eilučių. Įrašoma į Supabase...` : `⚙️ Processing ${stockRows.length} rows. Saving to Supabase...`);
                 
                 const { error: deleteError } = await clientDb.from('stock').delete().neq('id', 0);
                 if (deleteError) throw deleteError;
@@ -373,9 +541,9 @@
                 if (insertError) throw insertError;
 
                 statusDiv.style.color = "#2e7d32";
-                statusDiv.innerHTML = `✅ Successfully imported ${stockRows.length} rows into Supabase!`;
+                statusDiv.innerHTML = curL === 'ru' ? `✅ Успешно импортировано ${stockRows.length} строк в Supabase!` : (curL === 'lt' ? `✅ Sėkmingai importuota ${stockRows.length} eilučių į Supabase!` : `✅ Successfully imported ${stockRows.length} rows into Supabase!`);
                 fileInput.value = '';
-                document.getElementById('file_name_text').innerText = 'No file chosen';
+                document.getElementById('file_name_text').innerText = i18n[curL].no_file;
                 
                 loadStockTable();
                 setTimeout(() => { statusDiv.innerText = ''; }, 6000);
@@ -389,12 +557,13 @@
     }
 
     async function loadStockTable() {
+        const t = i18n[curL] || i18n.en;
         try {
             const { data: stock, error } = await clientDb.from('stock').select('*').order('id', { ascending: true });
             if (error) throw error;
 
             if (!stock || stock.length === 0) {
-                document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Stock database is empty.</td></tr>`;
+                document.getElementById('stock_base_body').innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">${t.empty_stock}</td></tr>`;
                 return;
             }
 
@@ -415,15 +584,15 @@
     }
 
     async function loadOfficeDashboard() {
+        const t = i18n[curL] || i18n.en;
         try {
-            // Перед обновлением проверяем, активен ли какой-то инпут комментариев
             const activeElement = document.activeElement;
             let focusedOrderId = null;
             let savedTypedValue = "";
 
             if (activeElement && activeElement.tagName === 'INPUT' && activeElement.id.startsWith('office_reply_to_')) {
                 focusedOrderId = parseInt(activeElement.id.replace('office_reply_to_', ''));
-                savedTypedValue = activeElement.value; // сохраняем текст, который менеджер пишет прямо сейчас
+                savedTypedValue = activeElement.value;
             }
 
             const { data: orders, error } = await clientDb.from('orders').select('*').order('id', { ascending: false }).limit(5);
@@ -432,18 +601,16 @@
             currentOrdersData = orders || [];
 
             const tableBody = document.getElementById('office_orders_body');
-            tableBody.innerHTML = ""; // очищаем перед обновлением
+            tableBody.innerHTML = ""; 
 
             orders.forEach(o => {
                 const tr = document.createElement('tr');
 
-                // Генерация цепочки логов в ячейке комментариев
                 let commentHtml = `<div style="margin-bottom: 2px; color: var(--text);">Line: ${o.comment || '-'}</div>`;
                 if (o.driver_comment) {
                     commentHtml += `<div style="color:#2e7d32; font-weight:600; margin-bottom: 2px;">Driver: ${o.driver_comment}</div>`;
                 }
                 
-                // Создаем блок для ввода или вывода ответа офиса
                 let officeSectionHtml = "";
                 if (o.office_comment) {
                     officeSectionHtml = `<div style="color:#0288d1; font-weight:600;">Office: ${o.office_comment}</div>`;
@@ -462,15 +629,13 @@
                     <td>${o.store || '-'}</td>
                     <td><strong>${o.qty || '-'}</strong></td>
                     <td id="comment_cell_${o.id}">${commentHtml}</td>
-                    <td>${o.driver_name ? '🚚 ' + o.driver_name : '<span style="color:var(--text-muted);">Waiting...</span>'}</td>
+                    <td>${o.driver_name ? '🚚 ' + o.driver_name : `<span style="color:var(--text-muted);">${t.waiting}</span>`}</td>
                     <td><span style="color:var(--status-done); font-weight:bold;">${o.delivered_at ? formatTime(o.delivered_at) : '-'}</span></td>
                     <td><span class="status-badge new">${o.status || 'new'}</span></td>
                 `;
 
-                // Вставляем сгенерированную строку в DOM
                 tableBody.appendChild(tr);
 
-                // Оперируем блоком ввода ответа отдельно, чтобы сохранить фокус
                 const commentCell = document.getElementById(`comment_cell_${o.id}`);
                 if (o.office_comment) {
                     commentCell.innerHTML += officeSectionHtml;
@@ -481,9 +646,8 @@
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.id = `office_reply_to_${o.id}`;
-                    input.placeholder = 'Office note...';
+                    input.placeholder = t.office_note_ph;
 
-                    // Если менеджер писал в это поле до обновления — возвращаем текст и фокус
                     if (focusedOrderId === o.id) {
                         input.value = savedTypedValue;
                         setTimeout(() => input.focus(), 1);
@@ -491,7 +655,7 @@
 
                     const sendBtn = document.createElement('button');
                     sendBtn.className = 'btn-reply';
-                    sendBtn.innerText = 'Reply';
+                    sendBtn.innerText = t.reply_btn;
                     sendBtn.onclick = () => sendOfficeReply(o.id);
 
                     replyBox.appendChild(input);
@@ -555,11 +719,14 @@
         XLSX.writeFile(workbook, `Peake_Fruit_Office_Report_${dateStr}.xlsx`);
     }
 
+    // Инициализация интерфейса
+    updateUI();
+
     // Первичная загрузка при открытии страницы
     loadOfficeDashboard();
     loadStockTable();
 
-    // Автообновление данных каждые 5 секунд
+    // Автообновление данных каждые 5 секунд с учетом выбранного языка
     setInterval(() => {
         loadOfficeDashboard();
         loadStockTable();
