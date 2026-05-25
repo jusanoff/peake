@@ -390,37 +390,37 @@
         <div class="grid-inputs">
             <div class="input-group">
                 <label id="lbl_desc">Description / Fruit</label>
-                <input type="text" id="inp_description" placeholder="">
+                <input type="text" id="inp_description" placeholder="e.g. Gala Apples 18kg">
             </div>
             <div class="input-group">
                 <label id="lbl_cons">Consignment (Cons)</label>
-                <input type="text" id="inp_consignment" placeholder="">
+                <input type="text" id="inp_consignment" placeholder="e.g. C25014">
             </div>
             <div class="input-group">
                 <label id="lbl_store">Store / Location</label>
-                <input type="text" id="inp_store" placeholder="">
+                <input type="text" id="inp_store" placeholder="e.g. Store 4">
             </div>
             <div class="input-group">
                 <label id="lbl_grower">Grower</label>
-                <input type="text" id="inp_grower" placeholder="">
+                <input type="text" id="inp_grower" placeholder="e.g. John Doe Farms">
             </div>
             <div class="input-group">
                 <label id="lbl_origin">Origin</label>
-                <input type="text" id="inp_origin" placeholder="">
+                <input type="text" id="inp_origin" placeholder="e.g. UK">
             </div>
             <div class="input-group">
                 <label id="lbl_size">Size</label>
-                <input type="text" id="inp_size" placeholder="">
+                <input type="text" id="inp_size" placeholder="e.g. 75-80mm">
             </div>
             <div class="input-group">
                 <label id="lbl_count">Count</label>
-                <input type="text" id="inp_count" placeholder="">
+                <input type="text" id="inp_count" placeholder="e.g. 50">
             </div>
         </div>
 
         <div class="input-group" style="margin-top: 15px;">
             <label id="lbl_comment">Comment</label>
-            <input type="text" id="inp_comment" placeholder="">
+            <input type="text" id="inp_comment" placeholder="e.g. Need urgently for Line 1">
         </div>
 
         <div class="qty-section">
@@ -473,12 +473,12 @@
 
         <div class="input-group" id="runner_tray_number_block" style="display:none; margin-top: 15px;">
             <label id="lbl_tray_number" style="color:var(--runner-accent); font-weight:700;">Tray Number *</label>
-            <input type="text" id="runner_tray_number" placeholder="">
+            <input type="text" id="runner_tray_number" placeholder="e.g. 12345">
         </div>
 
         <div class="input-group" id="runner_store_block" style="display:none; margin-top: 15px;">
             <label style="color: red; font-weight:700;" id="lbl_target_store">Target Store *</label>
-            <input type="text" id="runner_target_store" placeholder="">
+            <input type="text" id="runner_target_store" placeholder="e.g. Store 10">
         </div>
 
         <div class="input-group" style="margin-top: 15px;">
@@ -670,7 +670,6 @@
         });
     }
 
-    // Обновляем все текстовые поля
     setText('txt_main_title', lang.main_title);
     setText('txt_sub_title', lang.sub_title);
     setText('btn_logout', lang.logout);
@@ -747,7 +746,6 @@
 
     applyLocalization();
     
-    // Изначально пишем краткое имя из localStorage, пока идет загрузка полного имени
     document.getElementById('line_name_display').innerText = `${lang.line_badge}: ${currentUser}`;
 
     const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
@@ -761,30 +759,25 @@
     let stockItemsGlobal = [];
     let cachedLineFullName = currentUser;
 
-    // ДОБАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ОПРЕДЕЛЕНИЯ ПОЛНОГО ИМЕНИ
     async function fetchLineFullName() {
         try {
-            // Ищем красивое имя в таблице профилей пользователей по логину (username == currentUser)
             const { data, error } = await clientDb
                 .from('users') 
-                .select('full_name') // или то поле, где хранится "Hand Line1"
+                .select('full_name') 
                 .eq('username', currentUser)
                 .single();
                 
             if (!error && data && data.full_name) {
                 cachedLineFullName = data.full_name;
             } else {
-                // Локальный фолбек на случай отсутствия связи или таблицы users
                 if (currentUser === 'hl1') cachedLineFullName = "Hand Line1";
             }
         } catch (e) {
             if (currentUser === 'hl1') cachedLineFullName = "Hand Line1";
         }
-        // Обновляем плашку в шапке красивым полным именем
         const badgeEl = document.getElementById('line_name_display');
         if (badgeEl) badgeEl.innerText = `${lang.line_badge}: ${cachedLineFullName}`;
         
-        // После получения полного имени запускаем чтение активных заявок
         loadActiveRequests();
     }
 
@@ -1046,7 +1039,6 @@
                 if(el) currentTypingValue = el.value;
             }
 
-            // Запрашиваем ордера как для hl1, так и для "Hand Line1" во избежание пропадания старых записей
             const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
@@ -1149,7 +1141,6 @@
         } catch (e) {}
     }
 
-    // Запускаем определение полного имени (внутри него вызовется loadActiveRequests)
     fetchLineFullName();
     loadStockDropdown();
     setInterval(loadActiveRequests, 5000);
