@@ -919,9 +919,14 @@ tray_sainsbury: "Sainsbury Black",
             const boxLabel = boxSelect.options[boxSelect.selectedIndex].text;
             finalDescription = `📦 ${lang.task_txt_boxes} (${boxLabel}) x${qty}`;
         } else if (type === 'trays') {
-            const trayNum = document.getElementById('runner_tray_number').value.trim();
-            if (!trayNum) { alert(lang.alert_tray_req); return; }
-            finalDescription = `📥 ${lang.task_txt_trays} (№ ${trayNum}) x${qty}`;
+    const trayNum = document.getElementById('runner_tray_number').value.trim();
+    const trayType = document.getElementById('runner_tray_type').value; // Берем тип
+    
+    if (!trayNum) { alert(lang.alert_tray_req); return; }
+    
+    // Формируем описание с учетом нового типа
+    finalDescription = `📥 ${lang.task_txt_trays} (${trayType} № ${trayNum}) x${qty}`;
+}
         } else if (type === 'pickup') {
             const targetStore = document.getElementById('runner_target_store').value.trim();
             if (!targetStore) { alert(lang.alert_store_req); return; }
