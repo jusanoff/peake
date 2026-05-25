@@ -213,8 +213,8 @@
             // Авто-скрытие завершенных заказов через 1 минуту
             const activeOrders = orders.filter(o => {
                 const status = (o.status || 'new').toLowerCase();
-                if (status === 'delivered' || status === 'done') {
-                    const deliveredTime = new Date(o.delivered_at || o.created_at);
+                if (status === 'delivered' || status === 'done' || status === 'returned') {
+                    const deliveredTime = new Date(o.returned_at || o.delivered_at || o.created_at);
                     if (now - deliveredTime > 60000) {
                         return false; 
                     }
