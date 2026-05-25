@@ -49,7 +49,6 @@
 
         .section-title { font-size: 15px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; margin: 10px 0 5px 0; display: flex; align-items: center; gap: 6px; }
 
-        /* Сетка списков по умолчанию для больших экранов (ПК) */
         .list-container { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
@@ -82,7 +81,7 @@
         .fruit-desc { font-size: 16px; font-weight: 700; color: #1e293b; }
         .cons-info { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
         
-        .qty-badge { font-size: 24px; font-weight: 800; color: var(--accent); min-width: 45px; text-align: right; }
+        .qty-badge { font-size: 22px; font-weight: 800; color: var(--accent); text-align: right; margin-top: 4px; }
         .order-card.return-style .qty-badge { color: #ea580c; }
 
         .comment-box { background: #f8fafc; border: 1px dashed var(--border); padding: 10px; border-radius: 4px; font-size: 13px; color: #475569; line-height: 1.4; }
@@ -135,7 +134,7 @@
 
         .empty-msg { grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-size: 14px; padding: 20px; background: white; border-radius: 8px; border: 1px dashed var(--border); }
 
-        /* ================= АДАПТИВНОСТЬ ДЛЯ ПЛАНШЕТОВ ================= */
+        /* Адаптация для планшетов */
         @media (max-width: 1024px) {
             .list-container { 
                 grid-template-columns: repeat(auto-fill, minmax(48%, 1fr)); 
@@ -144,7 +143,7 @@
             .header-top h1 { font-size: 20px; }
         }
 
-        /* ================= АДАПТИВНОСТЬ ДЛЯ СМАРТФОНОВ ================= */
+        /* Адаптация для смартфонов */
         @media (max-width: 600px) {
             body { padding: 8px; }
             .container { gap: 12px; }
@@ -153,7 +152,6 @@
             .header-top { justify-content: center; text-align: center; }
             .nav-languages { justify-content: center; width: 100%; }
             
-            /* На смартфонах карточки идут строго одна за другой в полную ширину */
             .list-container { 
                 grid-template-columns: 1fr; 
                 gap: 10px;
@@ -162,9 +160,8 @@
             .order-card { padding: 12px; gap: 8px; }
             .line-info { font-size: 16px; }
             .fruit-desc { font-size: 15px; }
-            .qty-badge { font-size: 22px; position: static; text-align: left; margin-top: 4px; }
             
-            .btn-action { padding: 14px; font-size: 14px; } /* Кнопки крупнее для удобства нажатия пальцем */
+            .btn-action { padding: 14px; font-size: 14px; } 
             .reply-wrapper input { padding: 12px; font-size: 14px; }
             .btn-reply-send { padding: 12px; }
         }
@@ -227,7 +224,15 @@
             reason_2: "Wrong specifications",
             reason_3: "Pallet damaged / inaccessible",
             reason_4: "Other problem",
-            alert_reason: "Please select a reason for cancellation!"
+            alert_reason: "Please select a reason for cancellation!",
+            
+            // Новые переводы для динамических меток в карточке
+            label_line: "Line",
+            label_store: "Store",
+            label_comment: "Line Comment",
+            label_driver_note: "Your Note",
+            label_qty: "Qty",
+            label_pcs: "pcs"
         },
         ru: {
             title_main: "Peake Fruit — Водители",
@@ -250,7 +255,15 @@
             reason_2: "Неверная спецификация",
             reason_3: "Паллет поврежден / недоступен",
             reason_4: "Другая проблема",
-            alert_reason: "Пожалуйста, выберите причину отмены!"
+            alert_reason: "Пожалуйста, выберите причину отмены!",
+
+            // Новые переводы для динамических меток в карточке
+            label_line: "Линия",
+            label_store: "Магазин",
+            label_comment: "Комментарий линии",
+            label_driver_note: "Ваша заметка",
+            label_qty: "Кол-во",
+            label_pcs: "шт"
         },
         lt: {
             title_main: "Peake Fruit — Vairuotojai",
@@ -273,7 +286,15 @@
             reason_2: "Neteisinga specifikacija",
             reason_3: "Padėklas sugadintas / nepasiekiamas",
             reason_4: "Kita problema",
-            alert_reason: "Prašome pasirinkti atšaukimo priežastį!"
+            alert_reason: "Prašome pasirinkti atšaukimo priežastį!",
+
+            // Новые переводы для динамических меток в карточке
+            label_line: "Linija",
+            label_store: "Parduotuvė",
+            label_comment: "Linijos komentaras",
+            label_driver_note: "Jūsų pastaba",
+            label_qty: "Kiekis",
+            label_pcs: "vnt"
         }
     };
 
@@ -377,8 +398,10 @@
     function renderOrderCard(o, type) {
         const isUrgent = o.urgent ? 'urgent' : '';
         const timeStr = formatTime(o.created_at);
-        const commentHtml = o.comment ? `<div class="comment-box">💬 <strong>Line Comment:</strong> ${o.comment}</div>` : '';
-        const driverCommentHtml = o.driver_comment ? `<div class="comment-box" style="border-color:#bae6fd; background:#f0f9ff;">🚚 <strong>Your Note:</strong> ${o.driver_comment}</div>` : '';
+        
+        // Метки интерфейса теперь динамически берутся из словаря под язык пользователя
+        const commentHtml = o.comment ? `<div class="comment-box">💬 <strong>${lang.label_comment}:</strong> ${o.comment}</div>` : '';
+        const driverCommentHtml = o.driver_comment ? `<div class="comment-box" style="border-color:#bae6fd; background:#f0f9ff;">🚚 <strong>${lang.label_driver_note}:</strong> ${o.driver_comment}</div>` : '';
         
         let cardStyleClass = isUrgent;
         let actionButtonsHtml = '';
@@ -389,7 +412,7 @@
             actionButtonsHtml = `
                 <div class="card-row" style="margin-top:6px; width: 100%;">
                     <button class="btn-action btn-return-confirm" onclick="confirmReturnAndDelete(${o.id})">
-                        🔄 ${lang.btn_return_confirm} (${displayQty} шт)
+                        🔄 ${lang.btn_return_confirm} (${displayQty} ${lang.label_pcs})
                     </button>
                 </div>
             `;
@@ -421,14 +444,15 @@
             `;
         }
 
+        // В карточке заменяем статические тексты на языковые переменные
         return `
             <div class="order-card ${cardStyleClass}" id="card_${o.id}">
                 <div class="card-row">
                     <div>
-                        <span class="line-info">${o.line || 'Unknown Line'}</span>
+                        <span class="line-info">${lang.label_line} ${o.line || '?'}</span>
                         <span style="font-size:12px; color:var(--text-muted); margin-left:6px;">⏱ ${timeStr}</span>
                     </div>
-                    <span class="store-badge">Store ${o.store || '?'}</span>
+                    <span class="store-badge">${lang.label_store} ${o.store || '?'}</span>
                 </div>
                 
                 <div>
@@ -444,7 +468,7 @@
                 ${driverCommentHtml}
                 
                 <div class="qty-badge">
-                    Кол-во: ${type === 'return' ? (o.return_qty || o.qty || 1) : (o.qty || 1)}
+                    ${lang.label_qty}: ${type === 'return' ? (o.return_qty || o.qty || 1) : (o.qty || 1)} ${lang.label_pcs}
                 </div>
 
                 ${actionButtonsHtml}
