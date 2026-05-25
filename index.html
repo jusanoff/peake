@@ -1171,7 +1171,8 @@
                 .from('orders')
                 .update({ 
                     status: 'return_requested', 
-                    return_qty: parseInt(qtyToReturn) 
+                    return_qty: parseInt(qtyToReturn)
+                    target_role: 'driver' // <-- ДОБАВЬТЕ ЭТО
                 })
                 .eq('id', orderId);
 
