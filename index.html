@@ -461,10 +461,15 @@
             <select id="runner_box_type"></select>
         </div>
 
-        <div class="input-group" id="runner_tray_number_block" style="display:none; margin-top: 15px;">
-            <label style="color:var(--runner-accent); font-weight:700;" id="lbl_tray_number">Tray Number *</label>
-            <input type="text" id="runner_tray_number" placeholder="">
-        </div>
+        <div class="input-group" id="runner_tray_type_block" style="display:none; margin-top: 15px;">
+    <label style="color:var(--runner-accent); font-weight:700;">Select Tray Type *</label>
+    <select id="runner_tray_type" class="form-control">
+        <option value="Morrison">Morrison</option>
+        <option value="IFCO">IFCO</option>
+        <option value="EPS">EPS</option>
+        <option value="Sainsbury Black">Sainsbury Black</option>
+    </select>
+</div>
 
         <div class="input-group" id="runner_store_block" style="display:none; margin-top: 15px;">
             <label style="color: red; font-weight:700;" id="lbl_target_store">Target Store *</label>
