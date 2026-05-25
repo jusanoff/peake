@@ -721,7 +721,7 @@
     // Динамический словарь перевода из базы данных
     const dynamicDictionary = {
         ru: {
-            "švežimas: paruoštas padėklas": "ОХЛАЖДЕНИЕ: Готовый паллет",
+            "švežimas: paruoštas padėklas": "Готовый паллет",
             "paruoštas padėklas": "Готовый паллет",
             "juice bin": "Juice bin (Зеленый контейнер)",
             "green bin": "Juice bin (Зеленый контейнер)",
@@ -747,7 +747,7 @@
             "lidl strawberry": "Lidl strawberry (Braškės)"
         },
         en: {
-            "švežimas: paruoštas padėklas": "CHILLER: Ready Pallet",
+            "švežimas: paruoštas padėklas": "Ready Pallet",
             "paruoštas padėklas": "Ready Pallet",
             "juice bin": "Juice bin (Green Bin)",
             "general waste": "General waste (Red Bin)",
@@ -1192,18 +1192,21 @@
                 if(el) currentTypingValue = el.value;
             }
 
-            const { data: orders, error } = await clientDb
-                .from('orders')
-                .select('*')
-                .or(`line.eq."${currentUser}",line.eq."${cachedLineFullName}"`)
-                .order('id', { ascending: false });
+          const { data: orders, error } = await clientDb
+            .from('orders')
+            .select('*')
+            .or(`line.eq."${currentUser}",line.eq."${cachedLineFullName}"`)
+            .in('status', ['new', 'progress', 'delivered', 'return_requested', 'returned', 'done'])
+            .order('id', { ascending: false })
+            .limit(50); // Берем последние 50 записей, чтобы не грузить лишнее
 
-            if (error) throw error;
+        if (error) throw error;
 
             if (!orders || orders.length === 0) {
                 document.getElementById('line_requests_body').innerHTML = `<tr><td colspan="13" style="text-align:center; color:var(--text-muted);">${lang.no_requests}</td></tr>`;
                 document.getElementById('line_requests_mobile').innerHTML = `<div style="text-align:center; color:var(--text-muted); padding: 20px;">${lang.no_requests}</div>`;
                 return;
+            } catch (e) { console.error(e); 
             }
 
             const tableHtml = orders.map(o => {
