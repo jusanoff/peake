@@ -333,12 +333,12 @@
 
     async function loadRunnerTasks() {
         try {
-           // В файле runner.html внутри функции loadActiveRequests:
-const { data: orders, error } = await clientDb
-    .from('orders')
-    .select('*')
-    .eq('is_runner', true) // Только заказы для раннеров
-    .order('id', { ascending: false });
+            const { data: orders, error } = await clientDb
+                .from('orders')
+                .select('*')
+                .eq('is_runner', true)
+                .in('status', ['new', 'process', 'accepted'])
+                .order('id', { ascending: false });
 
             if (error) throw error;
 
@@ -349,11 +349,9 @@ const { data: orders, error } = await clientDb
             }
 
             // Добавь .eq('target_role', 'runner')
-const { data: orders, error } = await clientDb
+const { data, error } = await clientDb
     .from('orders')
     .select('*')
-    .eq('target_role', 'runner') // Ограничение: только раннер
-    .order('id', { ascending: false });
     
             const tableHtml = orders.map(o => {
                 const statusLwr = (o.status || 'new').toLowerCase();
