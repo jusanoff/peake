@@ -16,108 +16,158 @@
         }
 
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; \
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
             background: var(--bg); 
             color: var(--text); 
             margin: 0; 
-            padding: 8px;
+            padding: 12px;
+            -webkit-text-size-adjust: 100%;
         }
 
-        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 16px; 
+        }
         
         .header { 
             display: flex; 
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
             background: var(--card-bg); 
-            padding: 12px; 
+            padding: 16px; 
             border-radius: 8px; 
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        .header-top { display: flex; justify-content: space-between; align-items: center; }
-        .header-top h1 { margin: 0; font-size: 18px; font-weight: 700; color: var(--accent); }
-        .driver-badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 12px; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .header-top h1 { margin: 0; font-size: 22px; font-weight: 700; color: var(--accent); }
+        .driver-badge { background: #e0f2fe; color: #0369a1; padding: 6px 12px; border-radius: 4px; font-weight: 700; font-size: 14px; }
         
-        .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
 
-        .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; margin: 5px 0; display: flex; align-items: center; gap: 6px; }
+        .section-title { font-size: 15px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; margin: 10px 0 5px 0; display: flex; align-items: center; gap: 6px; }
+
+        /* Сетка списков по умолчанию для больших экранов (ПК) */
+        .list-container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
+            gap: 14px; 
+        }
 
         .order-card { 
             background: var(--card-bg); 
             border: 1px solid var(--border); 
             border-radius: 8px; 
-            padding: 12px; 
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            padding: 16px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
             position: relative;
+            box-sizing: border-box;
         }
         
-        .order-card.urgent { border-left: 4px solid #ef4444; background: #fff5f5; }
-        .order-card.accepted { border-left: 4px solid #3b82f6; }
-        .order-card.return-style { border-left: 4px solid #ea580c; background: #fff7ed; }
+        .order-card.urgent { border-left: 5px solid #ef4444; background: #fff5f5; }
+        .order-card.accepted { border-left: 5px solid #3b82f6; }
+        .order-card.return-style { border-left: 5px solid #ea580c; background: #fff7ed; }
 
         .card-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
         
-        .line-info { font-size: 15px; font-weight: 700; }
-        .store-badge { background: #f1f5f9; color: #334155; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 13px; border: 1px solid #cbd5e1; }
+        .line-info { font-size: 18px; font-weight: 700; color: #0f172a; }
+        .store-badge { background: #f1f5f9; color: #334155; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 14px; border: 1px solid #cbd5e1; }
         .order-card.return-style .store-badge { background: #ffedd5; color: #ea580c; border-color: #fed7d7; }
         
-        .fruit-desc { font-size: 14px; font-weight: 600; color: #1e293b; }
-        .cons-info { font-size: 12px; color: var(--text-muted); }
+        .fruit-desc { font-size: 16px; font-weight: 700; color: #1e293b; }
+        .cons-info { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
         
-        .qty-badge { font-size: 20px; font-weight: 800; color: var(--accent); min-width: 35px; text-align: right; }
+        .qty-badge { font-size: 24px; font-weight: 800; color: var(--accent); min-width: 45px; text-align: right; }
         .order-card.return-style .qty-badge { color: #ea580c; }
 
-        .comment-box { background: #f8fafc; border: 1px dashed var(--border); padding: 8px; border-radius: 4px; font-size: 12px; color: #475569; }
+        .comment-box { background: #f8fafc; border: 1px dashed var(--border); padding: 10px; border-radius: 4px; font-size: 13px; color: #475569; line-height: 1.4; }
         .order-card.urgent .comment-box { background: #fee2e2; border-color: #fca5a5; }
 
-        .btn-action { width: 100%; padding: 10px; border: none; border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-action { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
         .btn-accept { background: #3b82f6; color: white; }
         .btn-deliver { background: #10b981; color: white; }
         .btn-return-confirm { background: #ea580c; color: white; }
         
-        .btn-cancel-trigger { background: #ef4444; color: white; font-size: 12px; font-weight: 600; padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-cancel-trigger { background: #ef4444; color: white; font-size: 13px; font-weight: 600; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; }
 
-        .reply-wrapper { display: flex; gap: 4px; margin-top: 4px; }
-        .reply-wrapper input { flex-grow: 1; padding: 6px; font-size: 12px; border: 1px solid var(--border); border-radius: 4px; }
-        .btn-reply-send { background: #e2e8f0; border: 1px solid var(--border); padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .reply-wrapper { display: flex; gap: 6px; margin-top: 4px; }
+        .reply-wrapper input { flex-grow: 1; padding: 10px; font-size: 14px; border: 1px solid var(--border); border-radius: 4px; }
+        .btn-reply-send { background: #e2e8f0; border: 1px solid var(--border); padding: 10px 14px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
 
         .nav-languages { display: flex; gap: 8px; margin-top: 4px; }
-        .lang-span { font-size: 11px; cursor: pointer; padding: 2px 6px; border: 1px solid #cbd5e1; border-radius: 4px; background: white; color: #475569; }
+        .lang-span { font-size: 13px; cursor: pointer; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 4px; background: white; color: #475569; font-weight: 600; }
         .lang-span.active { background: #0288d1; color: white; border-color: #0288d1; font-weight: bold; }
 
         .cancel-reason-wrapper {
             display: none;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
             background: #fff5f5;
             border: 1px solid #fca5a5;
-            padding: 8px;
+            padding: 10px;
             border-radius: 6px;
             margin-top: 4px;
         }
         .cancel-reason-wrapper select {
-            padding: 6px;
-            font-size: 12px;
+            padding: 10px;
+            font-size: 14px;
             border: 1px solid #fca5a5;
             border-radius: 4px;
             background: white;
+            width: 100%;
         }
         .btn-cancel-confirm {
             background: #dc2626;
             color: white;
             border: none;
-            padding: 6px;
+            padding: 10px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: bold;
             cursor: pointer;
+            width: 100%;
         }
 
-        .list-container { display: flex; flex-direction: column; gap: 10px; }
-        .empty-msg { text-align: center; color: var(--text-muted); font-size: 13px; padding: 15px; background: white; border-radius: 8px; border: 1px dashed var(--border); }
+        .empty-msg { grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-size: 14px; padding: 20px; background: white; border-radius: 8px; border: 1px dashed var(--border); }
+
+        /* ================= АДАПТИВНОСТЬ ДЛЯ ПЛАНШЕТОВ ================= */
+        @media (max-width: 1024px) {
+            .list-container { 
+                grid-template-columns: repeat(auto-fill, minmax(48%, 1fr)); 
+                gap: 12px;
+            }
+            .header-top h1 { font-size: 20px; }
+        }
+
+        /* ================= АДАПТИВНОСТЬ ДЛЯ СМАРТФОНОВ ================= */
+        @media (max-width: 600px) {
+            body { padding: 8px; }
+            .container { gap: 12px; }
+            .header { padding: 12px; gap: 10px; }
+            .header-top h1 { font-size: 18px; width: 100%; text-align: center; }
+            .header-top { justify-content: center; text-align: center; }
+            .nav-languages { justify-content: center; width: 100%; }
+            
+            /* На смартфонах карточки идут строго одна за другой в полную ширину */
+            .list-container { 
+                grid-template-columns: 1fr; 
+                gap: 10px;
+            }
+            
+            .order-card { padding: 12px; gap: 8px; }
+            .line-info { font-size: 16px; }
+            .fruit-desc { font-size: 15px; }
+            .qty-badge { font-size: 22px; position: static; text-align: left; margin-top: 4px; }
+            
+            .btn-action { padding: 14px; font-size: 14px; } /* Кнопки крупнее для удобства нажатия пальцем */
+            .reply-wrapper input { padding: 12px; font-size: 14px; }
+            .btn-reply-send { padding: 12px; }
+        }
     </style>
 </head>
 <body>
@@ -126,7 +176,7 @@
     <div class="header">
         <div class="header-top">
             <h1 id="title_main">Peake Fruit — Drivers</h1>
-            <div style="display:flex; align-items:center; gap:6px;">
+            <div style="display:flex; align-items:center; gap:8px;">
                 <span class="driver-badge" id="driver_name_display">Driver Terminal</span>
                 <button class="btn-logout" id="btn_logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
             </div>
@@ -295,26 +345,22 @@
             const newContainer = document.getElementById('new_orders_list');
             const currentContainer = document.getElementById('current_orders_list');
 
-            // Фильтруем заявки по статусам
             const returnOrders = orders.filter(o => (o.status || '').toLowerCase() === 'return_requested');
             const newOrders = orders.filter(o => (o.status || '').toLowerCase() === 'new');
             const progressOrders = orders.filter(o => (o.status || '').toLowerCase() === 'accepted' && o.driver_name === currentUser);
 
-            // 1. РЕНДЕРИНГ ВОЗВРАТОВ
             if (returnOrders.length === 0) {
                 returnsContainer.innerHTML = `<div class="empty-msg">${lang.empty_returns}</div>`;
             } else {
                 returnsContainer.innerHTML = returnOrders.map(o => renderOrderCard(o, 'return')).join('');
             }
 
-            // 2. РЕНДЕРИНГ НОВЫХ
             if (newOrders.length === 0) {
                 newContainer.innerHTML = `<div class="empty-msg">${lang.empty_new}</div>`;
             } else {
                 newContainer.innerHTML = newOrders.map(o => renderOrderCard(o, 'new')).join('');
             }
 
-            // 3. РЕНДЕРИНГ В РАБОТЕ
             if (progressOrders.length === 0) {
                 currentContainer.innerHTML = `<div class="empty-msg">${lang.empty_current}</div>`;
             } else {
@@ -341,7 +387,7 @@
             cardStyleClass += ' return-style';
             const displayQty = o.return_qty ? o.return_qty : (o.qty || 1);
             actionButtonsHtml = `
-                <div class="card-row" style="margin-top:6px;">
+                <div class="card-row" style="margin-top:6px; width: 100%;">
                     <button class="btn-action btn-return-confirm" onclick="confirmReturnAndDelete(${o.id})">
                         🔄 ${lang.btn_return_confirm} (${displayQty} шт)
                     </button>
@@ -349,7 +395,7 @@
             `;
         } else if (type === 'new') {
             actionButtonsHtml = `
-                <div class="card-row" style="margin-top: 6px; gap: 6px;">
+                <div class="card-row" style="margin-top: 6px; gap: 6px; width: 100%;">
                     <button class="btn-action btn-accept" onclick="acceptOrder(${o.id})">${lang.btn_accept}</button>
                     <button class="btn-cancel-trigger" onclick="toggleCancelBlock(${o.id})">${lang.btn_cancel_trig}</button>
                 </div>
@@ -380,7 +426,7 @@
                 <div class="card-row">
                     <div>
                         <span class="line-info">${o.line || 'Unknown Line'}</span>
-                        <span style="font-size:11px; color:var(--text-muted); margin-left:6px;">⏱ ${timeStr}</span>
+                        <span style="font-size:12px; color:var(--text-muted); margin-left:6px;">⏱ ${timeStr}</span>
                     </div>
                     <span class="store-badge">Store ${o.store || '?'}</span>
                 </div>
@@ -397,8 +443,8 @@
                 ${commentHtml}
                 ${driverCommentHtml}
                 
-                <div style="position:absolute; right:12px; bottom:65px;" class="qty-badge">
-                    ${type === 'return' ? (o.return_qty || o.qty || 1) : (o.qty || 1)}
+                <div class="qty-badge">
+                    Кол-во: ${type === 'return' ? (o.return_qty || o.qty || 1) : (o.qty || 1)}
                 </div>
 
                 ${actionButtonsHtml}
@@ -464,7 +510,6 @@
         }
     }
 
-    // ПОЛНОЕ ФИЗИЧЕСКОЕ УДАЛЕНИЕ ЗАВЕРШЕННОГО ЗАКАЗА
     async function completeAndStrictDelete(orderId) {
         stopAutoUpdate();
         try {
@@ -484,7 +529,6 @@
         }
     }
 
-    // ПОЛНОЕ ФИЗИЧЕСКОЕ УДАЛЕНИЕ ЗАКАЗА ПРИ ОТМЕНЕ С УКАЗАНИЕМ ПРИЧИНЫ
     async function cancelAndStrictDelete(orderId) {
         const reasonSelect = document.getElementById(`reason_select_${orderId}`);
         const selectedReason = reasonSelect ? reasonSelect.value : "";
@@ -511,7 +555,6 @@
         }
     }
 
-    // ПОДТВЕРЖДЕНИЕ ВОЗВРАТА С ПОЛНЫМ УДАЛЕНИЕМ ЗАКАЗА ИЗ БАЗЫ ДАННЫХ
     async function confirmReturnAndDelete(orderId) {
         stopAutoUpdate();
         try {
@@ -563,7 +606,6 @@
         if (autoUpdateInterval) clearInterval(autoUpdateInterval);
     }
 
-    // Старт
     applyLocalization();
     loadAllOrders();
     startAutoUpdate();
