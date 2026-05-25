@@ -7,19 +7,19 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg: #f8fafc;
+            --bg: #f4f6f9;
             --card-bg: #ffffff;
-            --text: #0f172a;
-            --text-muted: #64748b;
+            --text: #1a1a2e;
+            --text-muted: #6c757d;
             --accent: #0288d1;
             --runner-accent: #6b46c1;
-            --border: #cbd5e1;
+            --border: #e2e8f0;
             --status-new: #ef6c00;
             --status-done: #2e7d32;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Segoe UI', Roboto, sans-serif;
             background: var(--bg);
             color: var(--text);
             margin: 0;
@@ -68,7 +68,7 @@
         }
 
         .nav-languages { display: flex; gap: 8px; margin-top: 4px; }
-        .lang-span { font-size: 13px; cursor: pointer; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 4px; background: white; color: #475569; font-weight: 600; }
+        .lang-span { font-size: 13px; cursor: pointer; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; background: white; color: #475569; font-weight: 600; }
         .lang-span.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: bold; }
 
         .grid-forms {
@@ -118,11 +118,6 @@
             color: var(--text);
             box-sizing: border-box;
         }
-        select:focus, input:focus {
-            outline: none;
-            border-color: #93c5fd;
-            box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.25);
-        }
 
         .btn-submit {
             width: 100%;
@@ -164,13 +159,15 @@
             cursor: pointer;
             margin-top: 4px;
         }
-        .checkbox-label input { width: 16px; height: 16px; cursor: pointer; }
+        .checkbox-label input { width: 16px; height: 16px; cursor: pointer; margin: 0; }
 
         .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
         .status-badge.new { background: #fff3e0; color: #e65100; }
         .status-badge.accepted { background: #e0f2fe; color: #0369a1; }
         .status-badge.process { background: #f3e8ff; color: #6b46c1; }
         .status-badge.return_requested { background: #ffedd5; color: #ea580c; border: 1px dashed #ea580c; }
+        .status-badge.cancelled, .status-badge.canceled { background: #ffeeee; color: #e53e3e; }
+        .status-badge.done, .status-badge.delivered { background: #e2f0d9; color: #385723; }
 
         .btn-return-trigger { background: #ea580c; color: white; border: none; padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .btn-return-trigger:hover { background: #d97706; }
@@ -212,11 +209,6 @@
             width: 100%;
             padding: 8px;
             font-size: 13px;
-        }
-
-        /* Адаптация под гаджеты */
-        @media (max-width: 1024px) {
-            .header-top h1 { font-size: 20px; }
         }
 
         @media (max-width: 768px) {
@@ -263,18 +255,18 @@
 
                 <div class="form-row-inline">
                     <div class="form-group">
-                        <label>Consignment</label>
+                        <label id="lbl_consignment">Consignment</label>
                         <input type="text" id="drv_cons" readonly style="background:#f1f5f9; font-weight:600;">
                     </div>
                     <div class="form-group">
-                        <label>Grower</label>
+                        <label id="lbl_grower">Grower</label>
                         <input type="text" id="drv_grower" readonly style="background:#f1f5f9;">
                     </div>
                 </div>
 
                 <div class="form-row-inline" style="margin-top:12px;">
                     <div class="form-group">
-                        <label>O / S / C</label>
+                        <label id="lbl_osc">O / S / C</label>
                         <input type="text" id="drv_osc" readonly style="background:#f1f5f9; font-size:12px;">
                     </div>
                     <div class="form-group">
@@ -343,7 +335,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th id="th_id">ID</th>
                         <th id="th_type">Type</th>
                         <th id="th_time">Time</th>
                         <th id="th_desc">Description</th>
@@ -367,7 +359,7 @@
 </div>
 
 <script>
-    // Настройки локализации интерфейса Линии (EN / RU / LT)
+    // Словарь локализации интерфейса
     const i18n = {
         en: {
             main_title: "Peake Fruit — Production Line Control",
@@ -375,6 +367,9 @@
             line_badge: "Line",
             driver_form_title: "Call Main Forklift Driver",
             select_fruit: "Select Fruit / Product Description",
+            consignment: "Consignment",
+            grower: "Grower",
+            osc: "O / S / C",
             qty_pallets: "Qty (Pallets / Bins)",
             target_store: "Target Location / Store",
             comment_drv: "Line Comment (Optional)",
@@ -387,16 +382,16 @@
             comment_run: "Comment for Runner",
             submit_run: "SEND REQUEST TO RUNNERS",
             active_requests_title: "Active Requests From This Line",
-            th_type: "Type", th_time: "Time", th_desc: "Description", th_qty: "Qty", th_store: "Target Store", th_status: "Status / Executed By", th_comment: "Comment", th_action: "Action",
+            th_id: "ID", th_type: "Type", th_time: "Time", th_desc: "Description", th_qty: "Qty", th_store: "Target Store", th_status: "Status / Executed By", th_comment: "Comment", th_action: "Action",
             loading_stock: "-- Select Product From Warehouse Stock --",
             loading_materials: "-- Select Material / Container Task --",
             alert_success: "Request successfully sent!",
             btn_return: "🔄 Return Item",
             prompt_return_qty: "Enter quantity to return:",
             placeholder_comment: "Add or edit comment...",
-            status_new: "new", status_accepted: "accepted", status_process: "in progress", status_return: "return requested",
+            status_new: "new", status_accepted: "accepted", status_process: "in progress", status_return: "return requested", status_done: "done", status_cancelled: "cancelled",
             label_type_driver: "DRIVER", label_type_runner: "RUNNER", label_qty: "Qty", label_store: "Store", label_comment: "Comment",
-            reason_prefix: "Reason: "
+            loading_tasks: "Loading active tasks..."
         },
         ru: {
             main_title: "Peake Fruit — Панель Управления Линии",
@@ -404,6 +399,9 @@
             line_badge: "Линия",
             driver_form_title: "Вызвать водителя погрузчика",
             select_fruit: "Выберите фрукт / Описание продукции",
+            consignment: "Консигнация",
+            grower: "Выращиватель",
+            osc: "O / S / C",
             qty_pallets: "Кол-во (Паллеты / Бины)",
             target_store: "Куда переместить / Склад",
             comment_drv: "Комментарий линии (Необязательно)",
@@ -416,16 +414,16 @@
             comment_run: "Комментарий для ранера",
             submit_run: "ОТПРАВИТЬ ЗАПРОС РАНЕРАМ",
             active_requests_title: "Активные запросы с этой линии",
-            th_type: "Тип", th_time: "Время", th_desc: "Описание", th_qty: "Кол-во", th_store: "Склад", th_status: "Статус / Кто выполняет", th_comment: "Комментарий", th_action: "Действие",
+            th_id: "ID", th_type: "Тип", th_time: "Время", th_desc: "Описание", th_qty: "Кол-во", th_store: "Склад", th_status: "Статус / Кто выполняет", th_comment: "Комментарий", th_action: "Действие",
             loading_stock: "-- Выберите продукт из остатков склада --",
             loading_materials: "-- Выберите материал / Задачу по таре --",
             alert_success: "Запрос успешно отправлен!",
             btn_return: "🔄 Возврат груза",
             prompt_return_qty: "Введите количество для возврата:",
             placeholder_comment: "Добавить/изменить комментарий...",
-            status_new: "новый", status_accepted: "принят", status_process: "в работе", status_return: "запрошен возврат",
+            status_new: "новый", status_accepted: "принят", status_process: "в работе", status_return: "запрошен возврат", status_done: "готово", status_cancelled: "отменен",
             label_type_driver: "ВОДИТЕЛЬ", label_type_runner: "РАНЕР", label_qty: "Кол-во", label_store: "Склад", label_comment: "Коммент.",
-            reason_prefix: "Причина: "
+            loading_tasks: "Загрузка активных задач..."
         },
         lt: {
             main_title: "Peake Fruit — Gamybos Linijos Valdymas",
@@ -433,6 +431,9 @@
             line_badge: "Linija",
             driver_form_title: "Iškviesti krautuvo vairuotoją",
             select_fruit: "Pasirinkite vaisių / Produkto aprašymą",
+            consignment: "Konsignacija",
+            grower: "Augintojas",
+            osc: "O / S / C",
             qty_pallets: "Kiekis (Padėklai / Binai)",
             target_store: "Kur perkelti / Sandėlis",
             comment_drv: "Linijos komentaras (Neprivaloma)",
@@ -445,23 +446,23 @@
             comment_run: "Komentaras runneriui",
             submit_run: "SIŲSTI UŽKLAUSĄ RUNNERIAMS",
             active_requests_title: "Šios linijos aktyvios užklausos",
-            th_type: "Tipas", th_time: "Laikas", th_desc: "Aprašymas", th_qty: "Kiekis", th_store: "Sandėlis", th_status: "Statusas / Kas vykdo", th_comment: "Komentaras", th_action: "Veiksmas",
+            th_id: "ID", th_type: "Tipas", th_time: "Laikas", th_desc: "Aprašymas", th_qty: "Kiekis", th_store: "Sandėlis", th_status: "Statusas / Kas vykdo", th_comment: "Komentaras", th_action: "Veiksmas",
             loading_stock: "-- Pasirinkite produktą iš sandėlio likučių --",
             loading_materials: "-- Pasirinkite medžiagą / Taros užduotį --",
             alert_success: "Užklausa sėkmingai išsiųsta!",
             btn_return: "🔄 Grąžinti krovinį",
             prompt_return_qty: "Įveskite grąžinamą kiekį:",
             placeholder_comment: "Pridėti ar keisti komentarą...",
-            status_new: "naujas", status_accepted: "priimtas", status_process: "vykdomas", status_return: "prašomas grąžinimas",
+            status_new: "naujas", status_accepted: "priimtas", status_process: "vykdomas", status_return: "prašomas grąžinimas", status_done: "atlikta", status_cancelled: "atšauktas",
             label_type_driver: "VAIRUOTOJAS", label_type_runner: "RUNNERIS", label_qty: "Kiekis", label_store: "Sandėlis", label_comment: "Koment.",
-            reason_prefix: "Priežastis: "
+            loading_tasks: "Kraunamos užduotys..."
         }
     };
 
-    // Динамический словарь перевода внутренних системных значений из базы данных
+    // Динамический словарь перевода внутренних системных строк
     const dynamicDictionary = {
         ru: {
-            "švežimas: paruoštas padėklas": "Готовый паллет",
+            "švežimas: paruoštas padėklas": "ОХЛАЖДЕНИЕ: Готовый паллет",
             "paruoštas padėklas": "Готовый паллет",
             "juice bin": "Juice bin (Зеленый контейнер)",
             "green bin": "Juice bin (Зеленый контейнер)",
@@ -489,7 +490,7 @@
             "reason for cancellation:": "Atšaukimo priežastis:"
         },
         en: {
-            "švežimas: paruoštas padėklas": "Ready Pallet",
+            "švežimas: paruoštas padėklas": "CHILLER: Ready Pallet",
             "paruoštas padėklas": "Ready Pallet",
             "juice bin": "Juice bin (Green Bin)",
             "general waste": "General waste (Red Bin)",
@@ -509,6 +510,9 @@
         document.getElementById('btn_logout').innerText = lang.btn_logout;
         document.getElementById('txt_driver_form_title').innerText = lang.driver_form_title;
         document.getElementById('lbl_select_fruit').innerText = lang.select_fruit;
+        document.getElementById('lbl_consignment').innerText = lang.consignment;
+        document.getElementById('lbl_grower').innerText = lang.grower;
+        document.getElementById('lbl_osc').innerText = lang.osc;
         document.getElementById('lbl_qty_pallets').innerText = lang.qty_pallets;
         document.getElementById('lbl_target_store').innerText = lang.target_store;
         document.getElementById('lbl_comment_drv').innerText = lang.comment_drv;
@@ -523,6 +527,7 @@
         document.getElementById('btn_submit_run').innerText = lang.submit_run;
         document.getElementById('txt_active_requests_title').innerText = lang.active_requests_title;
 
+        document.getElementById('th_id').innerText = lang.th_id;
         document.getElementById('th_type').innerText = lang.th_type;
         document.getElementById('th_time').innerText = lang.th_time;
         document.getElementById('th_desc').innerText = lang.th_desc;
@@ -748,13 +753,15 @@
         if (s === 'accepted') return `<span class="status-badge accepted">${lang.status_accepted}${namePostfix}</span>`;
         if (s === 'process') return `<span class="status-badge process">${lang.status_process}${namePostfix}</span>`;
         if (s === 'return_requested') return `<span class="status-badge return_requested">${lang.status_return}</span>`;
+        if (s === 'done' || s === 'delivered') return `<span class="status-badge done">${lang.status_done}${namePostfix}</span>`;
+        if (s === 'cancelled' || s === 'canceled') return `<span class="status-badge cancelled">${lang.status_cancelled}${namePostfix}</span>`;
         return `<span class="status-badge">${translateDynamicText(status)}${namePostfix}</span>`;
     }
 
     async function loadActiveRequests() {
         let activeId = null;
         let currentTypingValue = null;
-        if (document.activeElement && document.activeElement.id && document.activeElement.id.startsWith('inline_comment_')) {
+        if (document.activeElement && document.activeElement.id && (document.activeElement.id.startsWith('inline_comment_') || document.activeElement.id.startsWith('inline_comment_mob_'))) {
             activeId = document.activeElement.id;
             currentTypingValue = document.activeElement.value;
         }
@@ -794,7 +801,7 @@
                             <button class="btn-save-comment" onclick="updateOrderComment(${o.id})">💾</button>
                         </div>
                     </td>
-                    <td>${actionHtml = (o.driver_comment ? `<div style="font-size:11px; color:#c2410c; max-width:140px; white-space:normal; margin-bottom:4px;">${translateDynamicText(o.driver_comment)}</div>` : '') + actionBtn}</td>
+                    <td>${(o.driver_comment ? `<div style="font-size:11px; color:#c2410c; max-width:140px; white-space:normal; margin-bottom:4px;">${translateDynamicText(o.driver_comment)}</div>` : '') + actionBtn}</td>
                 </tr>`;
             }).join('');
 
