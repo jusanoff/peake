@@ -16,7 +16,7 @@
         }
 
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; \
             background: var(--bg); 
             color: var(--text); 
             margin: 0; 
@@ -32,121 +32,234 @@
             background: var(--card-bg); 
             padding: 12px; 
             border-radius: 8px; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        .header-title h1 { margin: 0; font-size: 18px; color: var(--accent); font-weight: 700; text-align: center; }
-        .header-right { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; }
+        .header-top h1 { margin: 0; font-size: 18px; font-weight: 700; color: var(--accent); }
+        .driver-badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 12px; }
         
-        .driver-badge { background: #e0f2fe; color: #0369a1; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 13px; flex-grow: 1; text-align: center; }
-        .btn-logout { background: #f1f5f9; color: #e11d48; border: 1px solid #ffe4e6; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 
-        .dashboard-card { background: var(--card-bg); padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #edf2f7; }
-        .dashboard-card h3 { margin-top: 0; margin-bottom: 10px; font-size: 15px; color: #334155; }
+        .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; margin: 5px 0; display: flex; align-items: center; gap: 6px; }
 
-        /* Полная адаптация таблицы через CSS-сетку для мобильных */
-        .table-responsive { background: #fff; border-radius: 6px; overflow: hidden; }
+        .order-card { 
+            background: var(--card-bg); 
+            border: 1px solid var(--border); 
+            border-radius: 8px; 
+            padding: 12px; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+        }
         
-        @media (max-width: 767px) {
-            table, thead, tbody, th, td, tr { display: block; }
-            thead { display: none; } /* Скрываем заголовки на смартфонах */
-            tr { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px; padding: 10px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-            td { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #f1f5f9; font-size: 13px; text-align: right; }
-            td::before { content: attr(data-label); font-weight: 700; color: var(--text-muted); font-size: 11px; text-transform: uppercase; float: left; text-align: left; margin-right: 10px; }
-            td:last-child { border-bottom: none; display: block; text-align: center; margin-top: 10px; }
-            .btn-action { width: 100% !important; margin-bottom: 6px; }
-            .cancel-box { width: 100% !important; flex-direction: column; }
-            .select-cancel-reason { width: 100% !important; }
+        .order-card.urgent { border-left: 4px solid #ef4444; background: #fff5f5; }
+        .order-card.accepted { border-left: 4px solid #3b82f6; }
+        .order-card.return-style { border-left: 4px solid #ea580c; background: #fff7ed; }
+
+        .card-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+        
+        .line-info { font-size: 15px; font-weight: 700; }
+        .store-badge { background: #f1f5f9; color: #334155; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 13px; border: 1px solid #cbd5e1; }
+        .order-card.return-style .store-badge { background: #ffedd5; color: #ea580c; border-color: #fed7d7; }
+        
+        .fruit-desc { font-size: 14px; font-weight: 600; color: #1e293b; }
+        .cons-info { font-size: 12px; color: var(--text-muted); }
+        
+        .qty-badge { font-size: 20px; font-weight: 800; color: var(--accent); min-width: 35px; text-align: right; }
+        .order-card.return-style .qty-badge { color: #ea580c; }
+
+        .comment-box { background: #f8fafc; border: 1px dashed var(--border); padding: 8px; border-radius: 4px; font-size: 12px; color: #475569; }
+        .order-card.urgent .comment-box { background: #fee2e2; border-color: #fca5a5; }
+
+        .btn-action { width: 100%; padding: 10px; border: none; border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-accept { background: #3b82f6; color: white; }
+        .btn-deliver { background: #10b981; color: white; }
+        .btn-return-confirm { background: #ea580c; color: white; }
+        
+        .btn-cancel-trigger { background: #ef4444; color: white; font-size: 12px; font-weight: 600; padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; }
+
+        .reply-wrapper { display: flex; gap: 4px; margin-top: 4px; }
+        .reply-wrapper input { flex-grow: 1; padding: 6px; font-size: 12px; border: 1px solid var(--border); border-radius: 4px; }
+        .btn-reply-send { background: #e2e8f0; border: 1px solid var(--border); padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+
+        .nav-languages { display: flex; gap: 8px; margin-top: 4px; }
+        .lang-span { font-size: 11px; cursor: pointer; padding: 2px 6px; border: 1px solid #cbd5e1; border-radius: 4px; background: white; color: #475569; }
+        .lang-span.active { background: #0288d1; color: white; border-color: #0288d1; font-weight: bold; }
+
+        .cancel-reason-wrapper {
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            background: #fff5f5;
+            border: 1px solid #fca5a5;
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 4px;
+        }
+        .cancel-reason-wrapper select {
+            padding: 6px;
+            font-size: 12px;
+            border: 1px solid #fca5a5;
+            border-radius: 4px;
+            background: white;
+        }
+        .btn-cancel-confirm {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
         }
 
-        @media (min-width: 768px) {
-            .table-responsive { overflow-x: auto; border: 1px solid #e2e8f0; }
-            table { width: 100%; border-collapse: collapse; min-width: 950px; }
-            th { background: #f8fafc; color: var(--text-muted); padding: 12px 10px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
-            td { padding: 14px 10px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
-        }
-
-        .btn-action { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; color: white; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; min-height: 34px; box-sizing: border-box; }
-        .btn-accept { background: #0288d1; width: 100%; }
-        .btn-complete { background: #16a34a; width: 100%; margin-bottom: 4px; }
-        .btn-cancel { background: #dc2626; width: 100%; }
-
-        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-        .status-badge.new { background: #fef3c7; color: #d97706; }
-        .status-badge.delivered { background: #dcfce7; color: #15803d; }
-        .status-badge.cancelled { background: #fee2e2; color: #b91c1c; }
-
-        .reply-box { display: flex; gap: 4px; margin-top: 4px; }
-        .reply-box input { border: 1px solid var(--border); padding: 4px; font-size: 12px; border-radius: 4px; flex: 1; }
-        .btn-reply { background: #475569; color: #fff; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-
-        .cancel-box { display: flex; gap: 4px; margin-top: 4px; width: 100%; }
-        .select-cancel-reason { border: 1px solid #fca5a5; padding: 6px; font-size: 12px; border-radius: 4px; background: #fff; flex: 1; font-weight: 600; color: #991b1b; }
-
-        @media (min-width: 768px) {
-            body { padding: 15px; }
-            .header { flex-direction: row; justify-content: space-between; align-items: center; padding: 14px 20px; }
-            .header-title h1 { font-size: 20px; text-align: left; }
-            .header-right { width: auto; }
-            .driver-badge { flex-grow: 0; min-width: 180px; }
-            .btn-action { width: auto; }
-            .btn-complete { width: auto; margin-bottom: 0; margin-right: 4px; }
-            .btn-cancel { width: auto; }
-            .cancel-box { width: auto; }
-            .select-cancel-reason { width: 160px; }
-        }
+        .list-container { display: flex; flex-direction: column; gap: 10px; }
+        .empty-msg { text-align: center; color: var(--text-muted); font-size: 13px; padding: 15px; background: white; border-radius: 8px; border: 1px dashed var(--border); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <div class="header-title"><h1>Peake Fruit — Driver Terminal</h1></div>
-        <div class="header-right">
-            <div class="driver-badge" id="driver_name_display">Driver: Loading...</div>
-            <button class="btn-logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
+        <div class="header-top">
+            <h1 id="title_main">Peake Fruit — Drivers</h1>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <span class="driver-badge" id="driver_name_display">Driver Terminal</span>
+                <button class="btn-logout" id="btn_logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
+            </div>
+        </div>
+        <div class="nav-languages">
+            <span class="lang-span" id="lang_en" onclick="changeLang('en')">EN</span>
+            <span class="lang-span" id="lang_ru" onclick="changeLang('ru')">RU</span>
+            <span class="lang-span" id="lang_lt" onclick="changeLang('lt')">LT</span>
         </div>
     </div>
 
-    <div class="dashboard-card">
-        <h3>Active Line Pallet Requests & Today's History</h3>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Line Name</th>
-                        <th>Ordered At</th>
-                        <th>Store</th>
-                        <th>Variety</th>
-                        <th>Grower</th>
-                        <th>Consignment</th>
-                        <th>Size</th>
-                        <th>Qty</th>
-                        <th>Driver Assigned</th>
-                        <th>Comments & Logs</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="driver_orders_body">
-                    <tr><td colspan="12" style="text-align:center; color:var(--text-muted);">Loading requests...</td></tr>
-                </tbody>
-            </table>
-        </div>
+    <div class="section-title" id="title_returns" style="color: #ea580c;">🔄 Запросы на возврат (Return Requests)</div>
+    <div id="returns_list" class="list-container">
+        <div class="empty-msg">Loading returns...</div>
+    </div>
+
+    <div class="section-title" id="title_new">📥 Новые запросы (New Requests)</div>
+    <div id="new_orders_list" class="list-container">
+        <div class="empty-msg">Loading new requests...</div>
+    </div>
+
+    <div class="section-title" id="title_current">⚡ В работе (In Progress)</div>
+    <div id="current_orders_list" class="list-container">
+        <div class="empty-msg">Loading active tasks...</div>
     </div>
 </div>
 
 <script>
+    const i18n = {
+        en: {
+            title_main: "Peake Fruit — Drivers",
+            btn_logout: "Log Out",
+            title_returns: "🔄 Return Requests",
+            title_new: "📥 New Requests",
+            title_current: "⚡ In Progress",
+            empty_returns: "No return requests",
+            empty_new: "No new requests",
+            empty_current: "No active tasks in progress",
+            btn_accept: "🚚 ACCEPT TASK",
+            btn_deliver: "✅ MARK AS DELIVERED / DONE",
+            btn_return_confirm: "🔄 CONFIRM RETURN & DELETE",
+            btn_cancel_trig: "Cancel",
+            btn_cancel_conf: "Confirm Cancel & Delete",
+            placeholder_reply: "Driver reply / comment...",
+            btn_send: "Send",
+            select_reason_placeholder: "-- Select reason --",
+            reason_1: "No stock in warehouse",
+            reason_2: "Wrong specifications",
+            reason_3: "Pallet damaged / inaccessible",
+            reason_4: "Other problem",
+            alert_reason: "Please select a reason for cancellation!"
+        },
+        ru: {
+            title_main: "Peake Fruit — Водители",
+            btn_logout: "Выйти",
+            title_returns: "🔄 Запросы на возврат",
+            title_new: "📥 Новые запросы",
+            title_current: "⚡ В работе",
+            empty_returns: "Нет запросов на возврат",
+            empty_new: "Нет новых запросов",
+            empty_current: "Нет заданий в работе",
+            btn_accept: "🚚 ПРИНЯТЬ В РАБОТУ",
+            btn_deliver: "✅ ДОСТАВЛЕНО / ГОТОВО",
+            btn_return_confirm: "🔄 ПОДТВЕРДИТЬ ВОЗВРАТ И УДАЛИТЬ",
+            btn_cancel_trig: "Отмена",
+            btn_cancel_conf: "Подтвердить отмену и удалить",
+            placeholder_reply: "Ответ водителя / комментарий...",
+            btn_send: "Отв.",
+            select_reason_placeholder: "-- Выберите причину --",
+            reason_1: "Нет товара на складе",
+            reason_2: "Неверная спецификация",
+            reason_3: "Паллет поврежден / недоступен",
+            reason_4: "Другая проблема",
+            alert_reason: "Пожалуйста, выберите причину отмены!"
+        },
+        lt: {
+            title_main: "Peake Fruit — Vairuotojai",
+            btn_logout: "Atsijungti",
+            title_returns: "🔄 Grąžinimo užklausos",
+            title_new: "📥 Naujos užklausos",
+            title_current: "⚡ Vykdomi darbai",
+            empty_returns: "Grąžinimo užklausų nėra",
+            empty_new: "Naujų užklausų nėra",
+            empty_current: "Šiuo metu vykdomų darbų nėra",
+            btn_accept: "🚚 PRIIMTI UŽDUOTĮ",
+            btn_deliver: "✅ PRISTATYTA / ATLIKTA",
+            btn_return_confirm: "🔄 PATVIRTINTI GRĄŽINIMĄ IR IŠTRINTI",
+            btn_cancel_trig: "Atšaukti",
+            btn_cancel_conf: "Patvirtinti atšaukimą ir ištrinti",
+            placeholder_reply: "Vairuotojo atsakymas / komentaras...",
+            btn_send: "Siųsti",
+            select_reason_placeholder: "-- Pasirinkite priežastį --",
+            reason_1: "Sandėlyje nėra likučio",
+            reason_2: "Neteisinga specifikacija",
+            reason_3: "Padėklas sugadintas / nepasiekiamas",
+            reason_4: "Kita problema",
+            alert_reason: "Prašome pasirinkti atšaukimo priežastį!"
+        }
+    };
+
+    let currentLang = localStorage.getItem('lang') || 'en';
+    let lang = i18n[currentLang];
+
+    function applyLocalization() {
+        document.getElementById('title_main').innerText = lang.title_main;
+        document.getElementById('btn_logout').innerText = lang.btn_logout;
+        document.getElementById('title_returns').innerText = lang.title_returns;
+        document.getElementById('title_new').innerText = lang.title_new;
+        document.getElementById('title_current').innerText = lang.title_current;
+
+        document.querySelectorAll('.lang-span').forEach(s => s.classList.remove('active'));
+        const activeLangSpan = document.getElementById(`lang_${currentLang}`);
+        if(activeLangSpan) activeLangSpan.classList.add('active');
+    }
+
+    function changeLang(target) {
+        currentLang = target;
+        localStorage.setItem('lang', target);
+        lang = i18n[target];
+        applyLocalization();
+        loadAllOrders();
+    }
+
     const currentUser = localStorage.getItem('user');
-    let currentRole = localStorage.getItem('role') || '';
+    const currentRole = localStorage.getItem('role');
 
-    currentRole = currentRole.toLowerCase().trim();
-
-    // Проверка прав доступа водителя
     if (!currentUser || currentRole !== 'driver') {
-        alert("Access denied! Only drivers are allowed here.");
+        alert("Access denied!");
         localStorage.clear();
         window.location.href = 'login.html';
     }
+
+    document.getElementById('driver_name_display').innerText = currentUser;
 
     const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
     const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
@@ -156,237 +269,264 @@
     const supabaseKey = k1 + k2 + k3;
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
-    let cachedDriverFullName = localStorage.getItem('name') || currentUser;
-    document.getElementById('driver_name_display').innerText = 'Driver: ' + cachedDriverFullName;
-
-    // Переменная для контроля таймера автообновления
-    let updateInterval = null;
     let isUserTyping = false;
+    let autoUpdateInterval = null;
 
     function formatTime(isoString) {
-        if (!isoString) return '-';
-        const date = new Date(isoString);
-        return isNaN(date.getTime()) ? '-' : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (!isoString) return "-";
+        try {
+            const d = new Date(isoString);
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } catch (e) { return "-"; }
     }
 
     async function loadAllOrders() {
-        // Если водитель сейчас пишет в инпут или выбирает причину отмены, полностью отменяем шаг обновления
-        if (isUserTyping) return;
-
         try {
-            // Загружаем заказы
-           // В файле driver.html внутри функции loadActiveRequests:
-const { data: orders, error } = await clientDb
-    .from('orders')
-    .select('*')
-    .eq('is_runner', false) // Только заказы для водителей
-    .order('id', { ascending: false });
-            
+            const { data: orders, error } = await clientDb
+                .from('orders')
+                .select('*')
+                .eq('target_role', 'driver')
+                .order('urgent', { ascending: false })
+                .order('id', { ascending: false });
 
             if (error) throw error;
 
-            if (!orders || orders.length === 0) {
-                document.getElementById('driver_orders_body').innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-muted);">No orders found.</td></tr>`;
-                return;
+            const returnsContainer = document.getElementById('returns_list');
+            const newContainer = document.getElementById('new_orders_list');
+            const currentContainer = document.getElementById('current_orders_list');
+
+            // Фильтруем заявки по статусам
+            const returnOrders = orders.filter(o => (o.status || '').toLowerCase() === 'return_requested');
+            const newOrders = orders.filter(o => (o.status || '').toLowerCase() === 'new');
+            const progressOrders = orders.filter(o => (o.status || '').toLowerCase() === 'accepted' && o.driver_name === currentUser);
+
+            // 1. РЕНДЕРИНГ ВОЗВРАТОВ
+            if (returnOrders.length === 0) {
+                returnsContainer.innerHTML = `<div class="empty-msg">${lang.empty_returns}</div>`;
+            } else {
+                returnsContainer.innerHTML = returnOrders.map(o => renderOrderCard(o, 'return')).join('');
             }
 
-            // Получаем начало сегодняшнего дня (00:00:00) локального времени для фильтрации истории
-            const todayStart = new Date();
-            todayStart.setHours(0,0,0,0);
-
-            const filteredOrders = orders.filter(o => {
-                // Показывать все "недоставленные" и "неотмененные" заказы
-                if (o.status !== 'delivered' && o.status !== 'cancelled') {
-                    return true;
-                }
-                
-                // Для доставленных или отмененных — показывать только если их взял этот водитель И это было сделано СЕГОДНЯ
-                if (o.driver_name === cachedDriverFullName) {
-                    const actionTimeStr = o.delivered_at || o.cancelled_at;
-                    if (actionTimeStr) {
-                        const actionTime = new Date(actionTimeStr);
-                        return actionTime >= todayStart;
-                    }
-                }
-                return false;
-            });
-
-            if (filteredOrders.length === 0) {
-                document.getElementById('driver_orders_body').innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-muted);">No active orders or history for today.</td></tr>`;
-                return;
+            // 2. РЕНДЕРИНГ НОВЫХ
+            if (newOrders.length === 0) {
+                newContainer.innerHTML = `<div class="empty-msg">${lang.empty_new}</div>`;
+            } else {
+                newContainer.innerHTML = newOrders.map(o => renderOrderCard(o, 'new')).join('');
             }
 
-            const html = filteredOrders.map(o => {
-                let actionBtn = '';
-                
-                if (o.status === 'new') {
-                    actionBtn = `<button class="btn-action btn-accept" onclick="acceptOrder(${o.id})">✅ Accept</button>`;
-                } else if (o.status === 'accepted' && o.driver_name === cachedDriverFullName) {
-                    actionBtn = `
-                        <button class="btn-action btn-complete" onclick="completeOrder(${o.id})">📦 Complete</button>
-                        <button class="btn-action btn-cancel" onclick="showCancelInterface(${o.id})">❌ Cancel</button>
-                        <div class="cancel-box" id="cancel_box_${o.id}" style="display:none;">
-                            <select class="select-cancel-reason" id="cancel_reason_${o.id}" onfocus="pauseUpdate()" onblur="resumeUpdateDelayed()">
-                                <option value="Cannot find fruit">Cannot find fruit</option>
-                                <option value="Cancelled by line">Cancelled by line</option>
-                                <option value="Other">Other</option>
-                            </select>
-                            <button class="btn-reply" style="background:#dc2626;" onclick="confirmCancelOrder(${o.id})">Submit</button>
-                        </div>
-                    `;
-                } else if (o.status === 'accepted') {
-                    actionBtn = `<span style="color:var(--text-muted); font-size:11px;">Locked</span>`;
-                } else if (o.status === 'delivered') {
-                    actionBtn = `<span class="status-badge delivered">Delivered</span>`;
-                } else if (o.status === 'cancelled') {
-                    actionBtn = `<span class="status-badge cancelled">Cancelled</span>`;
-                }
+            // 3. РЕНДЕРИНГ В РАБОТЕ
+            if (progressOrders.length === 0) {
+                currentContainer.innerHTML = `<div class="empty-msg">${lang.empty_current}</div>`;
+            } else {
+                currentContainer.innerHTML = progressOrders.map(o => renderOrderCard(o, 'progress')).join('');
+            }
 
-                // Логика вывода логов комментариев (Line, Office, Driver)
-                let logsHtml = `<div style="color:var(--text);">Line: ${o.comment || '-'}</div>`;
-                if (o.office_comment) {
-                    logsHtml += `<div style="color:#0288d1; font-size:11px; margin-top:2px; font-weight:600;">Office: ${o.office_comment}</div>`;
-                }
-                if (o.driver_comment) {
-                    logsHtml += `<div style="color:#16a34a; font-size:11px; margin-top:2px; font-weight:600;">Driver: ${o.driver_comment}</div>`;
-                }
-                
-                // Вывод времени завершения или отмены
-                if (o.status === 'delivered' && o.delivered_at) {
-                    logsHtml += `<div style="color:#16a34a; font-size:11px; margin-top:2px; font-weight:600;">Delivered at: ${formatTime(o.delivered_at)}</div>`;
-                }
-                if (o.status === 'cancelled' && o.cancelled_at) {
-                    logsHtml += `<div style="color:#dc2626; font-size:11px; margin-top:2px; font-weight:600;">Cancelled at: ${formatTime(o.cancelled_at)}</div>`;
-                }
+            restoreTypingFields();
 
-                // Поле ввода показывается только для активных принятых заказов
-                if (o.status === 'accepted' && o.driver_name === cachedDriverFullName && !o.driver_comment) {
-                    logsHtml += `
-                        <div class="reply-box">
-                            <input type="text" id="driver_reply_to_${o.id}" placeholder="Driver note..." 
-                                onfocus="pauseUpdate()" 
-                                onblur="resumeUpdateDelayed()">
-                            <button class="btn-reply" onclick="sendDriverReply(${o.id})">Reply</button>
-                        </div>
-                    `;
-                }
-
-                let driverDisplay = '';
-                if (o.driver_name) {
-                    driverDisplay = '🚚 ' + o.driver_name;
-                } else if (o.status === 'cancelled') {
-                    driverDisplay = '<span class="status-badge cancelled">Cancelled</span>';
-                } else {
-                    driverDisplay = '<span class="status-badge new">Free</span>';
-                }
-
-                return `
-                    <tr>
-                        <td data-label="ID">#${o.id}</td>
-                        <td data-label="Line Name"><strong>${o.line || '-'}</strong></td>
-                        <td data-label="Ordered At"><span style="color:#4a5568;">⏱ ${formatTime(o.created_at)}</span></td>
-                        <td data-label="Store"><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
-                        <td data-label="Variety"><strong>${o.description || '-'}</strong></td>
-                        <td data-label="Grower">${o.grower || '-'}</td>
-                        <td data-label="Consignment"><span style="font-family:monospace; background:#f1f3f5; padding:4px 6px; border-radius:4px; font-weight:600;">${o.consignment || '-'}</span></td>
-                        <td data-label="Size"><strong>${o.size || '-'}</strong></td>
-                        <td data-label="Qty"><strong style="color:#0288d1; font-size:14px;">${o.qty || '1'}</strong></td>
-                        <td data-label="Driver Assigned">${driverDisplay}</td>
-                        <td data-label="Comments & Logs">${logsHtml}</td>
-                        <td data-label="Action">${actionBtn}</td>
-                    </tr>
-                `;
-            }).join('');
-
-            document.getElementById('driver_orders_body').innerHTML = html;
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            console.error("Error loading drivers queue:", e);
+        }
     }
 
-    // Функции управления паузой автообновления
-    function pauseUpdate() {
-        isUserTyping = true;
-        clearInterval(updateInterval);
+    function renderOrderCard(o, type) {
+        const isUrgent = o.urgent ? 'urgent' : '';
+        const timeStr = formatTime(o.created_at);
+        const commentHtml = o.comment ? `<div class="comment-box">💬 <strong>Line Comment:</strong> ${o.comment}</div>` : '';
+        const driverCommentHtml = o.driver_comment ? `<div class="comment-box" style="border-color:#bae6fd; background:#f0f9ff;">🚚 <strong>Your Note:</strong> ${o.driver_comment}</div>` : '';
+        
+        let cardStyleClass = isUrgent;
+        let actionButtonsHtml = '';
+
+        if (type === 'return') {
+            cardStyleClass += ' return-style';
+            const displayQty = o.return_qty ? o.return_qty : (o.qty || 1);
+            actionButtonsHtml = `
+                <div class="card-row" style="margin-top:6px;">
+                    <button class="btn-action btn-return-confirm" onclick="confirmReturnAndDelete(${o.id})">
+                        🔄 ${lang.btn_return_confirm} (${displayQty} шт)
+                    </button>
+                </div>
+            `;
+        } else if (type === 'new') {
+            actionButtonsHtml = `
+                <div class="card-row" style="margin-top: 6px; gap: 6px;">
+                    <button class="btn-action btn-accept" onclick="acceptOrder(${o.id})">${lang.btn_accept}</button>
+                    <button class="btn-cancel-trigger" onclick="toggleCancelBlock(${o.id})">${lang.btn_cancel_trig}</button>
+                </div>
+                <div class="cancel-reason-wrapper" id="cancel_block_${o.id}">
+                    <select id="reason_select_${o.id}">
+                        <option value="">${lang.select_reason_placeholder}</option>
+                        <option value="${lang.reason_1}">${lang.reason_1}</option>
+                        <option value="${lang.reason_2}">${lang.reason_2}</option>
+                        <option value="${lang.reason_3}">${lang.reason_3}</option>
+                        <option value="${lang.reason_4}">${lang.reason_4}</option>
+                    </select>
+                    <button class="btn-cancel-confirm" onclick="cancelAndStrictDelete(${o.id})">${lang.btn_cancel_conf}</button>
+                </div>
+            `;
+        } else if (type === 'progress') {
+            cardStyleClass += ' accepted';
+            actionButtonsHtml = `
+                <button class="btn-action btn-deliver" style="margin-top:6px;" onclick="completeAndStrictDelete(${o.id})">${lang.btn_deliver}</button>
+                <div class="reply-wrapper">
+                    <input type="text" id="driver_reply_to_${o.id}" placeholder="${lang.placeholder_reply}" onfocus="setTyping(true)" onblur="setTyping(false)">
+                    <button class="btn-reply-send" onclick="sendDriverReply(${o.id})">${lang.btn_send}</button>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="order-card ${cardStyleClass}" id="card_${o.id}">
+                <div class="card-row">
+                    <div>
+                        <span class="line-info">${o.line || 'Unknown Line'}</span>
+                        <span style="font-size:11px; color:var(--text-muted); margin-left:6px;">⏱ ${timeStr}</span>
+                    </div>
+                    <span class="store-badge">Store ${o.store || '?'}</span>
+                </div>
+                
+                <div>
+                    <div class="fruit-desc">${o.description || '-'}</div>
+                    <div class="cons-info">
+                        Cons: <strong>${o.consignment || o.Consignment || '-'}</strong> | 
+                        Grower: ${o.grower || '-'} | 
+                        O/S/C: ${o.origin || '-'}/${o.size || '-'}/${o.available || '-'}
+                    </div>
+                </div>
+
+                ${commentHtml}
+                ${driverCommentHtml}
+                
+                <div style="position:absolute; right:12px; bottom:65px;" class="qty-badge">
+                    ${type === 'return' ? (o.return_qty || o.qty || 1) : (o.qty || 1)}
+                </div>
+
+                ${actionButtonsHtml}
+            </div>
+        `;
     }
 
-    function resumeUpdateDelayed() {
-        setTimeout(() => {
-            isUserTyping = false;
+    function setTyping(status) {
+        isUserTyping = status;
+        if (!status) {
             startAutoUpdate();
-        }, 300);
+        } else {
+            stopAutoUpdate();
+        }
     }
 
-    function startAutoUpdate() {
-        clearInterval(updateInterval);
-        updateInterval = setInterval(loadAllOrders, 4000);
+    function toggleCancelBlock(orderId) {
+        const block = document.getElementById(`cancel_block_${orderId}`);
+        if(block) {
+            const isHidden = block.style.display === 'none' || !block.style.display;
+            block.style.display = isHidden ? 'flex' : 'none';
+        }
+    }
+
+    let typedCache = {};
+    function saveTypingValues() {
+        typedCache = {};
+        document.querySelectorAll("[id^='driver_reply_to_']").forEach(input => {
+            if (document.activeElement === input) {
+                typedCache[input.id] = input.value;
+            }
+        });
+    }
+
+    function restoreTypingFields() {
+        for (const [id, value] of Object.entries(typedCache)) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.value = value;
+                el.focus();
+            }
+        }
     }
 
     async function acceptOrder(orderId) {
+        stopAutoUpdate();
         try {
             const { error } = await clientDb
                 .from('orders')
-                .update({ status: 'accepted', driver_name: cachedDriverFullName })
+                .update({ 
+                    status: 'accepted', 
+                    driver_name: currentUser,
+                    accepted_at: new Date().toISOString()
+                })
                 .eq('id', orderId);
-                
+
             if (error) throw error;
             loadAllOrders();
-        } catch (e) { alert(e.message); }
+            startAutoUpdate();
+        } catch (e) {
+            alert("Error accepting task: " + e.message);
+            startAutoUpdate();
+        }
     }
 
-    async function completeOrder(orderId) {
-        if (!confirm(`Вы действительно доставили паллет по заказу #${orderId}?`)) {
+    // ПОЛНОЕ ФИЗИЧЕСКОЕ УДАЛЕНИЕ ЗАВЕРШЕННОГО ЗАКАЗА
+    async function completeAndStrictDelete(orderId) {
+        stopAutoUpdate();
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .delete()
+                .eq('id', orderId);
+
+            if (error) throw error;
+            
+            isUserTyping = false;
+            loadAllOrders();
+            startAutoUpdate();
+        } catch (e) {
+            alert("Error processing: " + e.message);
+            startAutoUpdate();
+        }
+    }
+
+    // ПОЛНОЕ ФИЗИЧЕСКОЕ УДАЛЕНИЕ ЗАКАЗА ПРИ ОТМЕНЕ С УКАЗАНИЕМ ПРИЧИНЫ
+    async function cancelAndStrictDelete(orderId) {
+        const reasonSelect = document.getElementById(`reason_select_${orderId}`);
+        const selectedReason = reasonSelect ? reasonSelect.value : "";
+        if (!selectedReason) {
+            alert(lang.alert_reason);
             return;
         }
 
+        stopAutoUpdate();
         try {
             const { error } = await clientDb
                 .from('orders')
-                .update({ 
-                    status: 'delivered', 
-                    delivered_at: new Date().toISOString() 
-                })
+                .delete()
                 .eq('id', orderId);
 
             if (error) throw error;
             
-            alert(`✅ Заказ #${orderId} успешно доставлен на линию!`);
-            loadAllOrders();
-        } catch (e) {
-            alert("Error updating order: " + e.message);
-        }
-    }
-
-    // Показ блока выбора причины отмены
-    function showCancelInterface(orderId) {
-        pauseUpdate();
-        const box = document.getElementById(`cancel_box_${orderId}`);
-        if(box) {
-            box.style.display = box.style.display === 'none' ? 'flex' : 'none';
-        }
-    }
-
-    // Подтверждение отмены заказа с записью причины и времени отмены
-    async function confirmCancelOrder(orderId) {
-        const reasonSelect = document.getElementById(`cancel_reason_${orderId}`);
-        const selectedReason = reasonSelect ? reasonSelect.value : "Other";
-
-        try {
-            const { error } = await clientDb
-                .from('orders')
-                .update({ 
-                    status: 'cancelled', 
-                    driver_comment: "Reason for cancellation: " + selectedReason,
-                    cancelled_at: new Date().toISOString()
-                })
-                .eq('id', orderId);
-
-            if (error) throw error;
-            
-            alert(`❌ Заказ #${orderId} отменен.`);
             isUserTyping = false;
             loadAllOrders();
             startAutoUpdate();
         } catch (e) {
             alert("Error cancelling order: " + e.message);
+            startAutoUpdate();
+        }
+    }
+
+    // ПОДТВЕРЖДЕНИЕ ВОЗВРАТА С ПОЛНЫМ УДАЛЕНИЕМ ЗАКАЗА ИЗ БАЗЫ ДАННЫХ
+    async function confirmReturnAndDelete(orderId) {
+        stopAutoUpdate();
+        try {
+            const { error } = await clientDb
+                .from('orders')
+                .delete()
+                .eq('id', orderId);
+
+            if (error) throw error;
+            
+            loadAllOrders();
+            startAutoUpdate();
+        } catch (e) {
+            alert("Error confirming return: " + e.message);
+            startAutoUpdate();
         }
     }
 
@@ -409,7 +549,22 @@ const { data: orders, error } = await clientDb
         } catch (e) { alert("Error sending driver reply: " + e.message); }
     }
 
-    // Первоначальная загрузка и старт интервала обновления
+    function startAutoUpdate() {
+        if (autoUpdateInterval) clearInterval(autoUpdateInterval);
+        autoUpdateInterval = setInterval(() => {
+            if (!isUserTyping) {
+                saveTypingValues();
+                loadAllOrders();
+            }
+        }, 5000);
+    }
+
+    function stopAutoUpdate() {
+        if (autoUpdateInterval) clearInterval(autoUpdateInterval);
+    }
+
+    // Старт
+    applyLocalization();
     loadAllOrders();
     startAutoUpdate();
 </script>
