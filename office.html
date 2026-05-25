@@ -71,6 +71,18 @@
 
         .header-right { display: flex; align-items: center; gap: 15px; }
 
+        /* Плашка авторизованного пользователя */
+        .user-badge {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid #bae6fd;
+            white-space: nowrap;
+        }
+
         .office-ctrl-panel {
             display: flex;
             gap: 15px;
@@ -209,6 +221,8 @@
     <div class="header">
         <h1 id="main_title">Peake Fruit — Office Control Tower</h1>
         <div class="header-right">
+            <div class="user-badge" id="office_user_display">...</div>
+            
             <div class="lang-select">
                 <button id="lang_ru" onclick="changeLang('ru')">RU</button>
                 <button id="lang_en" onclick="changeLang('en')">EN</button>
@@ -308,12 +322,14 @@
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
     let currentOrdersData = [];
+    let cachedOfficeFullName = currentUser || "Office";
 
     // ОБЪЕКТ ПЕРЕВОДОВ ИНТЕРФЕЙСА ОФИСА
     const i18n = {
         ru: {
             main_title: "Peake Fruit — Диспетчерская Офиса",
             btn_logout: "Выйти",
+            user_logged: "Вошел",
             label_upload: "Загрузка Excel с утренним стоком:",
             btn_choose_file: "Выбрать файл",
             no_file: "Файл не выбран",
@@ -336,6 +352,7 @@
         en: {
             main_title: "Peake Fruit — Office Control Tower",
             btn_logout: "Log Out",
+            user_logged: "Logged in",
             label_upload: "Morning Stock Excel Upload:",
             btn_choose_file: "Choose File",
             no_file: "No file chosen",
@@ -358,6 +375,7 @@
         lt: {
             main_title: "Peake Fruit — Biuro Valdymo Bokštas",
             btn_logout: "Atsijungti",
+            user_logged: "Prisijungęs",
             label_upload: "Rytinio likučio Excel įkėlimas:",
             btn_choose_file: "Pasirinkti failą",
             no_file: "Nepasirinktas failas",
@@ -403,6 +421,12 @@
         document.getElementById('btn_export').innerText = t.btn_export;
         document.getElementById('title_stock_base').innerText = t.title_stock_base;
 
+        // Обновляем отображение вошедшего пользователя с учетом языка
+        const userDisplayEl = document.getElementById('office_user_display');
+        if (userDisplayEl) {
+            userDisplayEl.innerText = `${t.user_logged}: ${cachedOfficeFullName}`;
+        }
+
         // Заголовки таблицы заявок
         document.getElementById('th_ordered_at').innerText = t.th_ordered_at;
         document.getElementById('th_line_name').innerText = t.th_line_name;
@@ -442,6 +466,33 @@
         document.getElementById('lang_lt').classList.remove('active');
         const activeBtn = document.getElementById(`lang_${curL}`);
         if (activeBtn) activeBtn.classList.add('active');
+    }
+
+    // Асинхронное получение полного имени пользователя из базы данных
+    async function fetchOfficeFullName() {
+        try {
+            const { data, error } = await clientDb
+                .from('users')
+                .select('full_name')
+                .eq('username', currentUser)
+                .single();
+            
+            if (!error && data && data.full_name) {
+                cachedOfficeFullName = data.full_name;
+            } else {
+                cachedOfficeFullName = currentUser || "Office";
+            }
+        } catch (e) {
+            console.error("Error fetching full name, fallback to username:", e);
+            cachedOfficeFullName = currentUser || "Office";
+        }
+        
+        // Перерисовываем плашку пользователя после получения имени
+        const t = i18n[curL] || i18n.en;
+        const userDisplayEl = document.getElementById('office_user_display');
+        if (userDisplayEl) {
+            userDisplayEl.innerText = `${t.user_logged}: ${cachedOfficeFullName}`;
+        }
     }
 
     function formatTime(isoString) {
@@ -722,7 +773,8 @@
     // Инициализация интерфейса
     updateUI();
 
-    // Первичная загрузка при открытии страницы
+    // Первичная загрузка имени пользователя, дэшборда и стока при открытии страницы
+    fetchOfficeFullName();
     loadOfficeDashboard();
     loadStockTable();
 
