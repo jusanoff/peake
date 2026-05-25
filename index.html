@@ -566,7 +566,11 @@
             color_blue: "Fruit waste (blue bin)",
             color_green: "Juice bin (green bin)",
             color_white: "White bin",
-            box_empty: "Empty", box_reusable: "Reusable", box_printed: "Pre-printed",
+            box_lidl: "Lidl strawberry",
+            box_costco_pink: "Costco Pink Lady",
+            box_costco_gourmet: "Costco Gourmet",
+            box_costco_lady: "Costco Lady Bird",
+            box_reusable: "Reusable",
             task_txt_bins: "BINS ORDER", task_txt_boxes: "BOXES ORDER", task_txt_trays: "TRAYS ORDER", task_txt_pickup: "PICKUP: Ready Pallet removal"
         },
         ru: {
@@ -620,7 +624,11 @@
             color_blue: "Фруктовые отходы (синий бин)",
             color_green: "Бин для сока (зеленый бин)",
             color_white: "Белый бин",
-            box_empty: "Пустые", box_reusable: "Многоразовые", box_printed: "С принтом",
+            box_lidl: "Lidl strawberry", // Оставляем названия брендов на английском
+            box_costco_pink: "Costco Pink Lady",
+            box_costco_gourmet: "Costco Gourmet",
+            box_costco_lady: "Costco Lady Bird",
+            box_reusable: "Многоразовые (Reusable)",
             task_txt_bins: "БИНЫ ЗАКАЗ", task_txt_boxes: "КОРОБКИ ЗАКАЗ", task_txt_trays: "ТРЕИ ЗАКАЗ", task_txt_pickup: "ВЫВОЗ: Готовый паллет"
         }
     };
@@ -686,10 +694,13 @@
         <option value="${i18n.en.color_white}">${lang.color_white}</option>
     `;
         document.getElementById('runner_box_type').innerHTML = `
-            <option value="${i18n.en.box_empty}">${lang.box_empty}</option>
-            <option value="${i18n.en.box_reusable}">${lang.box_reusable}</option>
-            <option value="${i18n.en.box_printed}">${lang.box_printed}</option>
-        `;
+            document.getElementById('runner_box_type').innerHTML = `
+    <option value="${lang.box_lidl}">${lang.box_lidl}</option>
+    <option value="${lang.box_costco_pink}">${lang.box_costco_pink}</option>
+    <option value="${lang.box_costco_gourmet}">${lang.box_costco_gourmet}</option>
+    <option value="${lang.box_costco_lady}">${lang.box_costco_lady}</option>
+    <option value="${lang.box_reusable}">${lang.box_reusable}</option>
+`;
     }
 
     const currentUser = localStorage.getItem('user');
