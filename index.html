@@ -3,27 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <title>Peake Fruit — Production Line Control</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg: #f4f6f9;
+            --bg: #f8fafc;
             --card-bg: #ffffff;
-            --text: #1a1a2e;
-            --text-muted: #6c757d;
+            --text: #0f172a;
+            --text-muted: #64748b;
             --accent: #0288d1;
             --runner-accent: #6b46c1;
-            --border: #e2e8f0;
+            --border: #cbd5e1;
             --status-new: #ef6c00;
             --status-done: #2e7d32;
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--bg);
             color: var(--text);
             margin: 0;
-            padding: 10px;
+            padding: 12px;
+            -webkit-text-size-adjust: 100%;
         }
 
         .container { 
@@ -31,36 +32,28 @@
             margin: 0 auto; 
             display: flex; 
             flex-direction: column; 
-            gap: 15px; 
+            gap: 16px; 
         }
         
         .header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 12px;
             background: var(--card-bg);
-            padding: 12px 15px;
+            padding: 16px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-            gap: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        .header-title h1 { margin: 0; font-size: 18px; color: var(--accent); font-weight: 700; }
-        .header-title p { margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .header-top h1 { margin: 0; font-size: 22px; font-weight: 700; color: var(--accent); }
         
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
         .line-badge {
             background: #e0f2fe;
             color: #0369a1;
             padding: 6px 12px;
-            border-radius: 6px;
+            border-radius: 4px;
             font-weight: 700;
-            font-size: 13px;
-            white-space: nowrap;
+            font-size: 14px;
         }
 
         .btn-logout { 
@@ -68,173 +61,85 @@
             color: var(--text-muted); 
             border: 1px solid var(--border); 
             padding: 6px 12px; 
-            border-radius: 6px; 
+            border-radius: 4px; 
             cursor: pointer; 
             font-size: 13px; 
-            white-space: nowrap; 
+            font-weight: 600; 
         }
 
-        .tabs-container {
-            display: flex;
-            gap: 5px;
-            background: #e2e8f0;
-            padding: 5px;
-            border-radius: 8px;
-        }
+        .nav-languages { display: flex; gap: 8px; margin-top: 4px; }
+        .lang-span { font-size: 13px; cursor: pointer; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 4px; background: white; color: #475569; font-weight: 600; }
+        .lang-span.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: bold; }
 
-        .tab-btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: var(--text-muted);
-            background: transparent;
-        }
-
-        .tab-btn.active[data-tab="driver"] {
-            background: var(--accent);
-            color: white;
-        }
-
-        .tab-btn.active[data-tab="runner"] {
-            background: var(--runner-accent);
-            color: white;
-        }
-
-        .dashboard-card {
-            background: var(--card-bg);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-            border: 1px solid var(--border);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .card-title-quick {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #0288d1;
-            margin-bottom: 8px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        select, input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 14px;
-            box-sizing: border-box;
-            background: #ffffff;
-        }
-
-        .stock-search-combo {
-            border-color: #bae6fd;
-            background-color: #f0f9ff;
-        }
-
-        .grid-inputs {
+        .grid-forms {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 10px;
-            margin-top: 15px;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
         }
 
-        .input-group {
+        .card {
+            background: var(--card-bg);
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+            box-sizing: border-box;
+        }
+
+        .card.runner-theme {
+            border-top: 4px solid var(--runner-accent);
+        }
+        .card.driver-theme {
+            border-top: 4px solid var(--accent);
+        }
+
+        h3 { margin-top: 0; margin-bottom: 12px; font-size: 16px; font-weight: 700; color: #1e293b; }
+
+        .form-group {
+            margin-bottom: 12px;
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;
         }
-        .input-group label {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            font-weight: 600;
+        .form-row-inline {
+            display: flex;
+            gap: 10px;
+        }
+        .form-row-inline .form-group { flex: 1; margin-bottom: 0; }
+
+        label { font-size: 12px; font-weight: 600; color: #475569; }
+        select, input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: #fff;
+            color: var(--text);
+            box-sizing: border-box;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.25);
         }
 
-        .qty-section {
-            margin-top: 15px;
-        }
-        .qty-section input {
-            text-align: center;
-            font-size: 18px;
-            font-weight: 700;
-            border: 2px solid var(--accent);
-            color: var(--accent);
-        }
-        
-        .runner-qty-section input {
-            border: 2px solid var(--runner-accent) !important;
-            color: var(--runner-accent) !important;
-        }
-
-        .urgent-box {
-            margin-top: 15px;
-            background: #fff5f5;
-            border: 1px solid #feb2b2;
+        .btn-submit {
+            width: 100%;
             padding: 12px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #c53030;
-            font-size: 12px;
-            font-weight: 700;
-        }
-        .urgent-box input { width: auto; cursor: pointer; }
-
-        .btn-send {
-            width: 100%;
-            background: #0077c2;
-            color: white;
             border: none;
-            padding: 14px;
             border-radius: 6px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
-            cursor: pointer;
-            margin-top: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 2px 6px rgba(0,119,194,0.2);
-        }
-        .btn-send:hover { background: #005fa3; }
-
-        .btn-send-runner {
-            width: 100%;
-            background: var(--runner-accent);
             color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 6px;
-            font-size: 15px;
-            font-weight: 700;
             cursor: pointer;
-            margin-top: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 2px 6px rgba(107,70,193,0.2);
+            transition: background 0.1s ease;
+            margin-top: 4px;
         }
-        .btn-send-runner:hover { background: #553c9a; }
+        .btn-submit.driver-btn { background: var(--accent); }
+        .btn-submit.driver-btn:hover { background: #0277bd; }
+        .btn-submit.runner-btn { background: var(--runner-accent); }
+        .btn-submit.runner-btn:hover { background: #5b39a8; }
 
         .table-responsive {
             display: block;
@@ -247,7 +152,33 @@
 
         table { width: 100%; border-collapse: collapse; }
         th { background: #f8f9fa; color: var(--text-muted); padding: 10px; text-align: left; font-size: 12px; border-bottom: 2px solid var(--border); white-space: nowrap; }
-        td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #edf2f7; white-space: nowrap; }
+        td { padding: 10px; font-size: 13px; border-bottom: 1px solid #edf2f7; white-space: nowrap; }
+
+        .checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #ef4444;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+        .checkbox-label input { width: 16px; height: 16px; cursor: pointer; }
+
+        .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
+        .status-badge.new { background: #fff3e0; color: #e65100; }
+        .status-badge.accepted { background: #e0f2fe; color: #0369a1; }
+        .status-badge.process { background: #f3e8ff; color: #6b46c1; }
+        .status-badge.return_requested { background: #ffedd5; color: #ea580c; border: 1px dashed #ea580c; }
+
+        .btn-return-trigger { background: #ea580c; color: white; border: none; padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .btn-return-trigger:hover { background: #d97706; }
+
+        .table-comment-box { display: flex; gap: 4px; align-items: center; }
+        .table-comment-box input { padding: 6px; font-size: 12px; border: 1px solid var(--border); border-radius: 4px; width: 130px; }
+        .btn-save-comment { background: #f1f5f9; border: 1px solid var(--border); padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-save-comment:hover { background: #e2e8f0; }
 
         .mobile-requests-list {
             display: none;
@@ -260,104 +191,44 @@
             background: #fff;
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 12px;
+            padding: 14px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-        }
-
-        .card-row {
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 8px;
-            gap: 10px;
+            flex-direction: column;
+            gap: 8px;
+            box-sizing: border-box;
         }
-        .card-row:last-child { margin-bottom: 0; }
+        .request-card.card-driver-type { border-left: 5px solid var(--accent); }
+        .request-card.card-runner-type { border-left: 5px solid var(--runner-accent); }
 
-        .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
-        .status-badge.new { background: #e0f2fe; color: #0369a1; }
-        .status-badge.process, .status-badge.accepted { background: #fff3e0; color: #e65100; }
-        .status-badge.delivered, .status-badge.done { background: #e2f0d9; color: #385723; }
-        .status-badge.canceled { background: #ffeeee; color: #e53e3e; }
-        .status-badge.return_requested { background: #ffedd5; color: #ea580c; }
-        
-        .runner-badge {
-            background: #f3e8ff;
-            color: #6b46c1;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .btn-cancel {
-            background: #fff5f5;
-            color: #e53e3e;
-            border: 1px solid #fed7d7;
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 11px;
-        }
-        .btn-cancel:hover { background: #fed7d7; }
-
-        .table-comment-box {
-            display: flex;
-            gap: 4px;
-            align-items: center;
-            margin-bottom: 4px;
-        }
-        .table-comment-box input {
-            padding: 6px;
-            font-size: 12px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            width: 100%;
-            max-width: 150px;
-        }
+        .card-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
         
         .mobile-comment-wrapper {
-            width: 100%;
-            background: #f8fafc;
-            padding: 8px;
-            border-radius: 6px;
-            margin-top: 5px;
+            margin-top: 4px;
+            padding-top: 8px;
+            border-top: 1px dashed #edf2f7;
         }
         .mobile-comment-wrapper .table-comment-box input {
-            max-width: none;
-            flex-grow: 1;
+            width: 100%;
+            padding: 8px;
+            font-size: 13px;
         }
 
-        .btn-save-comment {
-            background: #e0f2fe;
-            color: #0369a1;
-            border: 1px solid #bae6fd;
-            padding: 6px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 12px;
-        }
-        .btn-save-comment:hover { background: #bae6fd; }
-
-        @media (max-width: 992px) {
-            .grid-inputs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-            th:nth-child(7), td:nth-child(7), th:nth-child(11), td:nth-child(11) { display: none; }
+        /* Адаптация под гаджеты */
+        @media (max-width: 1024px) {
+            .header-top h1 { font-size: 20px; }
         }
 
         @media (max-width: 768px) {
-            .grid-inputs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            th:nth-child(5), td:nth-child(5), th:nth-child(10), td:nth-child(10) { display: none; }
-        }
-
-        @media (max-width: 576px) {
-            body { padding: 5px; }
-            .header { flex-direction: column; align-items: flex-start; gap: 12px; }
-            .header-right { width: 100%; justify-content: space-between; }
-            .grid-inputs { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+            .grid-forms { grid-template-columns: 1fr; gap: 12px; }
             .table-responsive { display: none; }
             .mobile-requests-list { display: flex; }
+            body { padding: 8px; }
+            .container { gap: 12px; }
+            .header { padding: 12px; gap: 10px; }
+            .header-top h1 { font-size: 18px; width: 100%; text-align: center; }
+            .header-top { justify-content: center; text-align: center; }
+            .nav-languages { justify-content: center; width: 100%; }
         }
     </style>
 </head>
@@ -365,433 +236,337 @@
 
 <div class="container">
     <div class="header">
-        <div class="header-title">
+        <div class="header-top">
             <h1 id="txt_main_title">Peake Fruit — Production Line Control</h1>
-            <p id="txt_sub_title">Request Pallets from Warehouse</p>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="line-badge" id="line_name_display">Line Terminal</span>
+                <button class="btn-logout" id="btn_logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
+            </div>
         </div>
-        <div class="header-right">
-            <div class="line-badge" id="line_name_display">Line: Loading...</div>
-            <button class="btn-logout" id="btn_logout" onclick="localStorage.clear(); window.location.href='login.html';">Log Out</button>
+        <div class="nav-languages">
+            <span class="lang-span" id="lang_en" onclick="changeLang('en')">EN</span>
+            <span class="lang-span" id="lang_ru" onclick="changeLang('ru')">RU</span>
+            <span class="lang-span" id="lang_lt" onclick="changeLang('lt')">LT</span>
         </div>
     </div>
 
-    <div class="tabs-container">
-        <button class="tab-btn active" data-tab="driver" onclick="switchTab('driver')" id="btn_tab_driver">🚚 Driver Request</button>
-        <button class="tab-btn" data-tab="runner" onclick="switchTab('runner')" id="btn_tab_runner">🏃‍♂️ Runner Request</button>
+    <div class="grid-forms">
+        <div class="card driver-theme">
+            <h3 id="txt_driver_form_title">Call Main Forklift Driver</h3>
+            <form id="driver_call_form" onsubmit="submitDriverCall(event)">
+                <div class="form-group">
+                    <label id="lbl_select_fruit">Select Fruit / Product Description</label>
+                    <select id="driver_select_stock" required>
+                        <option value="">-- Loading Stock List --</option>
+                    </select>
+                </div>
+
+                <div class="form-row-inline">
+                    <div class="form-group">
+                        <label>Consignment</label>
+                        <input type="text" id="drv_cons" readonly style="background:#f1f5f9; font-weight:600;">
+                    </div>
+                    <div class="form-group">
+                        <label>Grower</label>
+                        <input type="text" id="drv_grower" readonly style="background:#f1f5f9;">
+                    </div>
+                </div>
+
+                <div class="form-row-inline" style="margin-top:12px;">
+                    <div class="form-group">
+                        <label>O / S / C</label>
+                        <input type="text" id="drv_osc" readonly style="background:#f1f5f9; font-size:12px;">
+                    </div>
+                    <div class="form-group">
+                        <label id="lbl_qty_pallets">Qty (Pallets / Bins)</label>
+                        <input type="number" id="drv_qty" value="1" min="1" required>
+                    </div>
+                </div>
+
+                <div class="form-row-inline" style="margin-top:12px;">
+                    <div class="form-group">
+                        <label id="lbl_target_store">Target Location / Store</label>
+                        <select id="driver_target_store" required></select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top:12px;">
+                    <label id="lbl_comment_drv">Line Comment (Optional)</label>
+                    <input type="text" id="driver_comment" placeholder="...">
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="driver_urgent"> <span id="txt_urgent_flag">URGENT REQUEST 🚨</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-submit driver-btn" id="btn_submit_drv">SEND REQUEST TO DRIVERS</button>
+            </form>
+        </div>
+
+        <div class="card runner-theme">
+            <h3 id="txt_runner_form_title">Call Runner (Material / Bins / Waste)</h3>
+            <form id="runner_call_form" onsubmit="submitRunnerCall(event)">
+                <div class="form-group">
+                    <label id="lbl_select_material">Select Material Type or Action</label>
+                    <select id="runner_select_task" required>
+                        <option value="">-- Loading Material List --</option>
+                    </select>
+                </div>
+
+                <div class="form-row-inline">
+                    <div class="form-group">
+                        <label id="lbl_runner_qty">Quantity</label>
+                        <input type="number" id="run_qty" value="1" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label id="lbl_runner_store">Target Store / Location</label>
+                        <select id="runner_target_store" required></select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top:12px;">
+                    <label id="lbl_comment_run">Comment for Runner</label>
+                    <input type="text" id="runner_comment" placeholder="...">
+                </div>
+
+                <button type="submit" class="btn-submit runner-btn" id="btn_submit_run">SEND REQUEST TO RUNNERS</button>
+            </form>
+        </div>
     </div>
 
-    <div id="content_driver" class="dashboard-card tab-content active">
-        <div class="card-title-quick" id="txt_quick_select">⚡ Quick Select From Stock Sheet</div>
-        
-        <div style="position: relative; width: 100%;">
-            <input type="text" id="stock_input" class="stock-search-combo" placeholder="🔍 Click or type to search fruit pallet..." oninput="handleCustomSearch(this)" onclick="handleCustomSearch(this)">
-            <div id="custom_dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-top: none; max-height: 250px; overflow-y: auto; z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 0 0 6px 6px;"></div>
-        </div>
-
-        <div class="grid-inputs">
-            <div class="input-group">
-                <label id="lbl_desc">Description / Fruit</label>
-                <input type="text" id="inp_description" placeholder="e.g. Gala Apples 18kg">
-            </div>
-            <div class="input-group">
-                <label id="lbl_cons">Consignment (Cons)</label>
-                <input type="text" id="inp_consignment" placeholder="e.g. C25014">
-            </div>
-            <div class="input-group">
-                <label id="lbl_store">Store / Location</label>
-                <input type="text" id="inp_store" placeholder="e.g. Store 4">
-            </div>
-            <div class="input-group">
-                <label id="lbl_grower">Grower</label>
-                <input type="text" id="inp_grower" placeholder="e.g. John Doe Farms">
-            </div>
-            <div class="input-group">
-                <label id="lbl_origin">Origin</label>
-                <input type="text" id="inp_origin" placeholder="e.g. UK">
-            </div>
-            <div class="input-group">
-                <label id="lbl_size">Size</label>
-                <input type="text" id="inp_size" placeholder="e.g. 75-80mm">
-            </div>
-            <div class="input-group">
-                <label id="lbl_count">Count</label>
-                <input type="text" id="inp_count" placeholder="e.g. 50">
-            </div>
-        </div>
-
-        <div class="input-group" style="margin-top: 15px;">
-            <label id="lbl_comment">Comment</label>
-            <input type="text" id="inp_comment" placeholder="e.g. Need urgently for Line 1">
-        </div>
-
-        <div class="qty-section">
-            <div class="input-group">
-                <label id="lbl_qty">Quantity Needed (QTY)</label>
-                <input type="number" id="inp_qty" value="1" min="1">
-            </div>
-        </div>
-
-        <div class="urgent-box">
-            <input type="checkbox" id="inp_urgent">
-            <label for="inp_urgent" id="lbl_urgent">⚠️ MARK AS URGENT</label>
-        </div>
-
-        <button class="btn-send" id="btn_send" onclick="sendRequestToDriver()">🚀 SEND REQUEST TO DRIVER</button>
-    </div>
-
-    <div id="content_runner" class="dashboard-card tab-content">
-        <div class="input-group">
-            <label style="font-weight:700; color:var(--runner-accent);" id="lbl_runner_task_type">Select Task</label>
-            <select id="runner_task_type" onchange="toggleRunnerFields()"></select>
-        </div>
-
-        <div class="qty-section runner-qty-section" style="margin-top: 15px;">
-            <div class="input-group">
-                <label id="lbl_runner_qty" style="color: var(--runner-accent); font-weight:700;">Quantity Needed</label>
-                <input type="number" id="runner_qty" value="1" min="1">
-            </div>
-        </div>
-
-        <div class="input-group" id="runner_bin_color_block" style="margin-top: 15px;">
-            <label id="lbl_bin_color">Bin Color</label>
-            <select id="runner_bin_color"></select>
-        </div>
-
-        <div class="input-group" id="runner_box_type_block" style="display:none; margin-top: 15px;">
-            <label id="lbl_box_type">Box Type</label>
-            <select id="runner_box_type"></select>
-        </div>
-
-        <div class="input-group" id="runner_tray_type_block" style="display:none; margin-top: 15px;">
-            <label style="color:var(--runner-accent); font-weight:700;">Select Tray Type *</label>
-            <select id="runner_tray_type" class="form-control">
-                <option value="Morrison">Morrison</option>
-                <option value="IFCO">IFCO</option>
-                <option value="EPS">EPS</option>
-                <option value="Sainsbury Black">Sainsbury Black</option>
-            </select>
-        </div>
-
-        <div class="input-group" id="runner_tray_number_block" style="display:none; margin-top: 15px;">
-            <label id="lbl_tray_number" style="color:var(--runner-accent); font-weight:700;">Tray Number *</label>
-            <input type="text" id="runner_tray_number" placeholder="e.g. 12345">
-        </div>
-
-        <div class="input-group" id="runner_store_block" style="display:none; margin-top: 15px;">
-            <label style="color: red; font-weight:700;" id="lbl_target_store">Target Store *</label>
-            <input type="text" id="runner_target_store" placeholder="e.g. Store 10">
-        </div>
-
-        <div class="input-group" style="margin-top: 15px;">
-            <label id="lbl_runner_comment" style="color: #4a5568; font-weight:600;">Comment (Optional)</label>
-            <input type="text" id="runner_comment" placeholder="...">
-        </div>
-
-        <button class="btn-send-runner" id="btn_send_runner" onclick="sendRequestToRunner()">📦 SEND REQUEST TO RUNNER</button>
-    </div>
-
-    <div class="dashboard-card">
-        <h3 id="txt_active_requests" style="margin-top:0; font-size:16px;">Your Active Line Requests (Live)</h3>
+    <div class="card" style="padding:14px;">
+        <h3 id="txt_active_requests_title" style="margin:0; font-size:15px;">Active Requests From This Line</h3>
         
         <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
-                        <th id="th_id">ID</th>
-                        <th id="th_time">Ordered At</th>
-                        <th id="th_store">Store</th>
-                        <th id="th_fruit">Fruit Description</th>
-                        <th id="th_grower">Grower</th>
-                        <th id="th_cons">Consignment</th>
-                        <th id="th_specs">Specs (O/S/C)</th>
+                        <th>ID</th>
+                        <th id="th_type">Type</th>
+                        <th id="th_time">Time</th>
+                        <th id="th_desc">Description</th>
                         <th id="th_qty">Qty</th>
+                        <th id="th_store">Target Store</th>
+                        <th id="th_status">Status / Executed By</th>
                         <th id="th_comment">Comment</th>
-                        <th id="th_driver">Driver</th>
-                        <th id="th_delivered">Delivered At</th>
-                        <th id="th_status">Status</th>
                         <th id="th_action">Action</th>
                     </tr>
                 </thead>
                 <tbody id="line_requests_body">
-                    <tr><td colspan="13" style="text-align:center; color:var(--text-muted);">Loading...</td></tr>
+                    <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Loading active tasks...</td></tr>
                 </tbody>
             </table>
         </div>
 
         <div class="mobile-requests-list" id="line_requests_mobile">
-            <div style="text-align:center; color:var(--text-muted); padding: 20px;">Loading...</div>
+            <div class="empty-msg">Loading...</div>
         </div>
     </div>
 </div>
 
 <script>
+    // Настройки локализации интерфейса Линии (EN / RU / LT)
     const i18n = {
         en: {
             main_title: "Peake Fruit — Production Line Control",
-            sub_title: "Request Pallets from Warehouse",
+            btn_logout: "Log Out",
             line_badge: "Line",
-            logout: "Log Out",
-            quick_select: "⚡ Quick Select From Stock Sheet",
-            search_placeholder: "🔍 Click or type to search fruit pallet...",
-            lbl_desc: "Description / Fruit",
-            lbl_cons: "Consignment (Cons)",
-            lbl_store: "Store / Location",
-            lbl_grower: "Grower",
-            lbl_origin: "Origin",
-            lbl_size: "Size",
-            lbl_count: "Count",
-            lbl_comment: "Comment",
-            lbl_qty: "Quantity Needed (QTY)",
-            lbl_urgent: "⚠️ MARK AS URGENT",
-            btn_send: "🚀 SEND REQUEST TO DRIVER",
-            active_requests: "Your Active Line Requests (Live)",
-            th_id: "ID", th_time: "Ordered At", th_store: "Store", th_fruit: "Fruit Description",
-            th_grower: "Grower", th_cons: "Consignment", th_specs: "Specs (O/S/C)", th_qty: "Qty",
-            th_comment: "Comment", th_driver: "Driver", th_delivered: "Delivered At", th_status: "Status", th_action: "Action",
-            loading: "Loading requests...", no_requests: "No active requests.",
-            waiting: "Waiting...", progress: "In progress", btn_cancel: "Cancel",
-            alert_fields: "Please fill in Description and Consignment fields!",
-            alert_success: "Request sent successfully!",
-            cancel_title: "Cancel Request",
-            cancel_menu: "Please select a reason (enter number 1-4):\n1. No longer needed\n2. Plans changed\n3. Wrong product selected\n4. Other / Mistake",
-            cancel_r1: "No longer needed", cancel_r2: "Plans changed", cancel_r3: "Wrong product selected", cancel_r4: "Other / Mistake",
-            alert_canceled: "Request successfully canceled.",
-            alert_comm_updated: "Comment updated!",
-            alert_store_req: "Please specify the Target Store for pickup!",
-            alert_tray_req: "Please specify the Tray Number!",
-            btn_tab_driver: "🚚 Driver Request",
-            btn_tab_runner: "🏃‍♂️ Runner Request",
-            lbl_runner_task_type: "Select Runner Task",
-            lbl_runner_qty: "Quantity Needed",
-            lbl_bin_color: "Bin Color",
-            lbl_box_type: "Box Type",
-            lbl_tray_number: "Tray Number *",
-            lbl_target_store: "Where to take the pallet? Target Store (Required) *",
-            lbl_runner_comment: "Comment (Optional)",
-            btn_send_runner: "📦 SEND REQUEST TO RUNNER",
-            task_bins: "🪵 Order Bins",
-            task_boxes: "📦 Order Boxes",
-            task_trays: "📥 Order Trays",
-            task_pickup: "🚛 Pallet Pickup (Ready Product)",
-            color_red: "General waste (red bin)",
-            color_blue: "Fruit waste (blue bin)",
-            color_green: "Juice bin (green bin)",
-            color_white: "White bin",
-            box_lidl: "Lidl strawberry",
-            box_costco_pink: "Costco Pink Lady",
-            box_costco_gourmet: "Costco Gourmet",
-            box_costco_lady: "Costco Lady Bird",
-            box_reusable: "Reusable",
-            tray_morrison: "Morrison",
-            tray_ifco: "IFCO",
-            tray_eps: "EPS",
-            tray_sainsbury: "Sainsbury Black",
-            task_txt_bins: "BINS ORDER", task_txt_boxes: "BOXES ORDER", task_txt_trays: "TRAYS ORDER", task_txt_pickup: "PICKUP: Ready Pallet removal"
+            driver_form_title: "Call Main Forklift Driver",
+            select_fruit: "Select Fruit / Product Description",
+            qty_pallets: "Qty (Pallets / Bins)",
+            target_store: "Target Location / Store",
+            comment_drv: "Line Comment (Optional)",
+            urgent_flag: "URGENT REQUEST 🚨",
+            submit_drv: "SEND REQUEST TO DRIVERS",
+            runner_form_title: "Call Runner (Material / Bins / Waste)",
+            select_material: "Select Material Type or Action",
+            runner_qty: "Quantity",
+            runner_store: "Target Store / Location",
+            comment_run: "Comment for Runner",
+            submit_run: "SEND REQUEST TO RUNNERS",
+            active_requests_title: "Active Requests From This Line",
+            th_type: "Type", th_time: "Time", th_desc: "Description", th_qty: "Qty", th_store: "Target Store", th_status: "Status / Executed By", th_comment: "Comment", th_action: "Action",
+            loading_stock: "-- Select Product From Warehouse Stock --",
+            loading_materials: "-- Select Material / Container Task --",
+            alert_success: "Request successfully sent!",
+            btn_return: "🔄 Return Item",
+            prompt_return_qty: "Enter quantity to return:",
+            placeholder_comment: "Add or edit comment...",
+            status_new: "new", status_accepted: "accepted", status_process: "in progress", status_return: "return requested",
+            label_type_driver: "DRIVER", label_type_runner: "RUNNER", label_qty: "Qty", label_store: "Store", label_comment: "Comment",
+            reason_prefix: "Reason: "
         },
         ru: {
-            main_title: "Peake Fruit — Управление Линией",
-            sub_title: "Заказ паллет со склада",
+            main_title: "Peake Fruit — Панель Управления Линии",
+            btn_logout: "Выйти",
             line_badge: "Линия",
-            logout: "Выйти",
-            quick_select: "⚡ Быстрый выбор из остатков (Stock)",
-            search_placeholder: "🔍 Нажмите или введите для поиска паллеты...",
-            lbl_desc: "Описание / Фрукт",
-            lbl_cons: "Консигнация (Cons)",
-            lbl_store: "Камера / Локация",
-            lbl_grower: "Фермер (Grower)",
-            lbl_origin: "Страна (Origin)",
-            lbl_size: "Калибр (Size)",
-            lbl_count: "Остаток (Count)",
-            lbl_comment: "Комментарий",
-            lbl_qty: "Количество паллет (QTY)",
-            lbl_urgent: "⚠️ СРОЧНЫЙ ЗАКАЗ",
-            btn_send: "🚀 ОТПРАВИТЬ ЗАЯВКУ ВОДИТЕЛЮ",
-            active_requests: "Активные заявки вашей линии (Live)",
-            th_id: "ID", th_time: "Время", th_store: "Камера", th_fruit: "Описание фрукта",
-            th_grower: "Фермер", th_cons: "Консигнация", th_specs: "Специф. (O/S/C)", th_qty: "Кол-во",
-            th_comment: "Комментарий", th_driver: "Водитель", th_delivered: "Доставлено", th_status: "Статус", th_action: "Действие",
-            loading: "Загрузка заявок...", no_requests: "Нет активных заявок.",
-            waiting: "Ожидание...", progress: "В работе", btn_cancel: "Отмена",
-            alert_fields: "Пожалуйста, заполните поля Описание и Консигнация!",
-            alert_success: "Заявка успешно отправлена!",
-            cancel_title: "Отмена заявки",
-            cancel_menu: "Выберите причину отмены (введите цифру 1-4):\n1. Больше не нужно\n2. Изменились планы\n3. Выбран не тот продукт\n4. Другое / Ошибка",
-            cancel_r1: "Больше не нужно", cancel_r2: "Изменились планы", cancel_r3: "Выбран не тот продукт", cancel_r4: "Другое / Ошибка",
-            alert_canceled: "Заявка успешно отменена.",
-            alert_comm_updated: "Комментарий обновлен!",
-            alert_store_req: "Пожалуйста, обязательно укажите в какой Store отвезти паллет!",
-            alert_tray_req: "Пожалуйста, укажите номер трея/лотка!",
-            btn_tab_driver: "🚚 Заказ Водителю",
-            btn_tab_runner: "🏃‍♂️ Заказ Ранеру",
-            lbl_runner_task_type: "Тип Задачи для Ранера",
-            lbl_runner_qty: "Количество (Quantity Needed)",
-            lbl_bin_color: "Цвет Бина (Bin Color)",
-            lbl_box_type: "Тип Коробок (Box Type)",
-            lbl_tray_number: "Номер Трея / Лотка (Tray Number) *",
-            lbl_target_store: "Куда отвезти паллет? Target Store (Обязательно) *",
-            lbl_runner_comment: "Комментарий к задаче (Optional)",
-            btn_send_runner: "📦 ОТПРАВИТЬ ЗАЯВКУ РАНЕРУ",
-            task_bins: "🪵 Заказать Бины",
-            task_boxes: "📦 Заказать Коробки",
-            task_trays: "📥 Заказать Треи / Лотки",
-            task_pickup: "🚛 Вывезти готовую продукцию",
-            color_red: "Общие отходы (красный бин)",
-            color_blue: "Фруктовые отходы (синий бин)",
-            color_green: "Бин для сока (зеленый бин)",
-            color_white: "Белый бин",
-            box_lidl: "Lidl strawberry",
-            box_costco_pink: "Costco Pink Lady",
-            box_costco_gourmet: "Costco Gourmet",
-            box_costco_lady: "Costco Lady Bird",
-            box_reusable: "Многоразовые (Reusable)",
-            tray_morrison: "Morrison",
-            tray_ifco: "IFCO",
-            tray_eps: "EPS",
-            tray_sainsbury: "Sainsbury Black",
-            task_txt_bins: "БИНЫ ЗАКАЗ", task_txt_boxes: "КОРОБКИ ЗАКАЗ", task_txt_trays: "ТРЕИ ЗАКАЗ", task_txt_pickup: "ВЫВОЗ: Готовый паллет"
+            driver_form_title: "Вызвать водителя погрузчика",
+            select_fruit: "Выберите фрукт / Описание продукции",
+            qty_pallets: "Кол-во (Паллеты / Бины)",
+            target_store: "Куда переместить / Склад",
+            comment_drv: "Комментарий линии (Необязательно)",
+            urgent_flag: "СРОЧНЫЙ ЗАПРОС 🚨",
+            submit_drv: "ОТПРАВИТЬ ЗАПРОС ВОДИТЕЛЯМ",
+            runner_form_title: "Вызвать ранера (Тара / Бины / Мусор)",
+            select_material: "Выберите тип материала или действие",
+            runner_qty: "Количество",
+            runner_store: "Куда доставить / Место",
+            comment_run: "Комментарий для ранера",
+            submit_run: "ОТПРАВИТЬ ЗАПРОС РАНЕРАМ",
+            active_requests_title: "Активные запросы с этой линии",
+            th_type: "Тип", th_time: "Время", th_desc: "Описание", th_qty: "Кол-во", th_store: "Склад", th_status: "Статус / Кто выполняет", th_comment: "Комментарий", th_action: "Действие",
+            loading_stock: "-- Выберите продукт из остатков склада --",
+            loading_materials: "-- Выберите материал / Задачу по таре --",
+            alert_success: "Запрос успешно отправлен!",
+            btn_return: "🔄 Возврат груза",
+            prompt_return_qty: "Введите количество для возврата:",
+            placeholder_comment: "Добавить/изменить комментарий...",
+            status_new: "новый", status_accepted: "принят", status_process: "в работе", status_return: "запрошен возврат",
+            label_type_driver: "ВОДИТЕЛЬ", label_type_runner: "РАНЕР", label_qty: "Кол-во", label_store: "Склад", label_comment: "Коммент.",
+            reason_prefix: "Причина: "
         },
         lt: {
             main_title: "Peake Fruit — Gamybos Linijos Valdymas",
-            sub_title: "Padėklų užsakymas iš sandėlio",
+            btn_logout: "Atsijungti",
             line_badge: "Linija",
-            logout: "Atsijungti",
-            quick_select: "⚡ Greitas pasirinkimas iš likučių (Stock)",
-            search_placeholder: "🔍 Spustelėkite arba įveskite padėklo paieškai...",
-            lbl_desc: "Aprašymas / Vaisiai",
-            lbl_cons: "Konsignacija (Cons)",
-            lbl_store: "Sandėlis / Vieta",
-            lbl_grower: "Augintojas (Grower)",
-            lbl_origin: "Kilmė (Origin)",
-            lbl_size: "Dydis (Size)",
-            lbl_count: "Likutis (Count)",
-            lbl_comment: "Komentaras",
-            lbl_qty: "Reikalingas kiekis (QTY)",
-            lbl_urgent: "⚠️ SKUBUS UŽSAKYMAS",
-            btn_send: "🚀 SIŲSTI UŽKLAUSĄ VAIRUOTOJUI",
-            active_requests: "Jūsų aktyvios linijos užklausos (Live)",
-            th_id: "ID", th_time: "Laikas", th_store: "Sandėlis", th_fruit: "Vaisių aprašymas",
-            th_grower: "Augintojas", th_cons: "Konsignacija", th_specs: "Specif. (O/S/C)", th_qty: "Kiekis",
-            th_comment: "Komentaras", th_driver: "Vairuotojas", th_delivered: "Pristatyta", th_status: "Būsena", th_action: "Veiksmas",
-            loading: "Kraunamos užklausos...", no_requests: "Aktyvių užklausų nėra.",
-            waiting: "Laukiama...", progress: "Vykdoma", btn_cancel: "Atšaukti",
-            alert_fields: "Prašome užpildyti Aprašymo ir Konsignacijos laukus!",
+            driver_form_title: "Iškviesti krautuvo vairuotoją",
+            select_fruit: "Pasirinkite vaisių / Produkto aprašymą",
+            qty_pallets: "Kiekis (Padėklai / Binai)",
+            target_store: "Kur perkelti / Sandėlis",
+            comment_drv: "Linijos komentaras (Neprivaloma)",
+            urgent_flag: "SKUBUS UŽSAKYMAS 🚨",
+            submit_drv: "SIŲSTI UŽKLAUSĄ VAIRUOTOJAMS",
+            runner_form_title: "Iškviesti runnerį (Tara / Binai / Atliekos)",
+            select_material: "Pasirinkite medžiagos tipą arba veiksmą",
+            runner_qty: "Kiekis",
+            runner_store: "Kur pristatyti / Vieta",
+            comment_run: "Komentaras runneriui",
+            submit_run: "SIŲSTI UŽKLAUSĄ RUNNERIAMS",
+            active_requests_title: "Šios linijos aktyvios užklausos",
+            th_type: "Tipas", th_time: "Laikas", th_desc: "Aprašymas", th_qty: "Kiekis", th_store: "Sandėlis", th_status: "Statusas / Kas vykdo", th_comment: "Komentaras", th_action: "Veiksmas",
+            loading_stock: "-- Pasirinkite produktą iš sandėlio likučių --",
+            loading_materials: "-- Pasirinkite medžiagą / Taros užduotį --",
             alert_success: "Užklausa sėkmingai išsiųsta!",
-            cancel_title: "Užklausos atšaukimas",
-            cancel_menu: "Pasirinkite atšaukimo priežastį (įveskite skaičių 1-4):\n1. Nebereikia\n2. Pasikeitė planai\n3. Pasirinktas netinkamas produktas\n4. Kita / Klaida",
-            cancel_r1: "Nebereikia", cancel_r2: "Pasikeitė planai", cancel_r3: "Pasirinktas netinkamas produktas", cancel_r4: "Kita / Klaida",
-            alert_canceled: "Užklausa sėkmingai atšaukta.",
-            alert_comm_updated: "Komentaras atnaujintas!",
-            alert_store_req: "Prašome nurodyti tikslinį sandėlį (Target Store)!",
-            alert_tray_req: "Prašome nurodyti dėklo numerį!",
-            btn_tab_driver: "🚚 Užklausa Vairuotojui",
-            btn_tab_runner: "🏃‍♂️ Užklausa Raneriui",
-            lbl_runner_task_type: "Ranerio užduoties tipas",
-            lbl_runner_qty: "Reikalingas kiekis",
-            lbl_bin_color: "Konteinerio spalva (Bin Color)",
-            lbl_box_type: "Dėžučių tipas (Box Type)",
-            lbl_tray_number: "Dėklo numeris (Tray Number) *",
-            lbl_target_store: "Kur nuvežti padėklą? Target Store (Privaloma) *",
-            lbl_runner_comment: "Užduoties komentaras (Optional)",
-            btn_send_runner: "📦 SIŲSTI UŽKLAUSĄ RANERIUI",
-            task_bins: "🪵 Užsakyti konteinerius (Bins)",
-            task_boxes: "📦 Užsakyti dėžutes",
-            task_trays: "📥 Užsakyti dėklus / padėkliukus",
-            task_pickup: "🚛 Išvežti paruoštą produkciją",
-            color_red: "Bendrosios atliekos (raudonas bin)",
-            color_blue: "Vaisių atliekos (mėlynas bin)",
-            color_green: "Sulčių konteineris (žalias bin)",
-            color_white: "Baltas konteineris",
-            box_lidl: "Lidl strawberry",
-            box_costco_pink: "Costco Pink Lady",
-            box_costco_gourmet: "Costco Gourmet",
-            box_costco_lady: "Costco Lady Bird",
-            box_reusable: "Daugkartinio naudojimo (Reusable)",
-            tray_morrison: "Morrison",
-            tray_ifco: "IFCO",
-            tray_eps: "EPS",
-            tray_sainsbury: "Sainsbury Black",
-            task_txt_bins: "DEŽIŲ UŽSAKYMAS", task_txt_boxes: "DĖŽUČIŲ UŽSAKYMAS", task_txt_trays: "PADĖKLIUKŲ UŽSAKYMAS", task_txt_pickup: "IŠVEŽIMAS: Paruoštas padėklas"
+            btn_return: "🔄 Grąžinti krovinį",
+            prompt_return_qty: "Įveskite grąžinamą kiekį:",
+            placeholder_comment: "Pridėti ar keisti komentarą...",
+            status_new: "naujas", status_accepted: "priimtas", status_process: "vykdomas", status_return: "prašomas grąžinimas",
+            label_type_driver: "VAIRUOTOJAS", label_type_runner: "RUNNERIS", label_qty: "Kiekis", label_store: "Sandėlis", label_comment: "Koment.",
+            reason_prefix: "Priežastis: "
         }
     };
 
-    // ОПРЕДЕЛЯЕМ ЯЗЫК НА ОСНОВЕ LOCALSTORAGE
-    let currentLang = localStorage.getItem('lang');
-    if (currentLang !== 'ru' && currentLang !== 'lt') {
-        currentLang = 'en'; // если пусто или english — ставим en по умолчанию
-    }
-    const lang = i18n[currentLang];
+    // Динамический словарь перевода внутренних системных значений из базы данных
+    const dynamicDictionary = {
+        ru: {
+            "švežimas: paruoštas padėklas": "Готовый паллет",
+            "paruoštas padėklas": "Готовый паллет",
+            "juice bin": "Juice bin (Зеленый контейнер)",
+            "green bin": "Juice bin (Зеленый контейнер)",
+            "general waste": "General waste (Красный контейнер)",
+            "red bin": "General waste (Красный контейнер)",
+            "fruit waste": "Fruit waste (Синий контейнер)",
+            "blue bin": "Fruit waste (Синий контейнер)",
+            "white bin": "White Bin (Белый контейнер)",
+            "reusable": "Reusable (Многоразовый)",
+            "lidl strawberry": "Lidl strawberry (Клубника)",
+            "reason for cancellation:": "Причина отмены:"
+        },
+        lt: {
+            "švežimas: paruoštas padėklas": "ŠVEŽIMAS: Paruoštas padėklas",
+            "paruoštas padėklas": "Paruoštas padėklas",
+            "juice bin": "Juice bin (Žalia šiukšliadėžė)",
+            "green bin": "Juice bin (Žalia šiukšliadėžė)",
+            "general waste": "General waste (Raudona šiukšliadėžė)",
+            "red bin": "General waste (Raudona šiukšliadėžė)",
+            "fruit waste": "Fruit waste (Mėlyna šiukšliadėžė)",
+            "blue bin": "Fruit waste (Mėlyna šiukšliadėžė)",
+            "white bin": "White Bin (Balta šiukšliadėžė)",
+            "reusable": "Reusable (Daugkartinio naudojimo)",
+            "lidl strawberry": "Lidl strawberry (Braškės)",
+            "reason for cancellation:": "Atšaukimo priežastis:"
+        },
+        en: {
+            "švežimas: paruoštas padėklas": "Ready Pallet",
+            "paruoštas padėklas": "Ready Pallet",
+            "juice bin": "Juice bin (Green Bin)",
+            "general waste": "General waste (Red Bin)",
+            "fruit waste": "Fruit waste (Blue Bin)",
+            "white bin": "White Bin",
+            "reusable": "Reusable",
+            "lidl strawberry": "Lidl strawberry",
+            "reason for cancellation:": "Reason for cancellation:"
+        }
+    };
 
-    function setText(id, text) {
-        const el = document.getElementById(id);
-        if (el) el.innerText = text;
-    }
+    let currentLang = localStorage.getItem('lang') || 'en';
+    let lang = i18n[currentLang];
 
-    // ДИНАМИЧЕСКАЯ ФУНКЦИЯ ЛОКАЛИЗАЦИИ ИНТЕРФЕЙСА
     function applyLocalization() {
-        setText('txt_main_title', lang.main_title);
-        setText('txt_sub_title', lang.sub_title);
-        setText('btn_logout', lang.logout);
-        setText('txt_quick_select', lang.quick_select);
+        document.getElementById('txt_main_title').innerText = lang.main_title;
+        document.getElementById('btn_logout').innerText = lang.btn_logout;
+        document.getElementById('txt_driver_form_title').innerText = lang.driver_form_title;
+        document.getElementById('lbl_select_fruit').innerText = lang.select_fruit;
+        document.getElementById('lbl_qty_pallets').innerText = lang.qty_pallets;
+        document.getElementById('lbl_target_store').innerText = lang.target_store;
+        document.getElementById('lbl_comment_drv').innerText = lang.comment_drv;
+        document.getElementById('txt_urgent_flag').innerText = lang.urgent_flag;
+        document.getElementById('btn_submit_drv').innerText = lang.submit_drv;
+
+        document.getElementById('txt_runner_form_title').innerText = lang.runner_form_title;
+        document.getElementById('lbl_select_material').innerText = lang.select_material;
+        document.getElementById('lbl_runner_qty').innerText = lang.runner_qty;
+        document.getElementById('lbl_runner_store').innerText = lang.runner_store;
+        document.getElementById('lbl_comment_run').innerText = lang.comment_run;
+        document.getElementById('btn_submit_run').innerText = lang.submit_run;
+        document.getElementById('txt_active_requests_title').innerText = lang.active_requests_title;
+
+        document.getElementById('th_type').innerText = lang.th_type;
+        document.getElementById('th_time').innerText = lang.th_time;
+        document.getElementById('th_desc').innerText = lang.th_desc;
+        document.getElementById('th_qty').innerText = lang.th_qty;
+        document.getElementById('th_store').innerText = lang.th_store;
+        document.getElementById('th_status').innerText = lang.th_status;
+        document.getElementById('th_comment').innerText = lang.th_comment;
+        document.getElementById('th_action').innerText = lang.th_action;
+
+        document.querySelectorAll('.lang-span').forEach(s => s.classList.remove('active'));
+        const activeLangSpan = document.getElementById(`lang_${currentLang}`);
+        if(activeLangSpan) activeLangSpan.classList.add('active');
+    }
+
+    function changeLang(target) {
+        currentLang = target;
+        localStorage.setItem('lang', target);
+        lang = i18n[target];
+        applyLocalization();
+        if(currentUser) {
+            document.getElementById('line_name_display').innerText = `${lang.line_badge}: ${cachedLineFullName}`;
+        }
+        loadStockDropdown();
+        loadActiveRequests();
+    }
+
+    function translateDynamicText(text) {
+        if (!text) return "-";
+        const cleanText = text.trim().toLowerCase();
         
-        const stockInput = document.getElementById('stock_input');
-        if (stockInput) stockInput.placeholder = lang.search_placeholder;
-
-        setText('lbl_desc', lang.lbl_desc);
-        setText('lbl_cons', lang.lbl_cons);
-        setText('lbl_store', lang.lbl_store);
-        setText('lbl_grower', lang.lbl_grower);
-        setText('lbl_origin', lang.lbl_origin);
-        setText('lbl_size', lang.lbl_size);
-        setText('lbl_count', lang.lbl_count);
-        setText('lbl_comment', lang.lbl_comment);
-        setText('lbl_qty', lang.lbl_qty);
-        setText('lbl_urgent', lang.lbl_urgent);
-        setText('btn_send', lang.btn_send);
-        setText('txt_active_requests', lang.active_requests);
-
-        ['th_id', 'th_time', 'th_store', 'th_fruit', 'th_grower', 'th_cons', 'th_specs', 'th_qty', 'th_comment', 'th_driver', 'th_delivered', 'th_status', 'th_action'].forEach(id => setText(id, lang[id]));
-
-        setText('btn_tab_driver', lang.btn_tab_driver);
-        setText('btn_tab_runner', lang.btn_tab_runner);
-        setText('lbl_runner_task_type', lang.lbl_runner_task_type);
-        setText('lbl_runner_qty', lang.lbl_runner_qty);
-        setText('lbl_bin_color', lang.lbl_bin_color);
-        setText('lbl_box_type', lang.lbl_box_type);
-        setText('lbl_tray_number', lang.lbl_tray_number);
-        setText('lbl_target_store', lang.lbl_target_store);
-        setText('lbl_runner_comment', lang.lbl_runner_comment);
-        setText('btn_send_runner', lang.btn_send_runner);
-
-        const taskType = document.getElementById('runner_task_type');
-        if (taskType) {
-            taskType.innerHTML = `
-                <option value="bins">${lang.task_bins}</option>
-                <option value="boxes">${lang.task_boxes}</option>
-                <option value="trays">${lang.task_trays}</option>
-                <option value="pickup">${lang.task_pickup}</option>
-            `;
+        if (dynamicDictionary[currentLang] && dynamicDictionary[currentLang][cleanText]) {
+            return dynamicDictionary[currentLang][cleanText];
         }
 
-        const binColor = document.getElementById('runner_bin_color');
-        if (binColor) {
-            binColor.innerHTML = `
-                <option value="${lang.color_red}">${lang.color_red}</option>
-                <option value="${lang.color_blue}">${lang.color_blue}</option>
-                <option value="${lang.color_green}">${lang.color_green}</option>
-                <option value="${lang.color_white}">${lang.color_white}</option>
-            `;
+        let result = text;
+        if (dynamicDictionary[currentLang]) {
+            for (const [key, translatedValue] of Object.entries(dynamicDictionary[currentLang])) {
+                if (cleanText.includes(key)) {
+                    const regex = new RegExp(key, 'gi');
+                    result = result.replace(regex, translatedValue);
+                }
+            }
         }
-
-        const boxType = document.getElementById('runner_box_type');
-        if (boxType) {
-            boxType.innerHTML = `
-                <option value="${lang.box_lidl}">${lang.box_lidl}</option>
-                <option value="${lang.box_costco_pink}">${lang.box_costco_pink}</option>
-                <option value="${lang.box_costco_gourmet}">${lang.box_costco_gourmet}</option>
-                <option value="${lang.box_costco_lady}">${lang.box_costco_lady}</option>
-                <option value="${lang.box_reusable}">${lang.box_reusable}</option>
-            `;
-        }
+        return result;
     }
 
     const currentUser = localStorage.getItem('user');
@@ -803,10 +578,7 @@
         window.location.href = 'login.html';
     }
 
-    // Запускаем локализацию при загрузке страницы!
     applyLocalization();
-    
-    document.getElementById('line_name_display').innerText = `${lang.line_badge}: ${currentUser}`;
 
     const k1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.';
     const k2 = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kd2lwbW9ia3FkdnRhYWpxZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTgxOTksImV4cCI6MjA5NDM3NDE5OX0.';
@@ -816,270 +588,8 @@
     const supabaseKey = k1 + k2 + k3;
     const clientDb = supabase.createClient(supabaseUrl, supabaseKey);
 
-    let stockItemsGlobal = [];
     let cachedLineFullName = currentUser;
-
-    async function fetchLineFullName() {
-        try {
-            const { data, error } = await clientDb
-                .from('users_table') 
-                .select('name') 
-                .eq('u', currentUser)
-                .single();
-                
-            if (!error && data && data.name) {
-                cachedLineFullName = data.name;
-            } else {
-                if (currentUser === 'hl1') cachedLineFullName = "Hand Line1";
-            }
-        } catch (e) {
-            if (currentUser === 'hl1') cachedLineFullName = "Hand Line1";
-        }
-        const badgeEl = document.getElementById('line_name_display');
-        if (badgeEl) badgeEl.innerText = `${lang.line_badge}: ${cachedLineFullName}`;
-        
-        loadActiveRequests();
-    }
-
-    function switchTab(tabName) {
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        
-        document.querySelector(`button[data-tab="${tabName}"]`).classList.add('active');
-        document.getElementById(`content_${tabName}`).classList.add('active');
-    }
-
-    function toggleRunnerFields() {
-        const type = document.getElementById('runner_task_type')?.value;
-        const blocks = {
-            'runner_bin_color_block': type === 'bins',
-            'runner_box_type_block': type === 'boxes',
-            'runner_tray_number_block': type === 'trays',
-            'runner_tray_type_block': type === 'trays',
-            'runner_store_block': type === 'pickup'
-        };
-
-        for (const [id, isVisible] of Object.entries(blocks)) {
-            const el = document.getElementById(id);
-            if (el) el.style.display = isVisible ? 'flex' : 'none';
-        }
-    }
-
-    async function loadStockDropdown() {
-        try {
-            const { data: stock, error } = await clientDb.from('stock').select('*').gt('count', 0);
-            if (error) throw error;
-            if (stock) {
-                stockItemsGlobal = stock;
-            }
-        } catch (e) { console.error(e); }
-    }
-
-    function handleCustomSearch(inputEl) {
-        const query = inputEl.value.toLowerCase().trim();
-        const dropdown = document.getElementById('custom_dropdown');
-        
-        const filtered = stockItemsGlobal.filter(item => {
-            const desc = (item.description || '').toLowerCase();
-            const cons = String(item.consignment || item.Consignment || '').toLowerCase();
-            const store = String(item.store || '').toLowerCase();
-            return desc.includes(query) || cons.includes(query) || store.includes(query);
-        });
-
-        if (filtered.length === 0) {
-            dropdown.style.display = 'none';
-            return;
-        }
-
-        dropdown.innerHTML = filtered.slice(0, 30).map(item => {
-            const desc = item.description || 'Unknown Fruit';
-            const cons = item.consignment || item.Consignment || 'No Cons';
-            const size = item.size || 'No Size';
-            const store = item.store || '?';
-            const fullText = `Store ${store} | ${desc} (Cons: ${cons}, Size: ${size})`;
-            
-            return `
-                <div style="padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #edf2f7; font-size: 14px; background: white;" 
-                     onclick="selectPlatformItem(${item.id}, '${fullText.replace(/'/g, "\\'")}')"
-                     onmouseover="this.style.backgroundColor='#f0f9ff'" 
-                     onmouseout="this.style.backgroundColor='white'">
-                    ${fullText}
-                </div>
-            `;
-        }).join('');
-
-        dropdown.style.display = 'block';
-    }
-
-    function selectPlatformItem(id, fullText) {
-        document.getElementById('stock_input').value = fullText;
-        document.getElementById('custom_dropdown').style.display = 'none';
-
-        const match = stockItemsGlobal.find(i => i.id === id);
-        if (!match) return;
-
-        document.getElementById('inp_description').value = match.description || '';
-        document.getElementById('inp_consignment').value = match.consignment || match.Consignment || '';
-        document.getElementById('inp_store').value = match.store || '';
-        document.getElementById('inp_grower').value = match.grower || '';
-        document.getElementById('inp_origin').value = match.origin || '';
-        document.getElementById('inp_size').value = match.size || '';
-        document.getElementById('inp_count').value = match.count || '';
-    }
-
-    document.addEventListener('click', function(e) {
-        const dropdown = document.getElementById('custom_dropdown');
-        const inputEl = document.getElementById('stock_input');
-        if (e.target !== inputEl && e.target !== dropdown) {
-            if(dropdown) dropdown.style.display = 'none';
-        }
-    });
-
-    async function sendRequestToDriver() {
-        const desc = document.getElementById('inp_description').value.trim();
-        const cons = document.getElementById('inp_consignment').value.trim();
-        const store = document.getElementById('inp_store').value.trim();
-        const grower = document.getElementById('inp_grower').value.trim();
-        const origin = document.getElementById('inp_origin').value.trim();
-        const size = document.getElementById('inp_size').value.trim();
-        const count = document.getElementById('inp_count').value.trim();
-        const qty = parseInt(document.getElementById('inp_qty').value) || 1;
-        const comment = document.getElementById('inp_comment').value.trim();
-        const isUrgent = document.getElementById('inp_urgent').checked;
-
-        if (!desc || !cons) {
-            alert(lang.alert_fields);
-            return;
-        }
-
-        try {
-            const { error } = await clientDb.from('orders').insert([{
-                line: cachedLineFullName, 
-                description: isUrgent ? '⚠️ ' + desc : desc,
-                consignment: cons,
-                store: store,
-                grower: grower,
-                origin: origin,
-                size: size,
-                available: count, 
-                qty: qty,
-                status: 'new',
-                urgent: isUrgent,
-                comment: comment,
-                is_runner: false,
-                target_role: 'driver'
-            }]);
-
-            if (error) throw error;
-            alert(lang.alert_success);
-            
-            document.getElementById('stock_input').value = '';
-            document.getElementById('inp_description').value = '';
-            document.getElementById('inp_consignment').value = '';
-            document.getElementById('inp_store').value = '';
-            document.getElementById('inp_grower').value = '';
-            document.getElementById('inp_origin').value = '';
-            document.getElementById('inp_size').value = '';
-            document.getElementById('inp_count').value = '';
-            document.getElementById('inp_qty').value = '1';
-            document.getElementById('inp_comment').value = '';
-            document.getElementById('inp_urgent').checked = false;
-            loadActiveRequests();
-        } catch (e) { alert(e.message); }
-    }
-
-    async function sendRequestToRunner() {
-        const type = document.getElementById('runner_task_type').value;
-        const qty = parseInt(document.getElementById('runner_qty').value) || 1;
-        const comment = document.getElementById('runner_comment').value.trim();
-        
-        let finalDescription = "";
-        let finalStore = "Packaging";
-        let dbType = "runner_materials";
-
-        if (type === 'bins') {
-            const colorSelect = document.getElementById('runner_bin_color');
-            const colorLabel = colorSelect.options[colorSelect.selectedIndex].text;
-            finalDescription = `🪵 ${lang.task_txt_bins} (${colorLabel}) x${qty}`;
-        } else if (type === 'boxes') {
-            const boxSelect = document.getElementById('runner_box_type');
-            const boxLabel = boxSelect.options[boxSelect.selectedIndex].text;
-            finalDescription = `📦 ${lang.task_txt_boxes} (${boxLabel}) x${qty}`;
-        } else if (type === 'trays') {
-            const trayNum = document.getElementById('runner_tray_number').value.trim();
-            const trayType = document.getElementById('runner_tray_type').value; 
-            
-            if (!trayNum) { alert(lang.alert_tray_req); return; }
-            
-            finalDescription = `📥 ${lang.task_txt_trays} (${trayType} № ${trayNum}) x${qty}`;
-        } else if (type === 'pickup') {
-            const targetStore = document.getElementById('runner_target_store').value.trim();
-            if (!targetStore) { alert(lang.alert_store_req); return; }
-            finalDescription = `🚛 ${lang.task_txt_pickup} x${qty}`;
-            finalStore = targetStore;
-            dbType = "runner_pickup";
-        }
-
-        try {
-            const { error } = await clientDb.from('orders').insert([{
-                line: cachedLineFullName,
-                description: finalDescription,
-                store: finalStore,
-                qty: qty,
-                status: 'new',
-                is_runner: true,
-                type: dbType,
-                comment: comment,
-                target_role: 'runner'
-            }]);
-            if (error) throw error;
-            alert(lang.alert_success);
-            
-            document.getElementById('runner_target_store').value = '';
-            document.getElementById('runner_tray_number').value = '';
-            document.getElementById('runner_comment').value = '';
-            document.getElementById('runner_qty').value = '1';
-            loadActiveRequests();
-        } catch (e) { alert(e.message); }
-    }
-
-    async function cancelOrder(orderId) {
-        const choice = prompt(`${lang.cancel_title} #${orderId}\n\n${lang.cancel_menu}`, "1");
-        if (choice === null) return; 
-
-        let reasonText = "";
-        switch(choice.trim()) {
-            case "1": reasonText = lang.cancel_r1; break;
-            case "2": reasonText = lang.cancel_r2; break;
-            case "3": reasonText = lang.cancel_r3; break;
-            case "4": reasonText = lang.cancel_r4; break;
-            default: reasonText = choice.trim() ? choice.trim() : "Canceled";
-        }
-
-        try {
-            const { error } = await clientDb
-                .from('orders')
-                .update({ status: 'canceled', comment: `❌ ${reasonText}` })
-                .eq('id', orderId);
-
-            if (error) throw error;
-            alert(lang.alert_canceled);
-            loadActiveRequests();
-        } catch (e) { alert(e.message); }
-    }
-
-    async function updateOrderComment(orderId) {
-        const inputEl = document.getElementById(`inline_comment_${orderId}`) || document.getElementById(`inline_comment_mob_${orderId}`);
-        if (!inputEl) return;
-        const newComment = inputEl.value.trim();
-
-        try {
-            const { error } = await clientDb.from('orders').update({ comment: newComment }).eq('id', orderId);
-            if (error) throw error;
-            alert(lang.alert_comm_updated);
-            loadActiveRequests();
-        } catch (e) { alert(e.message); }
-    }
+    let localStockData = [];
 
     function formatTime(isoString) {
         if (!isoString) return "-";
@@ -1089,137 +599,240 @@
         } catch (e) { return "-"; }
     }
 
-    // Функция для инициации возврата
-    async function initiateReturn(orderId, maxQty) {
-        const qtyToReturn = prompt(`Линия заказала ${maxQty} паллет. Сколько хотите вернуть?`, maxQty);
-        
-        if (!qtyToReturn || isNaN(qtyToReturn) || qtyToReturn > maxQty || qtyToReturn <= 0) {
-            alert("Некорректное количество!");
-            return;
-        }
+    async function fetchLineFullName() {
+        try {
+            const { data, error } = await clientDb.from('users_table').select('*').eq('u', currentUser);
+            if (!error && data && data.length > 0) {
+                const realName = data[0].name;
+                if (realName) {
+                    cachedLineFullName = realName;
+                    document.getElementById('line_name_display').innerText = `${lang.line_badge}: ${realName}`;
+                }
+            }
+        } catch (err) {}
+    }
+
+    async function loadStockDropdown() {
+        try {
+            const { data: stock, error: e1 } = await clientDb.from('stock').select('*').order('id', {ascending:false});
+            const { data: stores, error: e2 } = await clientDb.from('stores').select('*').order('name');
+            const { data: materials, error: e3 } = await clientDb.from('materials_list').select('*').order('name');
+
+            if (e1 || e2 || e3) return;
+
+            localStockData = stock || [];
+
+            const stockSelect = document.getElementById('driver_select_stock');
+            stockSelect.innerHTML = `<option value="">${lang.loading_stock}</option>` + 
+                localStockData.map(s => `<option value="${s.id}">${s.description} (Cons: ${s.consignment || s.Consignment || '-'})</option>`).join('');
+
+            stockSelect.onchange = () => {
+                const selectedId = stockSelect.value;
+                const found = localStockData.find(item => item.id == selectedId);
+                if (found) {
+                    document.getElementById('drv_cons').value = found.consignment || found.Consignment || '-';
+                    document.getElementById('drv_grower').value = found.grower || '-';
+                    document.getElementById('drv_osc').value = `${found.origin || '-'}/${found.size || '-'}/${found.available || '-'}`;
+                } else {
+                    document.getElementById('drv_cons').value = '';
+                    document.getElementById('drv_grower').value = '';
+                    document.getElementById('drv_osc').value = '';
+                }
+            };
+
+            const drvStore = document.getElementById('driver_target_store');
+            drvStore.innerHTML = (stores || []).map(st => `<option value="${st.name}">${st.name}</option>`).join('');
+
+            const runSelect = document.getElementById('runner_select_task');
+            runSelect.innerHTML = `<option value="">${lang.loading_materials}</option>` +
+                (materials || []).filter(m => !m.is_store_location).map(m => `<option value="${m.name}">${translateDynamicText(m.name)}</option>`).join('');
+
+            const runStore = document.getElementById('runner_target_store');
+            runStore.innerHTML = (materials || []).filter(m => m.is_store_location).map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+
+        } catch (e) {}
+    }
+
+    async function submitDriverCall(e) {
+        e.preventDefault();
+        const stockSelect = document.getElementById('driver_select_stock');
+        const selectedId = stockSelect.value;
+        const found = localStockData.find(item => item.id == selectedId);
+        if (!found) return;
+
+        const payload = {
+            line: cachedLineFullName,
+            target_role: 'driver',
+            is_runner: false,
+            status: 'new',
+            description: found.description,
+            consignment: found.consignment || found.Consignment || '-',
+            grower: found.grower || '-',
+            origin: found.origin || '-',
+            size: found.size || '-',
+            available: found.available || '-',
+            qty: parseInt(document.getElementById('drv_qty').value) || 1,
+            store: document.getElementById('driver_target_store').value,
+            comment: document.getElementById('driver_comment').value.trim(),
+            urgent: document.getElementById('driver_urgent').checked
+        };
+
+        try {
+            const { error } = await clientDb.from('orders').insert([payload]);
+            if (error) throw error;
+            alert(lang.alert_success);
+            document.getElementById('driver_comment').value = '';
+            document.getElementById('driver_urgent').checked = false;
+            loadActiveRequests();
+        } catch (err) { alert(err.message); }
+    }
+
+    async function submitRunnerCall(e) {
+        e.preventDefault();
+        const payload = {
+            line: cachedLineFullName,
+            target_role: 'runner',
+            is_runner: true,
+            status: 'new',
+            description: document.getElementById('runner_select_task').value,
+            qty: parseInt(document.getElementById('run_qty').value) || 1,
+            store: document.getElementById('runner_target_store').value,
+            comment: document.getElementById('runner_comment').value.trim(),
+            urgent: false
+        };
+
+        try {
+            const { error } = await clientDb.from('orders').insert([payload]);
+            if (error) throw error;
+            alert(lang.alert_success);
+            document.getElementById('runner_comment').value = '';
+            loadActiveRequests();
+        } catch (err) { alert(err.message); }
+    }
+
+    async function triggerReturnRequest(orderId, maxQty) {
+        const inputStr = prompt(lang.prompt_return_qty, maxQty);
+        if (inputStr === null) return;
+        const rQty = parseInt(inputStr) || 0;
+        if (rQty <= 0) return;
 
         try {
             const { error } = await clientDb
                 .from('orders')
-                .update({ 
-                    status: 'return_requested', 
-                    return_qty: parseInt(qtyToReturn) 
-                })
+                .update({ status: 'return_requested', return_qty: rQty })
                 .eq('id', orderId);
 
             if (error) throw error;
-            alert("Запрос на возврат отправлен водителю.");
-            loadActiveRequests(); // Обновляем список
-        } catch (e) {
-            alert("Ошибка: " + e.message);
+            loadActiveRequests();
+        } catch (e) { alert(e.message); }
+    }
+
+    async function updateOrderComment(orderId) {
+        let commentInput = document.getElementById(`inline_comment_${orderId}`);
+        if (!commentInput) {
+            commentInput = document.getElementById(`inline_comment_mob_${orderId}`);
         }
+        const val = commentInput ? commentInput.value.trim() : "";
+
+        try {
+            await clientDb.from('orders').update({ comment: val }).eq('id', orderId);
+            loadActiveRequests();
+        } catch (e) {}
+    }
+
+    function getStatusBadgeLabel(status, driverName) {
+        const s = (status || 'new').toLowerCase();
+        let namePostfix = driverName ? ` (${driverName})` : '';
+        
+        if (s === 'new') return `<span class="status-badge new">${lang.status_new}</span>`;
+        if (s === 'accepted') return `<span class="status-badge accepted">${lang.status_accepted}${namePostfix}</span>`;
+        if (s === 'process') return `<span class="status-badge process">${lang.status_process}${namePostfix}</span>`;
+        if (s === 'return_requested') return `<span class="status-badge return_requested">${lang.status_return}</span>`;
+        return `<span class="status-badge">${translateDynamicText(status)}${namePostfix}</span>`;
     }
 
     async function loadActiveRequests() {
-        try {
-            const activeId = document.activeElement ? document.activeElement.id : null;
-            let currentTypingValue = null;
-            
-            if (activeId && (activeId.startsWith('inline_comment_') || activeId === 'stock_input')) {
-                const el = document.getElementById(activeId);
-                if(el) currentTypingValue = el.value;
-            }
+        let activeId = null;
+        let currentTypingValue = null;
+        if (document.activeElement && document.activeElement.id && document.activeElement.id.startsWith('inline_comment_')) {
+            activeId = document.activeElement.id;
+            currentTypingValue = document.activeElement.value;
+        }
 
+        try {
             const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
-                .or(`line.eq."${currentUser}",line.eq."${cachedLineFullName}"`)
+                .eq('line', cachedLineFullName)
                 .order('id', { ascending: false });
 
-            if (error) throw error;
-
-            if (!orders || orders.length === 0) {
-                document.getElementById('line_requests_body').innerHTML = `<tr><td colspan="13" style="text-align:center; color:var(--text-muted);">${lang.no_requests}</td></tr>`;
-                document.getElementById('line_requests_mobile').innerHTML = `<div style="text-align:center; color:var(--text-muted); padding: 20px;">${lang.no_requests}</div>`;
-                return;
-            }
+            if (error || !orders) return;
 
             const tableHtml = orders.map(o => {
-                const statusLwr = (o.status || 'new').toLowerCase();
+                const isDrv = !o.is_runner;
+                const typeLabel = isDrv ? `<span style="color:var(--accent); font-weight:bold;">${lang.label_type_driver}</span>` : `<span style="color:var(--runner-accent); font-weight:bold;">${lang.label_type_runner}</span>`;
                 
-                let actionHtml = '';
-                if (statusLwr === 'new') {
-                    actionHtml = `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>`;
-                } else if (statusLwr === 'delivered' || statusLwr === 'done') {
-                    actionHtml = `<button class="btn-cancel" style="background:#fff7ed; color:#ea580c; border-color:#ffedd5;" onclick="initiateReturn(${o.id}, ${o.qty || 1})">${currentLang === 'ru' ? 'Возврат' : 'Return'}</button>`;
-                } else if (statusLwr === 'return_requested') {
-                    actionHtml = `<span style="color:#ea580c; font-size:11px; font-weight:bold;">${currentLang === 'ru' ? 'Запрошен возврат' : 'Return Requested'}</span>`;
-                } else {
-                    actionHtml = `<span style="color:var(--text-muted); font-size:11px;">${lang.progress}</span>`;
+                let actionBtn = '-';
+                if (isDrv && (o.status || '').toLowerCase() === 'accepted') {
+                    actionBtn = `<button class="btn-return-trigger" onclick="triggerReturnRequest(${o.id}, ${o.qty || 1})">${lang.btn_return}</button>`;
                 }
 
-                const assigneeDisplay = o.is_runner 
-                    ? (o.driver_name ? '🏃‍♂️ ' + o.driver_name : `<span class="runner-badge">${currentLang === 'ru' ? 'Ранер' : 'Runner Task'}</span>`)
-                    : (o.driver_name ? '🚚 ' + o.driver_name : lang.waiting);
+                const styleRow = o.urgent ? 'background:#fff5f5; font-weight:500;' : '';
 
                 return `
-                <tr>
-                    <td>#${o.id}</td>
+                <tr style="${styleRow}">
+                    <td><strong>#${o.id}</strong></td>
+                    <td>${typeLabel}</td>
                     <td>⏱ ${formatTime(o.created_at)}</td>
-                    <td><span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></td>
-                    <td><strong style="${o.is_runner ? 'color:var(--runner-accent);' : ''}">${o.description || '-'}</strong></td>
-                    <td>${o.grower || '-'}</td>
-                    <td>${o.consignment || o.Consignment || '-'}</td>
-                    <td>${o.origin || '-'} / ${o.size || '-'} / ${o.available || '-'}</td>
-                    <td><strong style="color:#0288d1;">${o.qty || '1'}</strong></td>
+                    <td><span style="font-weight:600;">${translateDynamicText(o.description)}</span></td>
+                    <td><strong>${o.qty || 1}</strong></td>
+                    <td><span style="color:#2e7d32; font-weight:600;">${o.store || '-'}</span></td>
+                    <td>${getStatusBadgeLabel(o.status, o.driver_name)}</td>
                     <td>
                         <div class="table-comment-box">
-                            <input type="text" id="inline_comment_${o.id}" value="${(o.comment || '').replace(/"/g, '&quot;')}" placeholder="...">
+                            <input type="text" id="inline_comment_${o.id}" value="${(o.comment || '').replace(/\"/g, '&quot;')}" placeholder="${lang.placeholder_comment}">
                             <button class="btn-save-comment" onclick="updateOrderComment(${o.id})">💾</button>
                         </div>
                     </td>
-                    <td>${assigneeDisplay}</td>
-                    <td>${o.delivered_at ? formatTime(o.delivered_at) : '-'}</td>
-                    <td><span class="status-badge ${statusLwr}">${o.status || 'new'}</span></td>
-                    <td>${actionHtml}</td>
+                    <td>${actionHtml = (o.driver_comment ? `<div style="font-size:11px; color:#c2410c; max-width:140px; white-space:normal; margin-bottom:4px;">${translateDynamicText(o.driver_comment)}</div>` : '') + actionBtn}</td>
                 </tr>`;
             }).join('');
 
             const mobileHtml = orders.map(o => {
-                const statusLwr = (o.status || 'new').toLowerCase();
+                const isDrv = !o.is_runner;
+                const cardTypeClass = isDrv ? 'card-driver-type' : 'card-runner-type';
+                const typeLabel = isDrv ? `<span style="color:var(--accent); font-weight:bold; font-size:12px;">${lang.label_type_driver}</span>` : `<span style="color:var(--runner-accent); font-weight:bold; font-size:12px;">${lang.label_type_runner}</span>`;
                 
-                let actionButton = '';
-                if (statusLwr === 'new') {
-                    actionButton = `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>`;
-                } else if (statusLwr === 'delivered' || statusLwr === 'done') {
-                    actionButton = `<button class="btn-cancel" style="background:#fff7ed; color:#ea580c; border-color:#ffedd5;" onclick="initiateReturn(${o.id}, ${o.qty || 1})">${currentLang === 'ru' ? 'Возврат' : 'Return'}</button>`;
-                } else if (statusLwr === 'return_requested') {
-                    actionButton = `<span style="color:#ea580c; font-size:12px; font-weight:bold;">${currentLang === 'ru' ? 'Запрошен возврат' : 'Return Requested'}</span>`;
-                } else {
-                    actionButton = `<span style="color:var(--text-muted); font-size:12px;">${lang.progress}</span>`;
+                let actionBtn = '';
+                if (isDrv && (o.status || '').toLowerCase() === 'accepted') {
+                    actionBtn = `<button class="btn-return-trigger" style="width:100%; padding:8px; margin-top:6px;" onclick="triggerReturnRequest(${o.id}, ${o.qty || 1})">${lang.btn_return}</button>`;
                 }
 
-                const driverDisplay = o.is_runner 
-                    ? (o.driver_name ? o.driver_name : (currentLang === 'ru' ? 'Ожидание ранера...' : 'Runner Waiting...'))
-                    : (o.driver_name ? o.driver_name : lang.waiting);
-
-                const badgeOrRunner = o.is_runner ? `<span class="runner-badge" style="margin-left:5px;">${currentLang === 'ru' ? 'Ранер' : 'Runner'}</span>` : '';
+                const cardUrgentStyle = o.urgent ? 'background:#fff5f5; border-left-color:#ef4444;' : '';
 
                 return `
-                <div class="request-card" style="${o.is_runner ? 'border-left: 4px solid var(--runner-accent);' : ''}">
+                <div class="request-card ${cardTypeClass}" style="${cardUrgentStyle}">
                     <div class="card-row">
-                        <div><span style="font-weight:700; color:var(--accent);">#${o.id}</span> ${badgeOrRunner} <span style="color:var(--text-muted); font-size:12px; margin-left:5px;">⏱ ${formatTime(o.created_at)}</span></div>
-                        <span class="status-badge ${statusLwr}">${o.status || 'new'}</span>
+                        <div>
+                            <strong>#${o.id}</strong> ${typeLabel}
+                            <span style="color:var(--text-muted); font-size:11px; margin-left:6px;">⏱ ${formatTime(o.created_at)}</span>
+                        </div>
+                        <div>${getStatusBadgeLabel(o.status, o.driver_name)}</div>
                     </div>
                     <div class="card-row">
                         <div>
-                            <span><strong style="${o.is_runner ? 'color:var(--runner-accent);' : ''}">${o.description || '-'}</strong></span><br>
-                            <span style="font-size:12px; color:var(--text-muted);">Cons: ${o.consignment || '-'} | Store: ${o.store || '-'}</span>
+                            <span style="font-size:15px; font-weight:700; color:#1e293b;">${translateDynamicText(o.description)}</span><br>
+                            <span style="font-size:12px; color:#2e7d32; font-weight:600; display:inline-block; margin-top:2px;">${lang.label_store}: ${o.store || '-'}</span>
                         </div>
-                        <div style="text-align:right;"><span style="font-size:18px; color:var(--accent); font-weight:800;">${o.qty || '1'}</span></div>
+                        <div style="text-align:right;">
+                            <span style="font-size:18px; font-weight:800; color:var(--text);">${o.qty || 1}</span> <span style="font-size:11px; color:var(--text-muted); font-weight:600;">${lang.label_qty}</span>
+                        </div>
                     </div>
-                    <div class="card-row" style="font-size:12px; border-top:1px dashed #e2e8f0; padding-top:8px;">
-                        <div>${currentLang === 'ru' ? 'Исполнитель' : 'Assignee'}: <strong>${driverDisplay}</strong></div>
-                        <div>${actionButton}</div>
-                    </div>
+                    ${o.driver_comment ? `<div style="font-size:12px; background:#fff7ed; border:1px solid #ffedd5; padding:8px; border-radius:4px; color:#c2410c; margin-top:2px;"><strong>${o.driver_name || 'Driver'}:</strong> ${translateDynamicText(o.driver_comment)}</div>` : ''}
+                    ${actionBtn}
                     <div class="mobile-comment-wrapper">
                         <div class="table-comment-box">
-                            <input type="text" id="inline_comment_mob_${o.id}" value="${(o.comment || '').replace(/"/g, '&quot;')}" placeholder="...">
+                            <input type="text" id="inline_comment_mob_${o.id}" value="${(o.comment || '').replace(/\"/g, '&quot;')}" placeholder="${lang.placeholder_comment}">
                             <button class="btn-save-comment" onclick="updateOrderComment(${o.id})">💾</button>
                         </div>
                     </div>
