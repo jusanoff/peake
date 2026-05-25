@@ -358,19 +358,6 @@
             .table-responsive { display: none; }
             .mobile-requests-list { display: flex; }
         }
-        .btn-return {
-    background: #6b46c1; 
-    color: white;
-    border: none;
-    padding: 6px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: bold;
-}
-.btn-return:hover {
-    background: #553c9a;
-}
     </style>
 </head>
 <body>
@@ -1151,20 +1138,14 @@ async function initiateReturn(orderId, maxQty) {
             }
 
             const tableHtml = orders.map(o => {
-               // ... внутри .map(o => {
-const statusLwr = (o.status || 'new').toLowerCase();
+                const statusLwr = (o.status || 'new').toLowerCase();
+                const actionHtml = statusLwr === 'new' 
+                    ? `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>` 
+                    : `<span style="color:var(--text-muted); font-size:11px;">${lang.progress}</span>`;
 
-// Логика кнопок:
-let actionHtml = '';
-if (statusLwr === 'new') {
-    actionHtml = `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>`;
-} else if (statusLwr === 'delivered') {
-    // Кнопка возврата только для доставленных заказов
-    actionHtml = `<button class="btn-return" onclick="initiateReturn(${o.id}, ${o.qty})">↩ Return</button>`;
-} else {
-    actionHtml = `<span style="color:var(--text-muted); font-size:11px;">${lang.progress}</span>`;
-}
-// ... дальше твой существующий код ...
+                const assigneeDisplay = o.is_runner 
+                    ? (o.driver_name ? '🏃‍♂️ ' + o.driver_name : `<span class="runner-badge">${currentLang === 'ru' ? 'Ранер' : 'Runner Task'}</span>`)
+                    : (o.driver_name ? '🚚 ' + o.driver_name : lang.waiting);
 
                 return `
                 <tr>
@@ -1190,18 +1171,11 @@ if (statusLwr === 'new') {
             }).join('');
 
             const mobileHtml = orders.map(o => {
-               // ... внутри .map(o => {
-const statusLwr = (o.status || 'new').toLowerCase();
+                const statusLwr = (o.status || 'new').toLowerCase();
+                const actionButton = statusLwr === 'new' 
+                    ? `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>` 
+                    : `<span style="color:var(--text-muted); font-size:12px;">${lang.progress}</span>`;
 
-let actionButton = '';
-if (statusLwr === 'new') {
-    actionButton = `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>`;
-} else if (statusLwr === 'delivered') {
-    actionButton = `<button class="btn-return" onclick="initiateReturn(${o.id}, ${o.qty})">↩ Return</button>`;
-} else {
-    actionButton = `<span style="color:var(--text-muted); font-size:12px;">${lang.progress}</span>`;
-}
-// ... дальше твой существующий код ...
                 const driverDisplay = o.is_runner 
                     ? (o.driver_name ? o.driver_name : (currentLang === 'ru' ? 'Ожидание ранера...' : 'Runner Waiting...'))
                     : (o.driver_name ? o.driver_name : lang.waiting);
@@ -1250,31 +1224,6 @@ if (statusLwr === 'new') {
             }
         } catch (e) {}
     }
-    async function initiateReturn(orderId, maxQty) {
-    const qtyToReturn = prompt(`Заказано: ${maxQty} паллет. Сколько возвращаем?`, maxQty);
-    
-    if (qtyToReturn === null) return; // Отмена
-    if (isNaN(qtyToReturn) || qtyToReturn <= 0 || qtyToReturn > maxQty) {
-        alert("Введите корректное число от 1 до " + maxQty);
-        return;
-    }
-
-    try {
-        const { error } = await clientDb
-            .from('orders')
-            .update({ 
-                status: 'return_requested', 
-                return_qty: parseInt(qtyToReturn) 
-            })
-            .eq('id', orderId);
-
-        if (error) throw error;
-        alert("Запрос на возврат отправлен водителю.");
-        loadActiveRequests(); // Обновляем таблицу
-    } catch (e) {
-        alert("Ошибка: " + e.message);
-    }
-}
 
     fetchLineFullName();
     loadStockDropdown();
