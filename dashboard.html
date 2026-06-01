@@ -217,14 +217,18 @@
                     const deliveredTime = new Date(o.returned_at || o.delivered_at || o.created_at);
                     if (now - deliveredTime > 60000) {
                         return false; 
+
+                        if (o.target_role === 'runner') return false; // Исключаем
+    // ... ваша остальная логика
                     }
                 }
-                return true;
+                return true; 
+                
+
+                
             });
-            const activeOrders = orders.filter(o => {
-    if (o.created_by_role === 'runner') return false; // Исключаем
-    // ... ваша остальная логика
-});
+           
+   
 
             // Сортировка: Срочные -> В процессе -> Новые -> Выполненные
             const sortedOrders = activeOrders.sort((a, b) => {
