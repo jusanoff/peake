@@ -222,7 +222,7 @@
                 return true;
             });
             const activeOrders = orders.filter(o => {
-    if (o.target_role === 'runner') return false; // Исключаем
+    if (o.created_by_role === 'runner') return false; // Исключаем
     // ... ваша остальная логика
 });
 
