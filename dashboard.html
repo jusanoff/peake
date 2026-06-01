@@ -181,7 +181,7 @@
         try {
             const { data: users, error } = await _db
                 .from('users_table')
-                .select('u, name') // Исправлено на правильную колонку 'u' вместо 'user'
+                .select('u, name')
                 .eq('t', 'driver');
             
             if (error) throw error;
@@ -210,24 +210,23 @@
 
             const now = new Date();
 
+            // Исключение заказов, где line содержит runner
+            const filteredOrders = orders.filter(o => {
+                const lineVal = (o.line || '').toLowerCase();
+                return !lineVal.includes('runner');
+            });
+
             // Авто-скрытие завершенных заказов через 1 минуту
-            const activeOrders = orders.filter(o => {
+            const activeOrders = filteredOrders.filter(o => {
                 const status = (o.status || 'new').toLowerCase();
                 if (status === 'delivered' || status === 'done' || status === 'returned') {
                     const deliveredTime = new Date(o.returned_at || o.delivered_at || o.created_at);
                     if (now - deliveredTime > 60000) {
                         return false; 
-
-                       
                     }
                 }
-                return true; 
-                
-
-                
+                return true;
             });
-           
-   
 
             // Сортировка: Срочные -> В процессе -> Новые -> Выполненные
             const sortedOrders = activeOrders.sort((a, b) => {
@@ -258,12 +257,10 @@
                 const rowClass = isUrgent ? 'class="urgent-row"' : '';
                 const urgentPrefix = isUrgent ? '<span class="urgent-label">⚠️ URGENT:</span> ' : '';
 
-                // Защита регистра данных из базы данных
                 const consignmentVal = o.consignment || o.Consignment || '-';
                 const quantityVal = o.quantity || o.Quantity || o.qty || o.Qty || '-';
-                const sizeVal = o.size || o.Size || '-'; // Читаем размер из базы данных
+                const sizeVal = o.size || o.Size || '-';
 
-                // Формирование логов комментариев (Line Note, Office, Driver) для новой колонки
                 let logsHtml = `<div style="font-size: 14px; font-weight: 500;">Line: ${o.comment || '-'}</div>`;
                 if (o.office_comment) {
                     logsHtml += `<div style="color:#0288d1; font-size:12px; margin-top:2px; font-weight:600;">Office: ${o.office_comment}</div>`;
