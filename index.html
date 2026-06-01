@@ -1172,7 +1172,7 @@
                 .update({ 
                     status: 'return_requested', 
                     return_qty: parseInt(qtyToReturn),
-                    target_role: 'driver' // <-- ДОБАВЬТЕ ЭТО
+                    target_role: 'driver'
                 })
                 .eq('id', orderId);
 
@@ -1188,14 +1188,11 @@
             const activeId = document.activeElement ? document.activeElement.id : null;
             let currentTypingValue = null;
             
-            // Сохраняем состояние поля, если пользователь сейчас что-то пишет
             if (activeId && (activeId.startsWith('inline_comment_') || activeId === 'stock_input')) {
                 const el = document.getElementById(activeId);
                 if(el) currentTypingValue = el.value;
             }
 
-            // ЗАГРУЗКА: Убрали ограничение .in('status', [...]), 
-            // теперь загружаем всё, чтобы история была видна.
             const { data: orders, error } = await clientDb
                 .from('orders')
                 .select('*')
@@ -1210,15 +1207,15 @@
                 document.getElementById('line_requests_mobile').innerHTML = `<div style="text-align:center; color:var(--text-muted); padding: 20px;">${lang.no_requests}</div>`;
                 return;
             }
-// Внутри loadActiveRequests, после const { data: orders, error } = ...
-console.log("Всего загружено заказов:", orders.length);
-console.log("Заказы в списке:", orders.map(o => `${o.id}: ${o.status}`)); // Выведет ID и статус
-            // Отрисовка таблицы
+
+            console.log("Всего загружено заказов:", orders.length);
+            console.log("Заказы в списке:", orders.map(o => `${o.id}: ${o.status}`));
+
+            // Отрисовка таблицы (Desktop)
             const tableHtml = orders.map(o => {
                 const statusLwr = (o.status || 'new').toLowerCase();
                 
                 let actionHtml = '';
-                // Логика кнопок в зависимости от статуса
                 if (statusLwr === 'new') {
                     actionHtml = `<button class="btn-cancel" onclick="cancelOrder(${o.id})">${lang.btn_cancel}</button>`;
                 } else if (statusLwr === 'delivered' || statusLwr === 'done') {
@@ -1250,8 +1247,6 @@ console.log("Заказы в списке:", orders.map(o => `${o.id}: ${o.statu
                             <input type="text" id="inline_comment_${o.id}" value="${(o.comment || '').replace(/"/g, '&quot;')}" placeholder="...">
                             <button class="btn-save-comment" onclick="updateOrderComment(${o.id})">💾</button>
                         </div>
-                        ${o.office_comment ? `<div style="color:#0288d1; font-size:11px; margin-top:4px; font-weight:600;">Office: ${o.office_comment}</div>` : ''}
-                        ${o.driver_comment ? `<div style="color:#2e7d32; font-size:11px; margin-top:2px; font-weight:600;">Driver: ${o.driver_comment}</div>` : ''}
                     </td>
                     <td>${assigneeDisplay}</td>
                     <td>${o.delivered_at ? formatTime(o.delivered_at) : '-'}</td>
@@ -1260,7 +1255,7 @@ console.log("Заказы в списке:", orders.map(o => `${o.id}: ${o.statu
                 </tr>`;
             }).join('');
 
-            // Отрисовка мобильных карточек
+            // Отрисовка мобильных карточек (Исправлено: Добавлен вывод всех данных)
             const mobileHtml = orders.map(o => {
                 const statusLwr = (o.status || 'new').toLowerCase();
                 let actionButton = '';
@@ -1277,27 +1272,44 @@ console.log("Заказы в списке:", orders.map(o => `${o.id}: ${o.statu
                     actionButton = `<span style="color:var(--text-muted); font-size:12px;">${lang.progress || 'In Progress'}</span>`;
                 }
 
+                const assigneeDisplay = o.is_runner 
+                    ? (o.driver_name ? '🏃‍♂️ ' + o.driver_name : `<span class="runner-badge">${lang.badge_runner}</span>`)
+                    : (o.driver_name ? '🚚 ' + o.driver_name : lang.waiting);
+
                 return `
                 <div class="request-card" style="${o.is_runner ? 'border-left: 4px solid var(--runner-accent);' : ''}">
                     <div class="card-row">
-                        <div><span style="font-weight:700; color:var(--accent);">#${o.id}</span></div>
+                        <div>
+                            <span style="font-weight:700; color:var(--accent);">#${o.id}</span>
+                            <span style="font-size:11px; color:var(--text-muted); margin-left:8px;">⏱ ${formatTime(o.created_at)}</span>
+                        </div>
                         <span class="status-badge ${statusLwr}">${translateDynamicText(o.status) || 'new'}</span>
                     </div>
+                    
                     <div class="card-row">
-                        <div>
+                        <div style="flex-grow: 1;">
                             <span><strong style="${o.is_runner ? 'color:var(--runner-accent);' : ''}">${translateDynamicText(o.description) || '-'}</strong></span>
                         </div>
-                        <div style="text-align:right;"><span style="font-size:18px; color:var(--accent); font-weight:800;">${o.qty || '1'}</span></div>
+                        <div style="text-align:right; min-width: 40px;">
+                            <span style="font-size:18px; color:var(--accent); font-weight:800;">${o.qty || '1'}</span>
+                        </div>
                     </div>
                     
-                    <div style="margin-top: 8px;">
-                        <div class="mobile-comment-wrapper">
-                            <div class="table-comment-box" style="margin-bottom:0;">
-                                <input type="text" id="inline_comment_mob_${o.id}" value="${(o.comment || '').replace(/"/g, '&quot;')}" placeholder="Comment...">
-                                <button class="btn-save-comment" onclick="updateOrderComment(${o.id})">💾</button>
-                            </div>
-                            ${o.office_comment ? `<div style="color:#0288d1; font-size:12px; margin-top:4px; font-weight:600;">Office: ${o.office_comment}</div>` : ''}
-                            ${o.driver_comment ? `<div style="color:#2e7d32; font-size:12px; margin-top:2px; font-weight:600;">Driver: ${o.driver_comment}</div>` : ''}
+                    <div style="font-size: 12px; color: #4a5568; background: #f8fafc; padding: 8px; border-radius: 6px; margin-top: 6px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border);">
+                        <div><strong>Store:</strong> <span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></div>
+                        ${!o.is_runner ? `
+                        <div><strong>Consignment:</strong> ${o.consignment || o.Consignment || '-'}</div>
+                        <div><strong>Grower:</strong> ${o.grower || '-'}</div>
+                        <div><strong>Specs (O/S/C):</strong> ${o.origin || '-'} / ${o.size || '-'} / ${o.available || '-'}</div>
+                        ` : ''}
+                        <div><strong>${lang.assignee || 'Assignee'}:</strong> ${assigneeDisplay}</div>
+                        ${o.delivered_at ? `<div><strong>Delivered:</strong> ${formatTime(o.delivered_at)}</div>` : ''}
+                    </div>
+                    
+                    <div class="mobile-comment-wrapper">
+                        <div class="table-comment-box">
+                            <input type="text" id="inline_comment_mob_${o.id}" value="${(o.comment || '').replace(/"/g, '&quot;')}" placeholder="...">
+                            <button class="btn-save-comment" onclick="updateOrderComment(${o.id})">💾</button>
                         </div>
                     </div>
 
@@ -1310,7 +1322,6 @@ console.log("Заказы в списке:", orders.map(o => `${o.id}: ${o.statu
             document.getElementById('line_requests_body').innerHTML = tableHtml;
             document.getElementById('line_requests_mobile').innerHTML = mobileHtml;
 
-            // Восстановление фокуса
             if (activeId) {
                 let targetInput = document.getElementById(activeId);
                 if (!targetInput && activeId.startsWith('inline_comment_')) {
