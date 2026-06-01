@@ -1250,6 +1250,8 @@ console.log("Заказы в списке:", orders.map(o => `${o.id}: ${o.statu
                             <input type="text" id="inline_comment_${o.id}" value="${(o.comment || '').replace(/"/g, '&quot;')}" placeholder="...">
                             <button class="btn-save-comment" onclick="updateOrderComment(${o.id})">💾</button>
                         </div>
+                        ${o.office_comment ? `<div style="color:#0288d1; font-size:11px; margin-top:4px; font-weight:600;">Office: ${o.office_comment}</div>` : ''}
+                        ${o.driver_comment ? `<div style="color:#2e7d32; font-size:11px; margin-top:2px; font-weight:600;">Driver: ${o.driver_comment}</div>` : ''}
                     </td>
                     <td>${assigneeDisplay}</td>
                     <td>${o.delivered_at ? formatTime(o.delivered_at) : '-'}</td>
@@ -1287,6 +1289,18 @@ console.log("Заказы в списке:", orders.map(o => `${o.id}: ${o.statu
                         </div>
                         <div style="text-align:right;"><span style="font-size:18px; color:var(--accent); font-weight:800;">${o.qty || '1'}</span></div>
                     </div>
+                    
+                    <div style="margin-top: 8px;">
+                        <div class="mobile-comment-wrapper">
+                            <div class="table-comment-box" style="margin-bottom:0;">
+                                <input type="text" id="inline_comment_mob_${o.id}" value="${(o.comment || '').replace(/"/g, '&quot;')}" placeholder="Comment...">
+                                <button class="btn-save-comment" onclick="updateOrderComment(${o.id})">💾</button>
+                            </div>
+                            ${o.office_comment ? `<div style="color:#0288d1; font-size:12px; margin-top:4px; font-weight:600;">Office: ${o.office_comment}</div>` : ''}
+                            ${o.driver_comment ? `<div style="color:#2e7d32; font-size:12px; margin-top:2px; font-weight:600;">Driver: ${o.driver_comment}</div>` : ''}
+                        </div>
+                    </div>
+
                     <div class="card-row" style="margin-top:8px;">
                         <div>${actionButton}</div>
                     </div>
