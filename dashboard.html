@@ -210,10 +210,10 @@
 
             const now = new Date();
 
-            // Исключение заказов, где line содержит runner
+            // Исключение заказов, где target_role равно runner
             const filteredOrders = orders.filter(o => {
-                const lineVal = (o.line || '').toLowerCase();
-                return !lineVal.includes('runner');
+                const role = (o.target_role || '').toLowerCase();
+                return role !== 'runner';
             });
 
             // Авто-скрытие завершенных заказов через 1 минуту
