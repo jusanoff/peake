@@ -678,7 +678,7 @@
             active_requests: "Jūsų aktyvios linijos užklausos (Live)",
             th_id: "ID", th_time: "Laikas", th_store: "Sandėlis", th_fruit: "Vaisių aprašymas",
             th_grower: "Augintojas", th_cons: "Konsignacija", th_specs: "Specif. (O/S/C)", th_qty: "Kiekis",
-            th_comment: "Komentaras", th_driver: "Vairuotojas", th_delivered: "Pristatyta", th_status: "Būsena", th_action: "Veiksmas",
+            th_comment: "Komentaras", th_driver: "Vairuotojas", th_delivered: "Pristatyta", th_status: "Būsena", th_action: "Veimas",
             loading: "Kraunamos užklausos...", no_requests: "Aktyvių užklausų nėra.",
             waiting: "Laukiama...", progress: "Vykdoma", btn_cancel: "Atšaukti", btn_return: "Grąžinti", btn_return_req: "Grąžinimas prašomas",
             alert_fields: "Prašome užpildyti Aprašymo ir Konsignacijos laukus!",
@@ -706,19 +706,18 @@
             task_pickup: "🚛 Išvežti paruoštą produkciją",
             color_red: "Bendrosios atliekos (raudonas bin)",
             color_blue: "Vaisių atliekos (mėlynas bin)",
-            color_green: "Sulčių konteineris (žalias bin)",
+            color_green: "Sulčių konteineris (žalia bin)",
             color_white: "Baltas konteineris",
             box_lidl: "Lidl strawberry",
             box_costco_pink: "Costco Pink Lady",
             box_costco_gourmet: "Costco Gourmet",
             box_costco_lady: "Costco Lady Bird",
             box_reusable: "Daugkartinio naudojimo (Reusable)",
-            task_txt_bins: "DEŽIŲ UŽSAKYMAS", task_txt_boxes: "DĖŽUČIŲ UŽSAKYMAS", task_txt_trays: "PADĖKLIUKŲ UŽSAKYMAS", task_txt_pickup: "IŠVEŽIMAS: Paruoštas padėklas",
+            task_txt_bins: "DEŽIŲ UŽSAKYMAS", task_txt_boxes: "DĖŽUČИŲ UŽSAKYMAS", task_txt_trays: "PADĖKLIUKŲ UŽSAKYMAS", task_txt_pickup: "IŠVEŽIMAS: Paruoštas padėklas",
             badge_runner: "Runneris", runner_wait: "Laukiama runnerio...", assignee: "Vykdytojas"
         }
     };
 
-    // Динамический словарь перевода из базы данных
     const dynamicDictionary = {
         ru: {
             "švežimas: paruoštas padėklas": "Готовый паллет",
@@ -890,6 +889,23 @@
 
     let stockItemsGlobal = [];
     let cachedLineFullName = currentUser;
+    let userNamesMap = {}; // СЛОВАРЬ: Логин -> Реальное Имя
+
+    // Загрузка карты пользователей (перевод driver2 -> Egies, driver3 -> Alex)
+    async function loadUsersMap() {
+        try {
+            const { data, error } = await clientDb.from('users_table').select('u, name');
+            if (!error && data) {
+                userNamesMap = {};
+                data.forEach(row => {
+                    if (row.u) {
+                        userNamesMap[row.u.trim().toLowerCase()] = row.name || row.u;
+                    }
+                });
+                console.log("Карта имён успешно загружена:", userNamesMap);
+            }
+        } catch (e) { console.error("Ошибка при сборке карты пользователей:", e); }
+    }
 
     async function fetchLineFullName() {
         try {
@@ -1208,9 +1224,6 @@
                 return;
             }
 
-            console.log("Всего загружено заказов:", orders.length);
-            console.log("Заказы в списке:", orders.map(o => `${o.id}: ${o.status}`));
-
             // Отрисовка таблицы (Desktop)
             const tableHtml = orders.map(o => {
                 const statusLwr = (o.status || 'new').toLowerCase();
@@ -1228,9 +1241,13 @@
                     actionHtml = `<span style="color:var(--text-muted); font-size:11px;">${lang.progress || 'In Progress'}</span>`;
                 }
 
+                // Перевод логина водителя в реальное имя
+                const rawDriver = o.driver_name;
+                const mappedDriverName = rawDriver ? (userNamesMap[rawDriver.trim().toLowerCase()] || rawDriver) : '';
+
                 const assigneeDisplay = o.is_runner 
-                    ? (o.driver_name ? '🏃‍♂️ ' + o.driver_name : `<span class="runner-badge">${lang.badge_runner}</span>`)
-                    : (o.driver_name ? '🚚 ' + o.driver_name : lang.waiting);
+                    ? (rawDriver ? '🏃‍♂️ ' + mappedDriverName : `<span class="runner-badge">${lang.badge_runner}</span>`)
+                    : (rawDriver ? '🚚 ' + mappedDriverName : lang.waiting);
 
                 return `
                 <tr>
@@ -1255,7 +1272,7 @@
                 </tr>`;
             }).join('');
 
-            // Отрисовка мобильных карточек (Исправлено: Добавлен вывод всех данных)
+            // Отрисовка мобильных карточек
             const mobileHtml = orders.map(o => {
                 const statusLwr = (o.status || 'new').toLowerCase();
                 let actionButton = '';
@@ -1272,9 +1289,13 @@
                     actionButton = `<span style="color:var(--text-muted); font-size:12px;">${lang.progress || 'In Progress'}</span>`;
                 }
 
+                // Перевод логина водителя в реальное имя для мобильной версии
+                const rawDriver = o.driver_name;
+                const mappedDriverName = rawDriver ? (userNamesMap[rawDriver.trim().toLowerCase()] || rawDriver) : '';
+
                 const assigneeDisplay = o.is_runner 
-                    ? (o.driver_name ? '🏃‍♂️ ' + o.driver_name : `<span class="runner-badge">${lang.badge_runner}</span>`)
-                    : (o.driver_name ? '🚚 ' + o.driver_name : lang.waiting);
+                    ? (rawDriver ? '🏃‍♂️ ' + mappedDriverName : `<span class="runner-badge">${lang.badge_runner}</span>`)
+                    : (rawDriver ? '🚚 ' + mappedDriverName : lang.waiting);
 
                 return `
                 <div class="request-card" style="${o.is_runner ? 'border-left: 4px solid var(--runner-accent);' : ''}">
@@ -1295,6 +1316,7 @@
                         </div>
                     </div>
                     
+                    <!-- Дополнительные детали паллеты на мобильном экране -->
                     <div style="font-size: 12px; color: #4a5568; background: #f8fafc; padding: 8px; border-radius: 6px; margin-top: 6px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border);">
                         <div><strong>Store:</strong> <span style="color:#6b46c1; font-weight:700;">${o.store || '-'}</span></div>
                         ${!o.is_runner ? `
@@ -1306,6 +1328,7 @@
                         ${o.delivered_at ? `<div><strong>Delivered:</strong> ${formatTime(o.delivered_at)}</div>` : ''}
                     </div>
                     
+                    <!-- Блок комментария для мобильной версии -->
                     <div class="mobile-comment-wrapper">
                         <div class="table-comment-box">
                             <input type="text" id="inline_comment_mob_${o.id}" value="${(o.comment || '').replace(/"/g, '&quot;')}" placeholder="...">
@@ -1335,8 +1358,15 @@
             }
         } catch (e) { console.error("Error in loadActiveRequests:", e); }
     }
-    fetchLineFullName();
-    loadStockDropdown();
+
+    // Инициализация приложения по цепочке
+    async function startApp() {
+        await loadUsersMap(); // 1. Качаем карту пользователей
+        await fetchLineFullName(); // 2. Качаем полное имя линии и запускаем автообновление заявок
+        await loadStockDropdown(); // 3. Подгружаем остатки для поиска
+    }
+
+    startApp();
     setInterval(loadActiveRequests, 5000);
 </script>
 </body>
