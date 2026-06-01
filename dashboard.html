@@ -221,6 +221,10 @@
                 }
                 return true;
             });
+            const activeOrders = orders.filter(o => {
+    if (o.target_role === 'runner') return false; // Исключаем
+    // ... ваша остальная логика
+});
 
             // Сортировка: Срочные -> В процессе -> Новые -> Выполненные
             const sortedOrders = activeOrders.sort((a, b) => {
