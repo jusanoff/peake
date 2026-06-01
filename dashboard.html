@@ -218,7 +218,7 @@
                     if (now - deliveredTime > 60000) {
                         return false; 
 
-                        if (o.target_role === 'runner') return false; // Исключаем
+                        if (o.created_by_role === 'runner') return false; // Исключаем
     // ... ваша остальная логика
                     }
                 }
