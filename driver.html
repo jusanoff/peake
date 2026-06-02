@@ -436,18 +436,28 @@
                 </div>
             `;
         }  else if (type === 'progress') {
-    cardStyleClass += ' accepted';
-    actionButtonsHtml = `
-        <div class="card-row" style="margin-top:6px; display:flex; gap:6px;">
-            <button class="btn-action btn-deliver" onclick="completeOrder(${o.id})">${lang.btn_deliver}</button>
-            <button class="btn-cancel-confirm" onclick="cancelOrder(${o.id})">${lang.btn_cancel_conf}</button>
-        </div>
-        <div class="reply-wrapper" style="margin-top:6px;">
-            <input type="text" id="driver_reply_to_${o.id}" placeholder="${lang.placeholder_reply}" onfocus="setTyping(true)" onblur="setTyping(false)">
-            <button class="btn-reply-send" onclick="sendDriverReply(${o.id})">${lang.btn_send}</button>
-        </div>
-    `;
-}
+            cardStyleClass += ' accepted';
+            actionButtonsHtml = `
+                <div class="card-row" style="margin-top:6px; display:flex; gap:6px; width: 100%;">
+                    <button class="btn-action btn-deliver" onclick="completeOrder(${o.id})">${lang.btn_deliver}</button>
+                    <button class="btn-cancel-trigger" onclick="toggleCancelBlock(${o.id})">${lang.btn_cancel_trig}</button>
+                </div>
+                <div class="cancel-reason-wrapper" id="cancel_block_${o.id}">
+                    <select id="reason_select_${o.id}">
+                        <option value="">${lang.select_reason_placeholder}</option>
+                        <option value="${lang.reason_1}">${lang.reason_1}</option>
+                        <option value="${lang.reason_2}">${lang.reason_2}</option>
+                        <option value="${lang.reason_3}">${lang.reason_3}</option>
+                        <option value="${lang.reason_4}">${lang.reason_4}</option>
+                    </select>
+                    <button class="btn-cancel-confirm" onclick="cancelOrder(${o.id})">${lang.btn_cancel_conf}</button>
+                </div>
+                <div class="reply-wrapper" style="margin-top:6px;">
+                    <input type="text" id="driver_reply_to_${o.id}" placeholder="${lang.placeholder_reply}" onfocus="setTyping(true)" onblur="setTyping(false)">
+                    <button class="btn-reply-send" onclick="sendDriverReply(${o.id})">${lang.btn_send}</button>
+                </div>
+            `;
+        }
 
         // В карточке заменяем статические тексты на языковые переменные
         return `
@@ -572,7 +582,10 @@
         try {
             const { error } = await clientDb
                 .from('orders')
-                .update({ status: 'canceled' })
+                .update({ 
+                    status: 'canceled',
+                    driver_comment: selectedReason
+                })
                 .eq('id', orderId);
 
             if (error) throw error;
