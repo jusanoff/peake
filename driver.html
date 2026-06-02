@@ -225,8 +225,6 @@
             reason_3: "Pallet damaged / inaccessible",
             reason_4: "Other problem",
             alert_reason: "Please select a reason for cancellation!",
-            
-            // Новые переводы для динамических меток в карточке
             label_line: "Line",
             label_store: "Store",
             label_comment: "Line Comment",
@@ -256,8 +254,6 @@
             reason_3: "Паллет поврежден / недоступен",
             reason_4: "Другая проблема",
             alert_reason: "Пожалуйста, выберите причину отмены!",
-
-            // Новые переводы для динамических меток в карточке
             label_line: "Линия",
             label_store: "Магазин",
             label_comment: "Комментарий линии",
@@ -274,7 +270,7 @@
             empty_returns: "Grąžinimo užklausų nėra",
             empty_new: "Naujų užklausų nėra",
             empty_current: "Šiuo metu vykdomų darbų nėra",
-            btn_accept: "🚚 PRIIMTI UŽDUOTĮ",
+            btn_accept: "🚚 PRIIMTI UŽDUOTI",
             btn_deliver: "✅ PRISTATYTA / ATLIKTA",
             btn_return_confirm: "🔄 PATVIRTINTI GRĄŽINIMĄ IR IŠTRINTI",
             btn_cancel_trig: "Atšaukti",
@@ -287,8 +283,6 @@
             reason_3: "Padėklas sugadintas / nepasiekiamas",
             reason_4: "Kita problema",
             alert_reason: "Prašome pasirinkti atšaukimo priežastį!",
-
-            // Новые переводы для динамических меток в карточке
             label_line: "Linija",
             label_store: "Parduotuvė",
             label_comment: "Linijos komentaras",
@@ -342,6 +336,7 @@
 
     let isUserTyping = false;
     let autoUpdateInterval = null;
+    let openCancelBlocks = new Set(); // Хранит ID заказов, у которых развернута панель отмены
 
     function formatTime(isoString) {
         if (!isoString) return "-";
@@ -401,12 +396,14 @@
         const isUrgent = o.urgent ? 'urgent' : '';
         const timeStr = formatTime(o.created_at);
         
-        // Метки интерфейса теперь динамически берутся из словаря под язык пользователя
         const commentHtml = o.comment ? `<div class="comment-box">💬 <strong>${lang.label_comment}:</strong> ${o.comment}</div>` : '';
         const driverCommentHtml = o.driver_comment ? `<div class="comment-box" style="border-color:#bae6fd; background:#f0f9ff;">🚚 <strong>${lang.label_driver_note}:</strong> ${o.driver_comment}</div>` : '';
         
         let cardStyleClass = isUrgent;
         let actionButtonsHtml = '';
+
+        // Проверяем, должна ли панель отмены отображаться как открытая
+        const cancelBlockStyle = openCancelBlocks.has(o.id) ? 'style="display: flex;"' : '';
 
         if (type === 'return') {
             cardStyleClass += ' return-style';
@@ -424,8 +421,8 @@
                     <button class="btn-action btn-accept" onclick="acceptOrder(${o.id})">${lang.btn_accept}</button>
                     <button class="btn-cancel-trigger" onclick="toggleCancelBlock(${o.id})">${lang.btn_cancel_trig}</button>
                 </div>
-                <div class="cancel-reason-wrapper" id="cancel_block_${o.id}">
-                    <select id="reason_select_${o.id}">
+                <div class="cancel-reason-wrapper" id="cancel_block_${o.id}" ${cancelBlockStyle}>
+                    <select id="reason_select_${o.id}" onfocus="setTyping(true)" onblur="setTyping(false)">
                         <option value="">${lang.select_reason_placeholder}</option>
                         <option value="${lang.reason_1}">${lang.reason_1}</option>
                         <option value="${lang.reason_2}">${lang.reason_2}</option>
@@ -442,8 +439,8 @@
                     <button class="btn-action btn-deliver" onclick="completeOrder(${o.id})">${lang.btn_deliver}</button>
                     <button class="btn-cancel-trigger" onclick="toggleCancelBlock(${o.id})">${lang.btn_cancel_trig}</button>
                 </div>
-                <div class="cancel-reason-wrapper" id="cancel_block_${o.id}">
-                    <select id="reason_select_${o.id}">
+                <div class="cancel-reason-wrapper" id="cancel_block_${o.id}" ${cancelBlockStyle}>
+                    <select id="reason_select_${o.id}" onfocus="setTyping(true)" onblur="setTyping(false)">
                         <option value="">${lang.select_reason_placeholder}</option>
                         <option value="${lang.reason_1}">${lang.reason_1}</option>
                         <option value="${lang.reason_2}">${lang.reason_2}</option>
@@ -459,7 +456,6 @@
             `;
         }
 
-        // В карточке заменяем статические тексты на языковые переменные
         return `
             <div class="order-card ${cardStyleClass}" id="card_${o.id}">
                 <div class="card-row">
@@ -493,7 +489,7 @@
 
     function setTyping(status) {
         isUserTyping = status;
-        if (!status) {
+        if (!status && openCancelBlocks.size === 0) {
             startAutoUpdate();
         } else {
             stopAutoUpdate();
@@ -504,7 +500,17 @@
         const block = document.getElementById(`cancel_block_${orderId}`);
         if(block) {
             const isHidden = block.style.display === 'none' || !block.style.display;
-            block.style.display = isHidden ? 'flex' : 'none';
+            if (isHidden) {
+                block.style.display = 'flex';
+                openCancelBlocks.add(orderId);
+                stopAutoUpdate(); // Останавливаем таймер при открытии панели
+            } else {
+                block.style.display = 'none';
+                openCancelBlocks.delete(orderId);
+                if (openCancelBlocks.size === 0 && !isUserTyping) {
+                    startAutoUpdate(); // Возвращаем таймер, если все закрыто
+                }
+            }
         }
     }
 
@@ -530,6 +536,7 @@
 
     async function acceptOrder(orderId) {
         stopAutoUpdate();
+        openCancelBlocks.delete(orderId);
         try {
             const { error } = await clientDb
                 .from('orders')
@@ -549,22 +556,22 @@
         }
     }
 
-    // --- 1. Завершение заказа ---
-    async function completeOrder(orderId) { // Переименовали, чтобы не путаться
+    async function completeOrder(orderId) {
         stopAutoUpdate();
+        openCancelBlocks.delete(orderId);
         try {
             const { error } = await clientDb
                 .from('orders')
                 .update({ 
                     status: 'done', 
-                    delivered_at: new Date().toISOString() // Сохраняем время
+                    delivered_at: new Date().toISOString()
                 })
                 .eq('id', orderId);
 
             if (error) throw error;
             
             isUserTyping = false;
-            loadAllOrders(); // Заказ обновится в базе и исчезнет из списка водителя (см. п.2)
+            loadAllOrders();
             startAutoUpdate();
         } catch (e) {
             alert("Error: " + e.message);
@@ -572,13 +579,13 @@
         }
     }
 
-    // --- 2. Отмена заказа ---
     async function cancelOrder(orderId) {
         const reasonSelect = document.getElementById(`reason_select_${orderId}`);
         const selectedReason = reasonSelect ? reasonSelect.value : "";
         if (!selectedReason) { alert(lang.alert_reason); return; }
 
         stopAutoUpdate();
+        openCancelBlocks.delete(orderId);
         try {
             const { error } = await clientDb
                 .from('orders')
@@ -599,7 +606,6 @@
         }
     }
 
-    // --- 3. Подтверждение возврата ---
     async function confirmReturn(orderId) {
         stopAutoUpdate();
         try {
@@ -640,7 +646,8 @@
     function startAutoUpdate() {
         if (autoUpdateInterval) clearInterval(autoUpdateInterval);
         autoUpdateInterval = setInterval(() => {
-            if (!isUserTyping) {
+            // Разрешаем обновление только если пользователь ничего не пишет и панели отмены закрыты
+            if (!isUserTyping && openCancelBlocks.size === 0) {
                 saveTypingValues();
                 loadAllOrders();
             }
