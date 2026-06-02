@@ -586,11 +586,6 @@
                     status: 'canceled',
                     driver_comment: selectedReason
                 })
-                stopAutoUpdate();
-        try {
-            const { error } = await clientDb
-                .from('orders')
-                .delete()
                 .eq('id', orderId);
 
             if (error) throw error;
