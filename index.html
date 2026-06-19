@@ -1017,7 +1017,8 @@
 
     async function loadStockDropdown() {
         try {
-            const { data: stock, error } = await clientDb.from('stock').select('*').gt('count', 0).limit(10000);
+            // Убрал .gt('count', 0), чтобы загружались абсолютно все строки (включая нулевые/отрицательные остатки)
+            const { data: stock, error } = await clientDb.from('stock').select('*').limit(10000);
             if (error) throw error;
             if (stock) {
                 stockItemsGlobal = stock;
@@ -1033,8 +1034,7 @@
             const desc = (item.description || '').toLowerCase();
             const cons = String(item.consignment || item.Consignment || '').toLowerCase();
             const store = String(item.store || '').toLowerCase();
-            const comm = String(item.comment || item.Comment || '').toLowerCase(); 
-            return desc.includes(query) || cons.includes(query) || store.includes(query) || comm.includes(query);
+            return desc.includes(query) || cons.includes(query) || store.includes(query);
         });
 
         if (filtered.length === 0) {
@@ -1042,13 +1042,13 @@
             return;
         }
 
-        dropdown.innerHTML = filtered.slice(0, 30).map(item => {
+        // Увеличил лимит визуального отображения до 500, чтобы показались все найденные паллеты
+        dropdown.innerHTML = filtered.slice(0, 500).map(item => {
             const desc = item.description || 'Unknown Fruit';
             const cons = item.consignment || item.Consignment || 'No Cons';
             const size = item.size || 'No Size';
             const store = item.store || '?';
-            const commTxt = item.comment || item.Comment ? ` | 💬 ${item.comment || item.Comment}` : ''; 
-            const fullText = `Store ${store} | ${desc} (Cons: ${cons}, Size: ${size})${commTxt}`;
+            const fullText = `Store ${store} | ${desc} (Cons: ${cons}, Size: ${size})`;
             
             return `
                 <div style="padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #edf2f7; font-size: 14px; background: white;" 
@@ -1087,6 +1087,7 @@
             if(dropdown) dropdown.style.display = 'none';
         }
     });
+    
     async function sendRequestToDriver() {
         const desc = document.getElementById('inp_description').value.trim();
         const cons = document.getElementById('inp_consignment').value.trim();
@@ -1317,7 +1318,6 @@
                     ? (rawDriver ? '🏃‍♂️ ' + mappedDriverName : `<span class="runner-badge">${lang.badge_runner}</span>`)
                     : (rawDriver ? '🚚 ' + mappedDriverName : lang.waiting);
 
-                // Достаем комментарии водителя и офиса
                 const driverComm = o.driver_comment ? `<div style="font-size:11px; color:#ef6c00; margin-top:4px; font-weight:600;">🚚: ${o.driver_comment}</div>` : '';
                 const officeComm = o.office_comment ? `<div style="font-size:11px; color:#9c27b0; margin-top:4px; font-weight:600;">🏢: ${o.office_comment}</div>` : '';
 
@@ -1370,7 +1370,6 @@
                     ? (rawDriver ? '🏃‍♂️ ' + mappedDriverName : `<span class="runner-badge">${lang.badge_runner}</span>`)
                     : (rawDriver ? '🚚 ' + mappedDriverName : lang.waiting);
 
-                // Достаем комментарии водителя и офиса
                 const driverComm = o.driver_comment ? `<div style="font-size:11px; color:#ef6c00; margin-top:4px; font-weight:600;">🚚: ${o.driver_comment}</div>` : '';
                 const officeComm = o.office_comment ? `<div style="font-size:11px; color:#9c27b0; margin-top:4px; font-weight:600;">🏢: ${o.office_comment}</div>` : '';
 
