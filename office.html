@@ -248,7 +248,7 @@
     <div class="dashboard-card">
         <div class="pipeline-header">
             <h2 id="title_pipeline">Live Production Orders Pipeline</h2>
-            <button class="btn-excel" id="btn_export" onclick="exportOrdersToExcel()">规格 Export Logs to Excel</button>
+            <button class="btn-excel" id="btn_export" onclick="exportOrdersToExcel()">📊 Export Logs to Excel</button>
         </div>
         <div class="table-responsive">
             <table>
@@ -543,18 +543,14 @@
 
                     let rawCons = String(row[0] || "").trim(); 
 
-                    if (!rawCons || 
-                        rawCons.toLowerCase().includes("consignment") || 
-                        rawCons.toLowerCase().includes("ltd") || 
-                        rawCons.toLowerCase().includes("braeburn") ||
-                        rawCons.toLowerCase().includes("cox") ||
-                        rawCons.toLowerCase().includes("gala") ||
-                        rawCons.length < 2) {
+                    // Пропускаем только строку, где явно написано слово "consignment" (заголовок)
+                    if (rawCons.toLowerCase() === "consignment") {
                         continue; 
                     }
 
                     const sizeVal = String(row[4] || "").trim();
-                    if (!sizeVal || sizeVal.toLowerCase().includes("size")) {
+                    // Пропускаем строку, если размер равен "size" (тоже заголовок)
+                    if (sizeVal.toLowerCase() === "size") {
                         continue; 
                     }
 
@@ -566,12 +562,17 @@
                     const variety   = String(row[9] || "").trim();  
                     const available = String(row[14] || "").trim(); 
 
+                    // Если в строке нет ни консигнации, ни сорта, ни количества - это просто пустая строка-разделитель (ее пропускаем)
+                    if (!rawCons && !variety && !countVal) {
+                        continue;
+                    }
+
                     stockRows.push({
                         consignment: rawCons,
                         growerpro: growerRef ? growerRef : null,
                         grower: supplier ? supplier : null,
                         origin: origin ? origin : null,
-                        size: sizeVal,
+                        size: sizeVal ? sizeVal : null,
                         count: countVal ? countVal : null,
                         store: storeVal ? storeVal : null,
                         description: variety ? variety : null,
@@ -610,7 +611,8 @@
     async function loadStockTable() {
         const t = i18n[curL] || i18n.en;
         try {
-            const { data: stock, error } = await clientDb.from('stock').select('*').order('id', { ascending: true });
+            // Добавил .limit(10000) чтобы вытащить из базы абсолютно все строки для офиса
+            const { data: stock, error } = await clientDb.from('stock').select('*').order('id', { ascending: true }).limit(10000);
             if (error) throw error;
 
             if (!stock || stock.length === 0) {
